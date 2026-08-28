@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BOOST Activity</title>
+  <link rel="stylesheet" href="assets/css/portal.css">
+</head>
+<body>
+<main class="activity-shell">
+  <header class="boost-nav">
+    <div class="nav-left"><a class="map-link" id="backTopic" href="index.html">← Back to Topic</a></div>
+    <div class="nav-center">
+      <div class="nav-title" id="activityTitle">BOOST Activity</div>
+      <div class="progress-row"><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><span class="progress-count" data-progress-count></span></div>
+      <div class="module-note" id="moduleNote"></div>
+    </div>
+    <div class="nav-right activity-actions">
+      <a class="external-btn" id="externalBtn" href="#" target="_blank" rel="noopener">Open in New Tab ↗</a>
+      <button class="finish-btn" id="finishBtn">✓ Finish &amp; Return to BOOST Map</button>
+    </div>
+  </header>
+  <iframe class="activity-frame" id="activityFrame" title="BOOST module activity" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/portal.js"></script>
+<script>
+const links=window.BOOST_LINKS||{};
+const cfg={
+  module1:{title:'Module 1 — Career Direction',src:links.module1,topic:'topic/module1.html',note:'Discover career possibilities using your O*NET interests and regional opportunity.'},
+  module2:{title:'Module 2 — Career Reality Check',src:links.module2,topic:'topic/module2.html',note:'Validate career possibilities against jobs, wages, life fit, and future opportunity.'},
+  module3:{title:'Module 3 — Career Mobility Exploration',src:links.module3,topic:'topic/module3.html',note:'Connect what you already bring to realistic career moves and growth.'},
+  module4:{title:'Module 4 — Decide',src:links.module4,topic:'topic/module4.html',note:'Coach-supported: review the evidence and choose your most efficient next step.',finishLabel:'✓ Coach Review Complete & Return'},
+  ai:{title:'Module 5 — AI & You',src:links.ai,topic:'topic/ai.html',note:'Learn it. See it. Try it. Use it — with human judgment in the loop.'},
+  healthcare:{title:'Healthcare Workplace Skills Challenge',src:links.healthcare,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
+  trades:{title:'Skilled Trades Workplace Skills Challenge',src:links.trades,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
+  manufacturing:{title:'Advanced Manufacturing Workplace Skills Challenge',src:links.manufacturing,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
+  it:{title:'Information Technology Workplace Skills Challenge',src:links.it,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
+  cdl:{title:'Transportation & Logistics • CDL Workplace Skills Challenge',src:links.cdl,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
+  investment:{title:'Career Investment Explorer',src:links.investment,topic:'index.html',note:'Bring your evidence together and determine whether — and where — skill-gap closure or training investment is justified.'}
+};
+const q=new URLSearchParams(location.search),m=q.get('m')||'module1',c=cfg[m]||cfg.module1;
+document.title=c.title+' | BOOST';
+document.getElementById('activityTitle').textContent=c.title;
+document.getElementById('moduleNote').textContent=c.note||'';
+document.getElementById('backTopic').href=c.topic;
+document.getElementById('backTopic').textContent=c.topic==='index.html'?'← Back to BOOST Map':'← Back to Topic';
+document.getElementById('activityFrame').src=c.src;
+document.getElementById('externalBtn').href=c.src;
+if(c.finishLabel) document.getElementById('finishBtn').textContent=c.finishLabel;
+document.getElementById('finishBtn').addEventListener('click',()=>{
+  BOOSTPortal.markComplete(m);
+  location.href='index.html';
+});
+</script>
+</body>
+</html>

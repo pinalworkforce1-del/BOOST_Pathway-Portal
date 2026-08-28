@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BOOST Pathways Portal Prototype v2</title>
+  <link rel="stylesheet" href="assets/css/portal.css">
+</head>
+<body>
+<main class="boost-shell">
+  <header class="boost-nav">
+    <div class="nav-left"><span class="nav-chip">BOOST Pathways</span></div>
+    <div class="nav-center">
+      <div class="nav-title"><span data-pathway-label></span> • Your BOOST Progress</div>
+      <div class="progress-row">
+        <div class="progress-track" aria-label="BOOST progress"><div class="progress-fill" data-progress-fill></div></div>
+        <span class="progress-count" data-progress-count></span>
+      </div>
+    </div>
+    <div class="nav-right">
+      <a href="#" class="nav-chip" data-choose-pathway>Choose Pathway</a>
+      <a href="#" class="nav-chip" data-reset-progress>Reset</a>
+    </div>
+  </header>
+
+  <div class="stage-wrap">
+    <div class="tipbar">
+      <div><strong>Select a step on the map.</strong> Live BOOST modules now connect to their existing GitHub Pages repositories; resources still in development remain reserved.</div>
+    </div>
+
+    <div class="stage" aria-label="Interactive BOOST Pathways map">
+      <img src="assets/images/boost-home.png" alt="BOOST Pathways map with Rapid Employment and Career Exploration and Development routes leading to employment opportunities">
+
+      <!-- Shared launch sequence -->
+      <a class="hotspot" style="left:3.3%;top:7.1%;width:8.4%;height:23.5%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
+      <a class="hotspot" style="left:14.4%;top:7.2%;width:8.7%;height:23.6%" href="https://forms.cloud.microsoft/r/ZTsLaQY4qC" target="_blank" rel="noopener" aria-label="Complete the Interest Form"><span class="hotspot-label">Complete the Interest Form</span></a>
+      <a class="hotspot" style="left:25.0%;top:7.0%;width:8.3%;height:24.0%" href="https://www.azjobconnection.gov/" target="_blank" rel="noopener" aria-label="Create Arizona Job Connection account"><span class="hotspot-label">Create AJC Account</span></a>
+      <a class="hotspot required" data-module-id="module1" style="left:35.3%;top:7.0%;width:8.8%;height:24.2%" href="topic/module1.html" aria-label="Open Module 1 Career Direction topic page"><span class="hotspot-label">Open Career Direction</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" style="left:44.2%;top:6.6%;width:9.1%;height:24.8%" href="#" data-coming="Career Coach scheduling / contact resource" aria-label="Meet with a Career Coach"><span class="hotspot-label">Meet with a Career Coach</span></a>
+      <a class="hotspot" style="left:57.4%;top:7.8%;width:10.4%;height:24.1%" href="#" data-choose-pathway aria-label="Start Your BOOST Pathway"><span class="hotspot-label">Choose Your BOOST Pathway</span></a>
+
+      <!-- Rapid Employment pathway -->
+      <a class="hotspot" data-module-id="financial" data-set-pathway="rapid" style="left:17.3%;top:35.5%;width:17.6%;height:11.8%" href="#" data-coming="Build Strong Financial Habits / Needs Assessment" aria-label="Build Strong Financial Habits"><span class="hotspot-label">Build Strong Financial Habits</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-module-id="skillmobility" data-set-pathway="rapid" style="left:16.7%;top:45.1%;width:17.9%;height:11.8%" href="#" data-coming="Skill Mobility" aria-label="Skill Mobility"><span class="hotspot-label">Skill Mobility</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="ai" data-set-pathway="rapid" style="left:15.7%;top:55.0%;width:17.9%;height:12.4%" href="topic/ai.html" aria-label="Open AI and You topic page"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-module-id="jobsearch" data-set-pathway="rapid" style="left:14.3%;top:68.0%;width:19.0%;height:18.0%" href="#" data-coming="48 Hour Job Search Strategies" aria-label="48 Hour Job Search Strategies"><span class="hotspot-label">48 Hour Job Search Strategies</span><span class="complete-badge">✓</span></a>
+
+      <!-- Career Exploration pathway -->
+      <a class="hotspot required" data-module-id="module2" data-set-pathway="career" style="left:53.2%;top:30.6%;width:18.1%;height:10.1%" href="topic/module2.html" aria-label="Open Module 2 Career Reality Check"><span class="hotspot-label">Open Career Reality Check</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="module3" data-set-pathway="career" style="left:53.3%;top:39.5%;width:18.0%;height:10.7%" href="topic/module3.html" aria-label="Open Module 3 Career Mobility Exploration"><span class="hotspot-label">Open Career Mobility Exploration</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="module4" data-set-pathway="career" style="left:53.3%;top:48.8%;width:18.0%;height:10.3%" href="topic/module4.html" aria-label="Open Module 4 Decide with your Career Coach"><span class="hotspot-label">Open Decide • Coach Supported</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="ai" data-set-pathway="career" style="left:53.5%;top:57.7%;width:17.5%;height:10.3%" href="topic/ai.html" aria-label="Open Module 5 AI and You"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-industry-choice data-set-pathway="career" style="left:53.5%;top:66.8%;width:18.2%;height:11.9%" href="#industry-start" aria-label="Choose Your Industry Path"><span class="hotspot-label">Choose Your Industry Path</span></a>
+
+      <!-- Live industry repositories -->
+      <a class="hotspot required" data-industry-id="trades" data-set-pathway="career" style="left:79.0%;top:29.0%;width:19.2%;height:9.5%" href="activity.html?m=trades" aria-label="Open Skilled Trades Workplace Skills Challenge"><span class="hotspot-label">Open Skilled Trades Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="manufacturing" data-set-pathway="career" style="left:79.0%;top:38.6%;width:19.2%;height:9.4%" href="activity.html?m=manufacturing" aria-label="Open Advanced Manufacturing Workplace Skills Challenge"><span class="hotspot-label">Open Advanced Manufacturing Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="healthcare" data-set-pathway="career" style="left:79.0%;top:48.1%;width:19.2%;height:9.4%" href="activity.html?m=healthcare" aria-label="Open Healthcare Workplace Skills Challenge"><span class="hotspot-label">Open Healthcare Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="it" data-set-pathway="career" style="left:79.0%;top:57.7%;width:19.2%;height:9.2%" href="activity.html?m=it" aria-label="Open Information Technology Workplace Skills Challenge"><span class="hotspot-label">Open Information Technology</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="cdl" data-set-pathway="career" style="left:79.0%;top:67.2%;width:19.2%;height:9.7%" href="activity.html?m=cdl" aria-label="Open Transportation and Logistics CDL Workplace Skills Challenge"><span class="hotspot-label">Open Transportation &amp; Logistics</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-set-pathway="career" style="left:79.0%;top:76.9%;width:19.2%;height:10.1%" href="#" data-coming="Skill Mobility industry fallback" aria-label="Skill Mobility fallback pathway"><span class="hotspot-label">Skill Mobility</span></a>
+
+      <!-- This step was not baked into the original map artwork, so v2 overlays it in HTML. -->
+      <a class="investment-card" data-investment-card data-set-pathway="career" href="activity.html?m=investment" aria-label="Open Career Investment Explorer">
+        <strong>Career Investment Explorer</strong>
+        <span data-investment-status>Complete an industry experience first</span>
+      </a>
+    </div>
+  </div>
+</main>
+
+<dialog id="pathwayDialog" class="pathway-dialog">
+  <div class="pathway-dialog-head">
+    <h2>Start Your BOOST Pathway</h2>
+    <p>Your Career Coach helps you identify the route that best supports your next step. Both routes lead toward employment.</p>
+  </div>
+  <div class="pathway-choices">
+    <button class="pathway-choice rapid" data-pathway-choice="rapid"><strong>Rapid Employment Pathway</strong><small>Move quickly toward employment readiness with targeted financial, skill-mobility, AI, and job-search support.</small></button>
+    <button class="pathway-choice career" data-pathway-choice="career"><strong>Career Exploration &amp; Development</strong><small>Validate career options, explore mobility, decide with your coach, experience an industry, and close documented gaps.</small></button>
+  </div>
+  <div class="dialog-foot"><button class="dialog-close" onclick="document.getElementById('pathwayDialog').close()">Not yet</button></div>
+</dialog>
+
+<div class="toast"></div>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/portal.js"></script>
+</body>
+</html>
