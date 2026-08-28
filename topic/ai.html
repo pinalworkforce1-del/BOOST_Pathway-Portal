@@ -1,8 +1,43 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Module 5 — AI & You | BOOST</title><link rel="stylesheet" href="../assets/css/portal.css"></head>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Module 5 — AI & You | BOOST</title><link rel="stylesheet" href="../assets/css/portal.css">
+<style>
+/* Subtle "click here" pulse for the primary visual entry point */
+.hotspot.click-pulse{
+  border-color:rgba(255,220,123,.62);
+  animation:boostClickPulse 2.15s ease-in-out infinite;
+}
+@keyframes boostClickPulse{
+  0%,100%{
+    box-shadow:0 0 0 0 rgba(240,179,35,0);
+    border-color:rgba(255,220,123,.38);
+    background:rgba(240,179,35,.015);
+  }
+  50%{
+    box-shadow:
+      0 0 0 5px rgba(240,179,35,.20),
+      0 0 30px rgba(240,179,35,.34);
+    border-color:rgba(255,235,168,.95);
+    background:rgba(240,179,35,.055);
+  }
+}
+.hotspot.click-pulse:hover,
+.hotspot.click-pulse:focus-visible{
+  animation:none;
+}
+@media(prefers-reduced-motion:reduce){
+  .hotspot.click-pulse{animation:none;border-color:rgba(255,220,123,.7)}
+}
+</style>
+</head>
 <body data-current-id="ai"><main class="boost-shell"><header class="boost-nav"><div class="nav-left"><a class="map-link" href="../index.html">← Back to BOOST Map</a></div><div class="nav-center"><div class="nav-title"><span data-pathway-label></span> • Your BOOST Progress</div><div class="progress-row"><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><span class="progress-count" data-progress-count></span></div></div><div class="nav-right"><a class="nav-chip" href="../activity.html?m=ai">Open Main Activity</a></div></header>
 <div class="stage-wrap"><div class="tipbar"><div><strong>Module 5 — AI &amp; You</strong> — The same live AI literacy module supports both BOOST pathways. Future YouTube, TED Talk, and workplace examples can be added here as optional resources.</div></div><div class="stage topic"><img src="../assets/images/ai-you.png" alt="Module 5 — AI & You illustrated BOOST topic page">
-<a class="hotspot required" style="left:0.8%;top:54.3%;width:23.3%;height:34.3%" href="../activity.html?m=ai" data-module-id="ai" aria-label="Open AI and You learning activity"><span class="hotspot-label">Learn It</span><span class="complete-badge">✓</span></a>
-<a class="hotspot" style="left:24.2%;top:54.3%;width:24.3%;height:34.3%" href="../activity.html?m=ai" aria-label="See AI in action"><span class="hotspot-label">See It</span></a>
-<a class="hotspot" style="left:48.8%;top:54.3%;width:24.1%;height:34.3%" href="../activity.html?m=ai" aria-label="Practice with AI"><span class="hotspot-label">Try It</span></a>
-<a class="hotspot" style="left:73.4%;top:54.3%;width:25.7%;height:34.3%" href="../activity.html?m=ai" aria-label="Use AI for career and workplace tasks"><span class="hotspot-label">Use It</span></a>
+
+<a class="hotspot required click-pulse"
+   style="left:0.8%;top:54.3%;width:98.3%;height:34.3%"
+   href="../activity.html?m=ai"
+   data-module-id="ai"
+   aria-label="Open Module 5 — AI and You. Learn It, See It, Try It, and Use It inside the module.">
+  <span class="hotspot-label">Open Module 5 — AI &amp; You</span>
+  <span class="complete-badge">✓</span>
+</a>
+
 </div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script></body></html>
