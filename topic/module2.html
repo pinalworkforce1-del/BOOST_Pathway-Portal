@@ -1,10 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Module 2 — Career Reality Check | BOOST</title><link rel="stylesheet" href="../assets/css/portal.css"></head>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Module 2 — Career Reality Check | BOOST</title><link rel="stylesheet" href="../assets/css/portal.css">
+<style>
+/* Module 2: subtle 'click here' pulse around the Reality Check panel */
+.hotspot.click-pulse{
+  border-color:rgba(255,220,123,.62);
+  animation:realityClickPulse 2.15s ease-in-out infinite;
+}
+@keyframes realityClickPulse{
+  0%,100%{
+    box-shadow:0 0 0 0 rgba(240,179,35,0);
+    border-color:rgba(255,220,123,.38);
+    background:rgba(240,179,35,.015);
+  }
+  50%{
+    box-shadow:
+      0 0 0 5px rgba(240,179,35,.20),
+      0 0 30px rgba(240,179,35,.34);
+    border-color:rgba(255,235,168,.95);
+    background:rgba(240,179,35,.055);
+  }
+}
+.hotspot.click-pulse:hover,
+.hotspot.click-pulse:focus-visible{
+  animation:none;
+}
+@media(prefers-reduced-motion:reduce){
+  .hotspot.click-pulse{animation:none;border-color:rgba(255,220,123,.7)}
+}
+</style>
+</head>
 <body data-current-id="module2"><main class="boost-shell"><header class="boost-nav"><div class="nav-left"><a class="map-link" href="../index.html">← Back to BOOST Map</a></div><div class="nav-center"><div class="nav-title"><span data-pathway-label></span> • Your BOOST Progress</div><div class="progress-row"><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><span class="progress-count" data-progress-count></span></div></div><div class="nav-right"><a class="nav-chip" href="../activity.html?m=module2">Open Main Activity</a></div></header>
-<div class="stage-wrap"><div class="tipbar"><div><strong>Module 2 — Career Reality Check</strong> — The live validation module already walks participants through JOBS → WAGES → LIFE → FUTURE and produces evidence to carry forward.</div></div><div class="stage topic"><img src="../assets/images/module2.png" alt="Module 2 — Career Reality Check illustrated BOOST topic page">
-<a class="hotspot required" style="left:22.1%;top:35.5%;width:35.8%;height:34.4%" href="../activity.html?m=module2" data-module-id="module2" aria-label="Open live BOOST Career Reality Check"><span class="hotspot-label">Open BOOST Career Reality Check</span><span class="complete-badge">✓</span></a>
-<a class="hotspot" style="left:69.8%;top:29.6%;width:7.7%;height:23.5%" href="../activity.html?m=module2" aria-label="Explore jobs in the Career Reality Check"><span class="hotspot-label">Explore Jobs</span></a>
-<a class="hotspot" style="left:77.6%;top:29.6%;width:7.3%;height:23.5%" href="../activity.html?m=module2" aria-label="Compare wages in the Career Reality Check"><span class="hotspot-label">Compare Wages</span></a>
-<a class="hotspot" style="left:84.9%;top:29.6%;width:7.0%;height:23.5%" href="../activity.html?m=module2" aria-label="Check life fit in the Career Reality Check"><span class="hotspot-label">Check Life Fit</span></a>
-<a class="hotspot" style="left:91.9%;top:29.6%;width:7.0%;height:23.5%" href="../activity.html?m=module2" aria-label="Review future outlook in the Career Reality Check"><span class="hotspot-label">Review Future Outlook</span></a>
+<div class="stage-wrap"><div class="tipbar"><div><strong>Module 2 — Career Reality Check</strong> — The live validation module walks you through JOBS → WAGES → LIFE → FUTURE. Select the Reality Check panel to begin.</div></div><div class="stage topic"><img src="../assets/images/module2.png" alt="Module 2 — Career Reality Check illustrated BOOST topic page">
+<a class="hotspot required click-pulse"
+   style="left:69.2%;top:24.1%;width:29.5%;height:29.2%"
+   href="../activity.html?m=module2"
+   data-module-id="module2"
+   aria-label="Open Module 2 — Career Reality Check. Explore Jobs, Wages, Life, and Future inside the module.">
+  <span class="hotspot-label">Open Career Reality Check</span>
+  <span class="complete-badge">✓</span>
+</a>
 <a class="hotspot" style="left:69.5%;top:1.4%;width:29.4%;height:22.5%" href="#" data-coming="Optional Module 2 video / TED Talk / labor-market resource" aria-label="Optional Module 2 supporting resource"><span class="hotspot-label">Optional Supporting Resource</span></a>
 </div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script></body></html>
