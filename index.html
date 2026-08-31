@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BOOST Pathways v2.8</title>
+  <title>BOOST Pathways v3.2</title>
   <style>
     :root{
       --navy:#0d2741;
@@ -100,16 +100,28 @@
     .hotspot.is-complete .complete-badge{display:flex}
 
     .investment-card{
-      position:absolute;z-index:8;left:78.7%;top:87.1%;width:19.3%;min-height:8.2%;
+      position:absolute;z-index:9;left:78.6%;top:86.7%;width:19.7%;min-height:9.0%;
       display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-      padding:8px;border-radius:13px;text-decoration:none;color:#fff;
-      background:linear-gradient(135deg,rgba(13,39,65,.96),rgba(32,91,130,.96));
-      border:2px solid rgba(244,204,106,.88);box-shadow:0 8px 18px rgba(0,0,0,.28);
-      font-size:clamp(.55rem,1vw,.82rem);line-height:1.12
+      padding:9px 10px;border-radius:14px;text-decoration:none;color:#fff;
+      background:linear-gradient(135deg,rgba(13,39,65,.98),rgba(32,91,130,.98));
+      border:2px solid rgba(244,204,106,.96);box-shadow:0 9px 22px rgba(0,0,0,.36),0 0 0 3px rgba(244,204,106,.10);
+      font-size:clamp(.56rem,1vw,.84rem);line-height:1.12;
+      transition:transform .16s ease,box-shadow .16s ease,filter .16s ease,opacity .16s ease
     }
-    .investment-card strong{font-size:1.02em}
-    .investment-card span{opacity:.82;font-size:.82em;margin-top:3px}
-    .investment-card.is-locked{filter:grayscale(.75);opacity:.62;cursor:not-allowed}
+    .investment-card::before{
+      content:"CAREER STEP 6";display:block;margin-bottom:4px;padding:3px 7px;border-radius:999px;
+      background:rgba(244,204,106,.98);color:#17324a;font-size:.72em;font-weight:950;letter-spacing:.045em
+    }
+    .investment-card strong{font-size:1.08em}
+    .investment-card span{opacity:.9;font-size:.82em;margin-top:4px}
+    .investment-card:not(.is-locked):hover,.investment-card:not(.is-locked):focus-visible{
+      transform:translateY(-2px);box-shadow:0 13px 30px rgba(0,0,0,.42),0 0 0 4px rgba(244,204,106,.18);outline:none
+    }
+    .investment-card.is-locked{
+      filter:saturate(.62);opacity:.90;cursor:not-allowed;
+      background:linear-gradient(135deg,rgba(50,62,72,.97),rgba(60,84,101,.97));
+      border-style:dashed
+    }
 
     dialog{border:0;padding:0}
     .pathway-dialog{
@@ -257,11 +269,11 @@
       <a class="hotspot required" data-industry-id="healthcare" data-set-pathway="career" style="left:79.0%;top:48.1%;width:19.2%;height:9.4%" href="activity.html?m=healthcare" aria-label="Open Healthcare Workplace Skills Challenge"><span class="hotspot-label">Open Healthcare Pathways</span><span class="complete-badge">✓</span></a>
       <a class="hotspot required" data-industry-id="it" data-set-pathway="career" style="left:79.0%;top:57.7%;width:19.2%;height:9.2%" href="activity.html?m=it" aria-label="Open Information Technology Workplace Skills Challenge"><span class="hotspot-label">Open Information Technology</span><span class="complete-badge">✓</span></a>
       <a class="hotspot required" data-industry-id="cdl" data-set-pathway="career" style="left:79.0%;top:67.2%;width:19.2%;height:9.7%" href="activity.html?m=cdl" aria-label="Open Transportation and Logistics CDL Workplace Skills Challenge"><span class="hotspot-label">Open Transportation &amp; Logistics</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" data-set-pathway="career" style="left:79.0%;top:76.9%;width:19.2%;height:10.1%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span></a>
+      <a class="hotspot" data-career-skillmobility data-set-pathway="career" style="left:79.0%;top:76.9%;width:19.2%;height:10.1%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span></a>
 
-      <a class="investment-card is-locked" data-investment-card data-set-pathway="career" href="activity.html?m=investment" aria-label="Open Career Investment Explorer" aria-disabled="true">
+      <a class="investment-card" data-investment-card data-set-pathway="career" href="https://pinalworkforce1-del.github.io/BOOST_Skill_Gap_Closure/" target="_blank" rel="noopener" aria-label="Open Career Investment Explorer">
         <strong>Career Investment Explorer</strong>
-        <span data-investment-status>Complete an industry experience first</span>
+        <span data-investment-status>Open Career Investment Explorer</span>
       </a>
     </div>
   </div>
@@ -435,10 +447,10 @@
       el.classList.toggle('is-complete', !!state.complete[id]);
     });
 
-    const industryDone = ['trades','manufacturing','healthcare','it','cdl'].some(id => state.complete[`i:${id}`]);
-    investmentCard.classList.toggle('is-locked', !industryDone);
-    investmentCard.setAttribute('aria-disabled', String(!industryDone));
-    investmentStatus.textContent = industryDone ? 'Ready to explore investment options' : 'Complete an industry experience first';
+    const industryDone = ['trades','manufacturing','healthcare','it','cdl','skillmobility'].some(id => state.complete[`i:${id}`]);
+    investmentCard.classList.remove('is-locked');
+    investmentCard.removeAttribute('aria-disabled');
+    investmentStatus.textContent = industryDone ? 'Ready to explore investment options' : 'Open Career Investment Explorer';
   }
 
   function openPathwayGuide(){
@@ -502,6 +514,10 @@
       if (el.dataset.setPathway) setPathway(el.dataset.setPathway);
     });
   });
+  document.querySelectorAll('[data-career-skillmobility]').forEach(el => el.addEventListener('click', () => {
+    state.complete['i:skillmobility'] = true;
+    save(); updateProgress();
+  }));
 
   document.querySelectorAll('[data-coming]').forEach(el => el.addEventListener('click', e => {
     e.preventDefault(); showToast(`${el.dataset.coming} is reserved in this prototype.`);
@@ -515,10 +531,8 @@
     });
   });
 
-  investmentCard.addEventListener('click', e => {
-    if (investmentCard.classList.contains('is-locked')) {
-      e.preventDefault(); showToast('Complete an industry experience first to open the Career Investment Explorer.');
-    }
+  investmentCard.addEventListener('click', () => {
+    setPathway('career');
   });
 
   document.querySelector('[data-reset-progress]').addEventListener('click', e => {
