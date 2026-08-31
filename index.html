@@ -3,18 +3,217 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BOOST Pathways Portal Prototype v2.6</title>
-  <link rel="stylesheet" href="assets/css/portal.css">
+  <title>BOOST Pathways</title>
+  <style>
+    :root{
+      --navy:#0d2741;
+      --navy-2:#183d5e;
+      --ink:#17202a;
+      --paper:#f8f3e7;
+      --cream:#fffaf0;
+      --gold:#e4a72b;
+      --green:#2f7d4c;
+      --blue:#245e91;
+      --rapid:#4c8b3d;
+      --career:#225f91;
+      --white:#fff;
+      --shadow:0 18px 45px rgba(0,0,0,.24);
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:#10243a;
+      color:var(--ink);
+    }
+    button,a{font:inherit}
+    button{cursor:pointer}
+
+    .boost-shell{min-height:100vh;background:linear-gradient(180deg,#10243a 0,#152f49 100%)}
+    .boost-nav{
+      position:sticky;top:0;z-index:30;
+      display:grid;grid-template-columns:auto minmax(240px,1fr) auto;gap:18px;align-items:center;
+      padding:12px 18px;
+      background:rgba(11,34,54,.96);backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(255,255,255,.12);
+      color:#fff;
+    }
+    .nav-chip{
+      display:inline-flex;align-items:center;justify-content:center;
+      min-height:38px;padding:8px 13px;border-radius:999px;
+      color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.24);
+      background:rgba(255,255,255,.08);font-weight:800;font-size:.9rem;
+    }
+    .nav-chip:hover,.nav-chip:focus-visible{background:rgba(255,255,255,.16);outline:none}
+    .nav-center{min-width:0}
+    .nav-title{font-weight:800;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+    .progress-row{display:flex;gap:9px;align-items:center}
+    .progress-track{height:8px;flex:1;background:rgba(255,255,255,.14);border-radius:999px;overflow:hidden}
+    .progress-fill{height:100%;width:0;background:linear-gradient(90deg,#e9bd58,#f6d983);transition:width .25s ease}
+    .progress-count{font-size:.78rem;white-space:nowrap;color:#d8e6f2}
+    .nav-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+
+    .stage-wrap{padding:18px}
+    .tipbar{
+      max-width:1648px;margin:0 auto 12px;padding:11px 14px;border-radius:12px;
+      color:#eef6fb;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+      font-size:.92rem;
+    }
+    .stage{
+      position:relative;max-width:1648px;margin:0 auto;border-radius:18px;overflow:hidden;
+      box-shadow:var(--shadow);background:#0b1d2f;aspect-ratio:1648/928;
+    }
+    .stage>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+    .hotspot{
+      position:absolute;z-index:4;display:block;border-radius:16px;text-decoration:none;
+      background:rgba(255,255,255,.001);outline:2px solid transparent;
+      transition:background .16s ease,box-shadow .16s ease,outline-color .16s ease,transform .16s ease;
+    }
+    .hotspot::after{
+      content:"";position:absolute;inset:7px;border-radius:13px;
+      box-shadow:0 0 0 0 rgba(255,215,112,.0);pointer-events:none;
+    }
+    .hotspot:hover,.hotspot:focus-visible{
+      outline-color:rgba(255,221,120,.92);background:rgba(255,227,139,.10);
+      box-shadow:0 0 0 4px rgba(255,214,94,.18),0 8px 26px rgba(0,0,0,.25);transform:translateY(-1px);
+    }
+    .hotspot.pulse::after{animation:hotspotPulse 2.4s ease-out infinite}
+    @keyframes hotspotPulse{
+      0%{box-shadow:0 0 0 0 rgba(255,220,111,.62)}
+      70%,100%{box-shadow:0 0 0 14px rgba(255,220,111,0)}
+    }
+    .hotspot-label{
+      position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);
+      display:none;width:max-content;max-width:220px;padding:7px 9px;border-radius:8px;
+      background:rgba(8,26,42,.96);color:#fff;font-size:.72rem;font-weight:800;line-height:1.2;
+      box-shadow:0 5px 18px rgba(0,0,0,.3);pointer-events:none;text-align:center;
+    }
+    .hotspot:hover .hotspot-label,.hotspot:focus-visible .hotspot-label{display:block}
+    .complete-badge{
+      position:absolute;right:5px;top:5px;display:none;align-items:center;justify-content:center;
+      width:24px;height:24px;border-radius:50%;background:#2e8a50;color:#fff;border:2px solid #fff;
+      font-size:.8rem;font-weight:900;box-shadow:0 3px 9px rgba(0,0,0,.25)
+    }
+    .hotspot.is-complete .complete-badge{display:flex}
+
+    .investment-card{
+      position:absolute;z-index:8;left:78.7%;top:87.1%;width:19.3%;min-height:8.2%;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+      padding:8px;border-radius:13px;text-decoration:none;color:#fff;
+      background:linear-gradient(135deg,rgba(13,39,65,.96),rgba(32,91,130,.96));
+      border:2px solid rgba(244,204,106,.88);box-shadow:0 8px 18px rgba(0,0,0,.28);
+      font-size:clamp(.55rem,1vw,.82rem);line-height:1.12
+    }
+    .investment-card strong{font-size:1.02em}
+    .investment-card span{opacity:.82;font-size:.82em;margin-top:3px}
+    .investment-card.is-locked{filter:grayscale(.75);opacity:.62;cursor:not-allowed}
+
+    dialog{border:0;padding:0}
+    .pathway-dialog{
+      width:min(1120px,calc(100vw - 28px));max-height:calc(100vh - 28px);overflow:auto;
+      border-radius:22px;background:var(--paper);box-shadow:0 30px 90px rgba(0,0,0,.48)
+    }
+    .pathway-dialog::backdrop{background:rgba(3,16,27,.78);backdrop-filter:blur(5px)}
+    .dialog-top{
+      position:sticky;top:0;z-index:3;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+      padding:20px 22px 15px;background:linear-gradient(90deg,#102d49,#1f587f);color:#fff;
+      border-bottom:3px solid #e3b54f
+    }
+    .dialog-top h2{margin:0;font-size:clamp(1.35rem,2.6vw,2rem);line-height:1.06}
+    .dialog-top p{margin:6px 0 0;color:#d9e8f2;max-width:760px;font-size:.94rem}
+    .icon-btn{
+      flex:0 0 auto;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;
+      width:38px;height:38px;border-radius:50%;font-size:1.2rem;line-height:1
+    }
+    .icon-btn:hover,.icon-btn:focus-visible{background:rgba(255,255,255,.18);outline:2px solid #f4d378;outline-offset:2px}
+
+    .guide-grid{display:grid;grid-template-columns:minmax(215px,290px) minmax(0,1fr);gap:22px;padding:22px}
+    .rosie-card{
+      align-self:start;border-radius:18px;background:linear-gradient(180deg,#e9f3f8,#dcebf2);
+      border:1px solid #c1d4df;overflow:hidden;min-height:360px;display:flex;align-items:flex-end;justify-content:center;
+      position:relative
+    }
+    .rosie-card::before{
+      content:"ROSIE • BOOST GUIDE";position:absolute;left:12px;top:12px;z-index:1;
+      padding:6px 9px;border-radius:999px;background:#173f60;color:#fff;font-size:.68rem;font-weight:900;letter-spacing:.05em
+    }
+    .rosie-card img{width:100%;height:auto;max-height:465px;object-fit:contain;object-position:center bottom;display:block}
+
+    .guide-copy h3{margin:0 0 8px;font-size:1.35rem;color:#143a58}
+    .guide-copy .lead{margin:0 0 16px;line-height:1.55;color:#3d4b55}
+    .audio-panel{
+      border:1px solid #c6d5df;background:#fff;border-radius:16px;padding:14px;margin-bottom:14px;
+      box-shadow:0 6px 20px rgba(28,58,78,.08)
+    }
+    .audio-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .audio-btn{
+      border:0;border-radius:999px;padding:9px 13px;background:#173f60;color:#fff;font-weight:850;
+    }
+    .audio-btn.secondary{background:#e8eef2;color:#1d3d55;border:1px solid #cbd8df}
+    .audio-btn:hover,.audio-btn:focus-visible{filter:brightness(1.06);outline:2px solid #e2b64e;outline-offset:2px}
+    .audio-status{font-size:.8rem;color:#51616c;font-weight:700;margin-left:auto}
+    .seek-wrap{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .seek{appearance:none;width:100%;height:7px;border-radius:999px;background:#d8e2e8;outline:none}
+    .seek::-webkit-slider-thumb{appearance:none;width:17px;height:17px;border-radius:50%;background:#1d5a83;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+    .time{font-variant-numeric:tabular-nums;font-size:.77rem;color:#536571;white-space:nowrap}
+    .caption-box{
+      min-height:76px;display:flex;align-items:center;justify-content:center;text-align:center;
+      margin-top:12px;padding:12px 14px;border-radius:12px;background:#102d49;color:#fff;
+      font-size:clamp(.95rem,1.7vw,1.16rem);font-weight:750;line-height:1.4
+    }
+    .caption-box.is-off{background:#eef2f4;color:#6d7780;font-weight:650}
+
+    details.transcript{margin:10px 0 18px;border:1px solid #d5dedf;border-radius:12px;background:#fff}
+    details.transcript summary{padding:10px 12px;cursor:pointer;font-weight:800;color:#294d64}
+    .transcript-copy{padding:0 14px 13px;line-height:1.55;color:#394850;max-height:220px;overflow:auto}
+
+    .pathway-choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+    .pathway-choice{
+      min-height:142px;border:0;border-radius:16px;padding:16px;text-align:left;color:#fff;
+      box-shadow:0 8px 22px rgba(0,0,0,.13);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease
+    }
+    .pathway-choice:hover,.pathway-choice:focus-visible{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.2);filter:brightness(1.04);outline:3px solid #f0c864;outline-offset:2px}
+    .pathway-choice.rapid{background:linear-gradient(135deg,#356f39,#5d964b)}
+    .pathway-choice.career{background:linear-gradient(135deg,#174e7b,#2d78ad)}
+    .pathway-choice strong{display:block;font-size:1.08rem;margin-bottom:7px}
+    .pathway-choice small{display:block;font-size:.86rem;line-height:1.42;color:rgba(255,255,255,.92)}
+    .decision-note{margin:12px 2px 0;color:#53616b;font-size:.82rem;line-height:1.45}
+    .dialog-foot{display:flex;justify-content:flex-end;gap:8px;padding:0 22px 22px}
+    .dialog-close{
+      border:1px solid #bfcbd2;background:#fff;color:#355063;border-radius:999px;padding:9px 14px;font-weight:800
+    }
+
+    .toast{
+      position:fixed;left:50%;bottom:20px;z-index:50;transform:translate(-50%,18px);opacity:0;
+      max-width:min(560px,calc(100vw - 30px));padding:11px 15px;border-radius:12px;background:#0b2237;color:#fff;
+      box-shadow:0 12px 30px rgba(0,0,0,.28);font-weight:750;font-size:.9rem;pointer-events:none;transition:.22s ease
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    @media (max-width:900px){
+      .boost-nav{grid-template-columns:1fr auto}.nav-center{grid-column:1/-1;grid-row:2}.nav-right{grid-column:2;grid-row:1}.stage-wrap{padding:10px}
+      .guide-grid{grid-template-columns:1fr}.rosie-card{min-height:260px}.rosie-card img{max-height:360px;width:auto;max-width:100%}
+    }
+    @media (max-width:640px){
+      .boost-nav{padding:10px;gap:8px}.nav-right .nav-chip:last-child{display:none}.stage-wrap{padding:6px}.tipbar{font-size:.82rem;margin-bottom:7px}
+      .pathway-choices{grid-template-columns:1fr}.guide-grid{padding:15px;gap:15px}.dialog-top{padding:16px}.dialog-foot{padding:0 15px 16px}
+      .pathway-dialog{width:calc(100vw - 12px);max-height:calc(100vh - 12px);border-radius:16px}
+    }
+    @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+  </style>
 </head>
 <body>
 <main class="boost-shell">
   <header class="boost-nav">
     <div class="nav-left"><span class="nav-chip">BOOST Pathways</span></div>
     <div class="nav-center">
-      <div class="nav-title"><span data-pathway-label></span> • Your BOOST Progress</div>
+      <div class="nav-title"><span data-pathway-label>Pathway not selected</span> • Your BOOST Progress</div>
       <div class="progress-row">
         <div class="progress-track" aria-label="BOOST progress"><div class="progress-fill" data-progress-fill></div></div>
-        <span class="progress-count" data-progress-count></span>
+        <span class="progress-count" data-progress-count>0 of 0</span>
       </div>
     </div>
     <div class="nav-right">
@@ -25,19 +224,19 @@
 
   <div class="stage-wrap">
     <div class="tipbar">
-      <div><strong>Select a step on the map.</strong> Live BOOST modules now connect to their existing GitHub Pages repositories; resources still in development remain reserved.</div>
+      <div><strong>Select a step on the map.</strong> The pathway decision now opens Rosie’s short narrated guide before you choose your route.</div>
     </div>
 
     <div class="stage" aria-label="Interactive BOOST Pathways map">
       <img src="assets/images/boost-home.png" alt="BOOST Pathways map with Rapid Employment and Career Exploration and Development routes leading to employment opportunities">
 
       <!-- Shared launch sequence -->
-      <a class="hotspot" style="left:3.3%;top:7.1%;width:8.4%;height:23.5%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
+      <a class="hotspot pulse" style="left:3.3%;top:7.1%;width:8.4%;height:23.5%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
       <a class="hotspot" style="left:14.4%;top:7.2%;width:8.7%;height:23.6%" href="https://forms.cloud.microsoft/r/ZTsLaQY4qC" target="_blank" rel="noopener" aria-label="Complete the Interest Form"><span class="hotspot-label">Complete the Interest Form</span></a>
       <a class="hotspot" style="left:25.0%;top:7.0%;width:8.3%;height:24.0%" href="https://www.azjobconnection.gov/" target="_blank" rel="noopener" aria-label="Create Arizona Job Connection account"><span class="hotspot-label">Create AJC Account</span></a>
       <a class="hotspot required" data-module-id="module1" style="left:35.3%;top:7.0%;width:8.8%;height:24.2%" href="topic/module1.html" aria-label="Open Module 1 Career Direction topic page"><span class="hotspot-label">Open Career Direction</span><span class="complete-badge">✓</span></a>
       <a class="hotspot" style="left:44.2%;top:6.6%;width:9.1%;height:24.8%" href="#" data-coming="Career Coach scheduling / contact resource" aria-label="Meet with a Career Coach"><span class="hotspot-label">Meet with a Career Coach</span></a>
-      <a class="hotspot" style="left:57.4%;top:7.8%;width:10.4%;height:24.1%" href="#" data-choose-pathway aria-label="Start Your BOOST Pathway"><span class="hotspot-label">Choose Your BOOST Pathway</span></a>
+      <a class="hotspot pulse" style="left:57.4%;top:7.8%;width:10.4%;height:24.1%" href="#" data-choose-pathway aria-label="Start Your BOOST Pathway"><span class="hotspot-label">Choose Your BOOST Pathway</span></a>
 
       <!-- Rapid Employment pathway -->
       <a class="hotspot" data-module-id="financial" data-set-pathway="rapid" style="left:17.3%;top:35.5%;width:17.6%;height:11.8%" href="https://pinalworkforce1-del.github.io/Financial_Assessment/" target="_blank" rel="noopener" aria-label="Open Build Strong Financial Habits"><span class="hotspot-label">Open Build Strong Financial Habits</span><span class="complete-badge">✓</span></a>
@@ -60,8 +259,7 @@
       <a class="hotspot required" data-industry-id="cdl" data-set-pathway="career" style="left:79.0%;top:67.2%;width:19.2%;height:9.7%" href="activity.html?m=cdl" aria-label="Open Transportation and Logistics CDL Workplace Skills Challenge"><span class="hotspot-label">Open Transportation &amp; Logistics</span><span class="complete-badge">✓</span></a>
       <a class="hotspot" data-set-pathway="career" style="left:79.0%;top:76.9%;width:19.2%;height:10.1%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span></a>
 
-      <!-- This step was not baked into the original map artwork, so v2 overlays it in HTML. -->
-      <a class="investment-card" data-investment-card data-set-pathway="career" href="activity.html?m=investment" aria-label="Open Career Investment Explorer">
+      <a class="investment-card is-locked" data-investment-card data-set-pathway="career" href="activity.html?m=investment" aria-label="Open Career Investment Explorer" aria-disabled="true">
         <strong>Career Investment Explorer</strong>
         <span data-investment-status>Complete an industry experience first</span>
       </a>
@@ -69,20 +267,269 @@
   </div>
 </main>
 
-<dialog id="pathwayDialog" class="pathway-dialog">
-  <div class="pathway-dialog-head">
-    <h2>Start Your BOOST Pathway</h2>
-    <p>Your Career Coach helps you identify the route that best supports your next step. Both routes lead toward employment.</p>
+<dialog id="pathwayDialog" class="pathway-dialog" aria-labelledby="pathwayTitle">
+  <div class="dialog-top">
+    <div>
+      <h2 id="pathwayTitle">Choose Your BOOST Pathway</h2>
+      <p>Rosie will explain the two routes, what each is designed to do, and how you and your Career Coach can use the evidence to choose the strongest next step.</p>
+    </div>
+    <button class="icon-btn" type="button" data-dialog-x aria-label="Close pathway guide">×</button>
   </div>
-  <div class="pathway-choices">
-    <button class="pathway-choice rapid" data-pathway-choice="rapid"><strong>Rapid Employment Pathway</strong><small>Move quickly toward employment readiness with targeted financial, skill-mobility, AI, and job-search support.</small></button>
-    <button class="pathway-choice career" data-pathway-choice="career"><strong>Career Exploration &amp; Development</strong><small>Validate career options, explore mobility, decide with your coach, experience an industry, and close documented gaps.</small></button>
+
+  <div class="guide-grid">
+    <div class="rosie-card">
+      <img src="assets/images/rosie-master.webp" alt="Rosie, the BOOST guide, presenting the pathway choices">
+    </div>
+
+    <div class="guide-copy">
+      <h3>Two pathways. One employment goal.</h3>
+      <p class="lead">Listen to Rosie’s short guide, use the captions if you want them, then select the route that best fits the evidence you and your Career Coach are reviewing.</p>
+
+      <div class="audio-panel">
+        <audio id="pathwayAudio" preload="metadata">
+          <source src="assets/audio/boost-pathways.mp3" type="audio/mpeg">
+          <track kind="captions" src="assets/captions/boost-pathways-en-US.vtt" srclang="en" label="English" default>
+        </audio>
+        <div class="audio-actions">
+          <button class="audio-btn" type="button" data-audio-toggle>▶ Play Rosie’s Guide</button>
+          <button class="audio-btn secondary" type="button" data-audio-replay>↺ Replay</button>
+          <button class="audio-btn secondary" type="button" data-caption-toggle>Captions: On</button>
+          <span class="audio-status" data-audio-status>Ready</span>
+        </div>
+        <div class="seek-wrap">
+          <input class="seek" type="range" min="0" max="100" value="0" step="0.1" data-seek aria-label="Narration position">
+          <span class="time" data-time>0:00 / 1:37</span>
+        </div>
+        <div class="caption-box" data-caption-box aria-live="polite">Before you choose your BOOST pathway, let me quickly explain how this works.</div>
+      </div>
+
+      <details class="transcript">
+        <summary>Read the full transcript</summary>
+        <div class="transcript-copy">
+          <p>Before you choose your BOOST pathway, let me quickly explain how this works.</p>
+          <p>BOOST has two pathways, but they both lead toward the same goal — employment.</p>
+          <p>The Rapid Employment Pathway is designed for people who are ready to move toward work more quickly. It focuses on practical employment readiness, financial stability, transferable skills, AI tools, and job-search support.</p>
+          <p>The Career Exploration and Development Pathway gives you more opportunity to explore and validate a career direction. You’ll look more closely at jobs, wages, career fit, transferable skills, industry options, and whether additional development or training is really needed.</p>
+          <p>One pathway isn’t better than the other. They simply respond to different needs. And this decision isn’t based on a single test or one answer.</p>
+          <p>Through your conversations with your Career Coach, the evidence may show that it makes sense to prioritize one pathway over the other. That decision is made individually, based on the skills and experience you already have, the career direction you’re considering, and how those things align with opportunities in the current labor market.</p>
+          <p>Your pathway can also change as you learn more. New information, new opportunities, or what you discover about yourself may point toward a different next step.</p>
+          <p>You don’t have to figure that out alone. Your Career Coach will help you review the evidence and determine which pathway gives you the strongest and most efficient route forward.</p>
+          <p>Whichever path you take, the goal remains the same: help you move toward meaningful, sustainable employment.</p>
+          <p>When you’re ready, let’s choose your BOOST pathway.</p>
+        </div>
+      </details>
+
+      <div class="pathway-choices" aria-label="BOOST pathway choices">
+        <button class="pathway-choice rapid" type="button" data-pathway-choice="rapid">
+          <strong>Rapid Employment Pathway</strong>
+          <small>Move more quickly toward employment with financial stability, transferable-skills, AI, and job-search support.</small>
+        </button>
+        <button class="pathway-choice career" type="button" data-pathway-choice="career">
+          <strong>Career Exploration &amp; Development</strong>
+          <small>Explore and validate career direction, compare jobs and wages, experience industries, and identify whether development or training is actually needed.</small>
+        </button>
+      </div>
+      <p class="decision-note">This is not a permanent lock-in. Your pathway can change as new evidence, opportunities, and what you learn about yourself point toward a different next step.</p>
+    </div>
   </div>
-  <div class="dialog-foot"><button class="dialog-close" onclick="document.getElementById('pathwayDialog').close()">Not yet</button></div>
+
+  <div class="dialog-foot">
+    <button class="dialog-close" type="button" data-dialog-close>Not yet</button>
+  </div>
 </dialog>
 
-<div class="toast"></div>
-<script src="assets/js/config.js"></script>
-<script src="assets/js/portal.js"></script>
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const STORAGE_KEY = 'boostPathwaysV27';
+  const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  state.complete = state.complete || {};
+
+  const dialog = document.getElementById('pathwayDialog');
+  const audio = document.getElementById('pathwayAudio');
+  const audioToggle = document.querySelector('[data-audio-toggle]');
+  const replay = document.querySelector('[data-audio-replay]');
+  const captionsToggle = document.querySelector('[data-caption-toggle]');
+  const captionBox = document.querySelector('[data-caption-box]');
+  const seek = document.querySelector('[data-seek]');
+  const time = document.querySelector('[data-time]');
+  const audioStatus = document.querySelector('[data-audio-status]');
+  const pathwayLabel = document.querySelector('[data-pathway-label]');
+  const progressFill = document.querySelector('[data-progress-fill]');
+  const progressCount = document.querySelector('[data-progress-count]');
+  const investmentCard = document.querySelector('[data-investment-card]');
+  const investmentStatus = document.querySelector('[data-investment-status]');
+  const toast = document.querySelector('.toast');
+  let captionsOn = true;
+  let toastTimer;
+
+  const cues = [
+    [0.000,2.357,'Before you choose your BOOST pathway, let'],
+    [2.357,4.412,'me quickly explain how this works.'],
+    [4.412,6.954,'BOOST has two pathways, but they both'],
+    [6.954,9.567,'lead toward the same goal — employment.'],
+    [9.567,12.585,'The Rapid Employment Pathway is designed for people who'],
+    [12.585,15.279,'are ready to move toward work more quickly.'],
+    [15.279,18.112,'It focuses on practical employment readiness,'],
+    [18.112,22.152,'financial stability, transferable skills, AI tools,'],
+    [22.152,24.160,'and job-search support.'],
+    [24.160,26.703,'The Career Exploration and Development Pathway'],
+    [26.703,28.781,'gives you more opportunity to explore'],
+    [28.781,30.848,'and validate a career direction.'],
+    [30.848,34.076,'You’ll look more closely at jobs, wages, career'],
+    [34.076,38.650,'fit, transferable skills, industry options, and whether additional'],
+    [38.650,40.960,'development or training is really needed.'],
+    [40.960,43.050,'One pathway isn’t better than the other.'],
+    [43.050,45.419,'They simply respond to different needs.'],
+    [45.419,46.893,'And this decision isn’t based on'],
+    [46.893,49.482,'a single test or one answer.'],
+    [49.482,52.129,'Through your conversations with your Career Coach, the'],
+    [52.129,53.778,'evidence may show that it makes sense to'],
+    [53.778,56.390,'prioritize one pathway over the other.'],
+    [56.390,59.385,'That decision is made individually, based on the'],
+    [59.385,62.323,'skills and experience you already have, the career'],
+    [62.323,65.051,'direction you’re considering, and how those things align'],
+    [65.051,67.675,'with opportunities in the current labor market.'],
+    [67.675,70.531,'Your pathway can also change as you learn more.'],
+    [70.531,73.387,'New information, new opportunities, or what'],
+    [73.387,75.360,'you discover about yourself may point'],
+    [75.360,77.299,'toward a different next step.'],
+    [77.299,79.691,'You don’t have to figure that out alone.'],
+    [79.691,81.700,'Your Career Coach will help you review the'],
+    [81.700,84.335,'evidence and determine which pathway gives you the'],
+    [84.335,87.342,'strongest and most efficient route forward.'],
+    [87.342,90.685,'Whichever path you take, the goal remains the same:'],
+    [90.685,91.614,'help you move toward'],
+    [91.614,93.959,'meaningful, sustainable employment.'],
+    [93.959,96.920,'When you’re ready, let’s choose your BOOST pathway.']
+  ];
+
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function fmt(s){
+    if (!Number.isFinite(s)) return '0:00';
+    const m = Math.floor(s/60), sec = Math.floor(s%60).toString().padStart(2,'0');
+    return `${m}:${sec}`;
+  }
+  function showToast(message){
+    clearTimeout(toastTimer); toast.textContent = message; toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+  function setPathway(pathway, announce=false){
+    state.pathway = pathway; save();
+    pathwayLabel.textContent = pathway === 'rapid' ? 'Rapid Employment Pathway' : pathway === 'career' ? 'Career Exploration & Development' : 'Pathway not selected';
+    if (announce && pathway) showToast(pathway === 'rapid' ? 'Rapid Employment Pathway selected.' : 'Career Exploration & Development selected.');
+  }
+  function updateProgress(){
+    const modules = [...document.querySelectorAll('[data-module-id], [data-industry-id]')];
+    const uniqueIds = [...new Set(modules.map(el => el.dataset.moduleId ? `m:${el.dataset.moduleId}` : `i:${el.dataset.industryId}`))];
+    const completeCount = uniqueIds.filter(id => state.complete[id]).length;
+    const pct = uniqueIds.length ? (completeCount / uniqueIds.length) * 100 : 0;
+    progressFill.style.width = `${pct}%`;
+    progressCount.textContent = `${completeCount} of ${uniqueIds.length}`;
+
+    modules.forEach(el => {
+      const id = el.dataset.moduleId ? `m:${el.dataset.moduleId}` : `i:${el.dataset.industryId}`;
+      el.classList.toggle('is-complete', !!state.complete[id]);
+    });
+
+    const industryDone = ['trades','manufacturing','healthcare','it','cdl'].some(id => state.complete[`i:${id}`]);
+    investmentCard.classList.toggle('is-locked', !industryDone);
+    investmentCard.setAttribute('aria-disabled', String(!industryDone));
+    investmentStatus.textContent = industryDone ? 'Ready to explore investment options' : 'Complete an industry experience first';
+  }
+
+  function openPathwayGuide(){
+    if (!dialog.open) dialog.showModal();
+    audio.currentTime = 0;
+    audio.play().catch(() => { audioStatus.textContent = 'Press Play to hear Rosie'; });
+  }
+  function closePathwayGuide(){ audio.pause(); dialog.close(); }
+
+  document.querySelectorAll('[data-choose-pathway]').forEach(el => el.addEventListener('click', e => {
+    e.preventDefault(); openPathwayGuide();
+  }));
+  document.querySelector('[data-dialog-x]').addEventListener('click', closePathwayGuide);
+  document.querySelector('[data-dialog-close]').addEventListener('click', closePathwayGuide);
+  dialog.addEventListener('cancel', e => { e.preventDefault(); closePathwayGuide(); });
+  dialog.addEventListener('click', e => { if (e.target === dialog) closePathwayGuide(); });
+
+  document.querySelectorAll('[data-pathway-choice]').forEach(btn => btn.addEventListener('click', () => {
+    setPathway(btn.dataset.pathwayChoice, true); audio.pause(); dialog.close();
+  }));
+
+  audioToggle.addEventListener('click', () => audio.paused ? audio.play() : audio.pause());
+  replay.addEventListener('click', () => { audio.currentTime = 0; audio.play(); });
+  captionsToggle.addEventListener('click', () => {
+    captionsOn = !captionsOn;
+    captionsToggle.textContent = `Captions: ${captionsOn ? 'On' : 'Off'}`;
+    captionBox.classList.toggle('is-off', !captionsOn);
+    if (!captionsOn) captionBox.textContent = 'Captions are off.';
+    else updateCaption();
+  });
+  seek.addEventListener('input', () => {
+    if (Number.isFinite(audio.duration)) audio.currentTime = (Number(seek.value)/100)*audio.duration;
+  });
+  audio.addEventListener('play', () => { audioToggle.textContent = '❚❚ Pause'; audioStatus.textContent = 'Rosie is speaking'; });
+  audio.addEventListener('pause', () => { audioToggle.textContent = '▶ Play Rosie’s Guide'; if (!audio.ended) audioStatus.textContent = 'Paused'; });
+  audio.addEventListener('ended', () => { audioToggle.textContent = '▶ Play Rosie’s Guide'; audioStatus.textContent = 'Guide complete — choose a pathway'; });
+  audio.addEventListener('loadedmetadata', updateAudioUI);
+  audio.addEventListener('timeupdate', () => { updateAudioUI(); updateCaption(); });
+
+  function updateAudioUI(){
+    const duration = Number.isFinite(audio.duration) ? audio.duration : 96.92;
+    seek.value = duration ? String((audio.currentTime / duration) * 100) : '0';
+    time.textContent = `${fmt(audio.currentTime)} / ${fmt(duration)}`;
+  }
+  function updateCaption(){
+    if (!captionsOn) return;
+    const t = audio.currentTime;
+    const cue = cues.find(([s,e]) => t >= s && t < e) || (t >= cues[cues.length-1][0] ? cues[cues.length-1] : cues[0]);
+    captionBox.textContent = cue[2];
+  }
+
+  document.querySelectorAll('[data-module-id], [data-industry-id]').forEach(el => el.addEventListener('click', () => {
+    const id = el.dataset.moduleId ? `m:${el.dataset.moduleId}` : `i:${el.dataset.industryId}`;
+    state.complete[id] = true;
+    if (el.dataset.setPathway) state.pathway = el.dataset.setPathway;
+    save(); setPathway(state.pathway); updateProgress();
+  }));
+  document.querySelectorAll('[data-set-pathway]').forEach(el => {
+    if (el.matches('[data-module-id], [data-industry-id], [data-pathway-choice]')) return;
+    el.addEventListener('click', () => {
+      if (el.dataset.setPathway) setPathway(el.dataset.setPathway);
+    });
+  });
+
+  document.querySelectorAll('[data-coming]').forEach(el => el.addEventListener('click', e => {
+    e.preventDefault(); showToast(`${el.dataset.coming} is reserved in this prototype.`);
+  }));
+
+  document.querySelector('[data-industry-choice]').addEventListener('click', e => {
+    e.preventDefault();
+    showToast('Choose one of the industry pathways on the right.');
+    document.querySelectorAll('[data-industry-id]').forEach(el => {
+      el.classList.add('pulse'); setTimeout(() => el.classList.remove('pulse'), 4800);
+    });
+  });
+
+  investmentCard.addEventListener('click', e => {
+    if (investmentCard.classList.contains('is-locked')) {
+      e.preventDefault(); showToast('Complete an industry experience first to open the Career Investment Explorer.');
+    }
+  });
+
+  document.querySelector('[data-reset-progress]').addEventListener('click', e => {
+    e.preventDefault();
+    if (!confirm('Reset your saved BOOST pathway choice and progress on this browser?')) return;
+    localStorage.removeItem(STORAGE_KEY); state.complete = {}; state.pathway = null;
+    setPathway(null); updateProgress(); showToast('BOOST progress reset.');
+  });
+
+  setPathway(state.pathway || null);
+  updateProgress();
+  updateCaption();
+})();
+</script>
 </body>
 </html>
