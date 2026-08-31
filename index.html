@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BOOST Pathways</title>
+  <title>BOOST Pathways v2.8</title>
   <style>
     :root{
       --navy:#0d2741;
@@ -224,7 +224,7 @@
 
   <div class="stage-wrap">
     <div class="tipbar">
-      <div><strong>Select a step on the map.</strong> The pathway decision now opens Rosie’s short narrated guide before you choose your route.</div>
+      <div><strong>Select a step on the map.</strong> Rosie introduces the pathway decision, and the Rapid Employment Pathway now includes the active 48-Hour Job Search Strategy.</div>
     </div>
 
     <div class="stage" aria-label="Interactive BOOST Pathways map">
@@ -242,7 +242,7 @@
       <a class="hotspot" data-module-id="financial" data-set-pathway="rapid" style="left:17.3%;top:35.5%;width:17.6%;height:11.8%" href="https://pinalworkforce1-del.github.io/Financial_Assessment/" target="_blank" rel="noopener" aria-label="Open Build Strong Financial Habits"><span class="hotspot-label">Open Build Strong Financial Habits</span><span class="complete-badge">✓</span></a>
       <a class="hotspot" data-module-id="skillmobility" data-set-pathway="rapid" style="left:16.7%;top:45.1%;width:17.9%;height:11.8%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span><span class="complete-badge">✓</span></a>
       <a class="hotspot required" data-module-id="ai" data-set-pathway="rapid" style="left:15.7%;top:55.0%;width:17.9%;height:12.4%" href="topic/ai.html" aria-label="Open AI and You topic page"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" data-module-id="jobsearch" data-set-pathway="rapid" style="left:14.3%;top:68.0%;width:19.0%;height:18.0%" href="#" data-coming="48 Hour Job Search Strategies" aria-label="48 Hour Job Search Strategies"><span class="hotspot-label">48 Hour Job Search Strategies</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="jobsearch" data-set-pathway="rapid" style="left:14.3%;top:68.0%;width:19.0%;height:18.0%" href="https://pinalworkforce1-del.github.io/48_hour_job_search/" aria-label="Open 48-Hour Job Search Strategy"><span class="hotspot-label">Open 48-Hour Job Search Strategy</span><span class="complete-badge">✓</span></a>
 
       <!-- Career Exploration pathway -->
       <a class="hotspot required" data-module-id="module2" data-set-pathway="career" style="left:53.2%;top:30.6%;width:18.1%;height:10.1%" href="topic/module2.html" aria-label="Open Module 2 Career Reality Check"><span class="hotspot-label">Open Career Reality Check</span><span class="complete-badge">✓</span></a>
@@ -342,8 +342,10 @@
 
 <script>
 (() => {
-  const STORAGE_KEY = 'boostPathwaysV27';
-  const state = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const STORAGE_KEY = 'boostPathwaysV29';
+  const LEGACY_STORAGE_KEY = 'boostPathwaysV28';
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || '{}'); } catch(e) { state = {}; }
   state.complete = state.complete || {};
 
   const dialog = document.getElementById('pathwayDialog');
