@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const COMPLETED='boostPortalCompleted_v2',PATH='boostPortalPathway_v2';
+const COMPLETED='boostPortalCompleted_v2',PATH='boostPortalPathway_v2',MAP='boostPathwaysV29',MAP_OLD='boostPathwaysV28';
 const steps={
  module1:{title:'Module 1 — Discover',unlock:'Start here',text:'This is where your BOOST journey begins. We’ll use your interests, strengths, and career ideas to identify possibilities worth exploring. What you save here becomes evidence that follows you into the next steps.',audio:'assets/audio/rosie-map-module1.mp3'},
  coach:{title:'Career Coach Check-In',unlock:'Complete Module 1 first',text:'This conversation helps you and your Career Coach look at what you discovered before choosing a pathway. BOOST gives you evidence; your conversation helps turn that evidence into an individualized next step.',audio:'assets/audio/rosie-map-coach.mp3'},
@@ -18,9 +18,10 @@ const steps={
 };
 const rapidOrder=['financial','skillmobility','ai','jobsearch'];
 const careerOrder=['module2','module3','module4','careerai','industry','investment'];
-function done(){try{return new Set(JSON.parse(localStorage.getItem(COMPLETED)||'[]'))}catch{return new Set()}}
-function selectedPath(){return localStorage.getItem(PATH)||'shared'}
-function complete(k){const d=done();if(k==='careerai')return d.has('ai');if(k==='industry')return d.has('industry');return d.has(k)}
+function portalDone(){try{return new Set(JSON.parse(localStorage.getItem(COMPLETED)||'[]'))}catch{return new Set()}}
+function mapState(){try{return JSON.parse(localStorage.getItem(MAP)||localStorage.getItem(MAP_OLD)||'{}')}catch{return{}}}
+function selectedPath(){const direct=localStorage.getItem(PATH);if(direct)return direct;return mapState().pathway||'shared'}
+function complete(k){const d=portalDone(),m=mapState(),mc=m.complete||{};if(k==='careerai')return d.has('ai')||!!mc['m:ai'];if(k==='industry')return d.has('industry')||Object.keys(mc).some(x=>x.startsWith('i:')&&mc[x]);return d.has(k)||!!mc['m:'+k]}
 function unlocked(key){if(key==='module1')return true;if(key==='coach'||key==='choose')return complete('module1');if(rapidOrder.includes(key)){if(selectedPath()!=='rapid')return false;const i=rapidOrder.indexOf(key);return i===0?complete('module1'):complete(rapidOrder[i-1])}if(careerOrder.includes(key)){if(selectedPath()!=='career')return false;const i=careerOrder.indexOf(key);return i===0?complete('module1'):complete(careerOrder[i-1])}if(key.startsWith('industry:'))return selectedPath()==='career'&&complete('ai');return true}
 function keyFor(el){if(el.dataset.moduleId){if(el.dataset.moduleId==='ai'&&el.dataset.setPathway==='career')return'careerai';return el.dataset.moduleId}if(el.hasAttribute('data-industry-choice'))return'industry';if(el.dataset.industryId)return'industry:'+el.dataset.industryId;if(el.hasAttribute('data-career-skillmobility'))return'industry:skillmobility';if(el.hasAttribute('data-investment-card'))return'investment';if(el.hasAttribute('data-choose-pathway'))return'choose';if(el.dataset.coming?.toLowerCase().includes('career coach'))return'coach';return null}
 function infoFor(key){if(key?.startsWith('industry:'))return steps.industry;return steps[key]||null}
