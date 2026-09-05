@@ -22,13 +22,13 @@
   </header>
   <iframe class="activity-frame" id="activityFrame" title="BOOST module activity" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
 </main>
-
+<div class="toast"></div>
 <script src="assets/js/config.js"></script>
 <script src="assets/js/portal.js"></script>
 <script>
 const links=window.BOOST_LINKS||{};
 const cfg={
-  module1:{title:'Module 1 — Career Direction',src:links.module1,topic:'topic/module1.html',note:'Discover career possibilities using your O*NET interests and regional opportunity.'},
+  module1:{title:'Module 1 — Career Direction',src:links.module1,topic:'topic/module1.html',note:'Discover career possibilities using your O*NET interests and regional H3 opportunity.'},
   module2:{title:'Module 2 — Career Reality Check',src:links.module2,topic:'topic/module2.html',note:'Validate career possibilities against jobs, wages, life fit, and future opportunity.'},
   module3:{title:'Module 3 — Career Mobility Exploration',src:links.module3,topic:'topic/module3.html',note:'Connect what you already bring to realistic career moves and growth.'},
   module4:{title:'Module 4 — Decide',src:links.module4,topic:'topic/module4.html',note:'Coach-supported: review the evidence and choose your most efficient next step.',finishLabel:'✓ Coach Review Complete & Return'},
@@ -46,10 +46,59 @@ document.getElementById('activityTitle').textContent=c.title;
 document.getElementById('moduleNote').textContent=c.note||'';
 document.getElementById('backTopic').href=c.topic;
 document.getElementById('backTopic').textContent=c.topic==='index.html'?'← Back to BOOST Map':'← Back to Topic';
-document.getElementById('activityFrame').src=c.src;
+const frame=document.getElementById('activityFrame');frame.src=c.src;
 document.getElementById('externalBtn').href=c.src;
-if(c.finishLabel) document.getElementById('finishBtn').textContent=c.finishLabel;
-document.getElementById('finishBtn').addEventListener('click',()=>{
+if(c.finishLabel)document.getElementById('finishBtn').textContent=c.finishLabel;
+
+function cleanChoice(t){return String(t||'').replace(/\s*[•·].*$/,'').replace(/\s+Remove\s*$/i,'').replace(/^\d+\.\s*/,'').trim()}
+function extractSafeEvidence(){
+  const evidence={module:m};
+  try{
+    const d=frame.contentDocument;if(!d)return evidence;
+    if(m==='module1'){
+      const scores={};['R','I','A','S','E','C'].forEach(k=>{const el=d.getElementById(k);if(el&&el.value!=='')scores[k]=Number(el.value)});
+      evidence.interestScores=scores;
+      const choices=[...d.querySelectorAll('#selected .choice')].map(x=>cleanChoice(x.textContent)).filter(Boolean);
+      const careers=[];
+      [...d.querySelectorAll('.card')].forEach(card=>{const cb=card.querySelector('input[type="checkbox"]');if(!cb?.checked)return;const title=card.querySelector('h3')?.textContent?.trim();if(!title)return;careers.push({title,h3:card.querySelector('.tag.h3')?.textContent?.trim()||'',sector:card.querySelector('.tag.priority')?.textContent?.trim()||card.querySelector('.tag')?.textContent?.trim()||''})});
+      const byTitle=new Map(careers.map(x=>[x.title,x]));
+      evidence.careers=choices.map(title=>byTitle.get(title)||{title}).filter(x=>x.title);
+      if(!evidence.careers.length)evidence.careers=careers;
+      evidence.primaryCareer=evidence.careers[0]?.title||'';
+      evidence.h3Status=evidence.careers[0]?.h3||'';
+      evidence.topInterests=Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([code,score])=>({code,score}));
+    }else{
+      const fields={};
+      d.querySelectorAll('select').forEach(el=>{const key=(el.id||el.name||'').toLowerCase();if(!/(career|occupation|soc|industry|sector|pathway|direction|decision)/.test(key))return;const opt=el.selectedOptions?.[0];if(el.value)fields[key]=opt?.textContent?.trim()||el.value});
+      if(Object.keys(fields).length)evidence.selectionFields=fields;
+    }
+  }catch(err){console.warn('BOOST carry-forward extraction unavailable',err)}
+  return evidence;
+}
+function carrySummary(j){
+  const m1=j?.modules?.module1||{};const cs=(m1.careers||[]).map(x=>typeof x==='string'?x:x.title).filter(Boolean);
+  const h3=(m1.careers||[]).map(x=>typeof x==='object'&&x.h3?`${x.title}: ${x.h3}`:'').filter(Boolean);
+  const completed=Object.entries(j?.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k);
+  let html='<strong>BOOST is carrying forward:</strong> ';
+  if(cs.length)html+='Careers: '+cs.join(', ')+'. ';
+  if(h3.length)html+='H3: '+h3.join(' • ')+'. ';
+  if(completed.length)html+='Completed: '+completed.join(', ')+'.';
+  if(!cs.length&&!completed.length)html+='Your structured career evidence will appear here as you complete the journey.';
+  return html;
+}
+function injectConnectedUI(){
+  try{
+    const d=frame.contentDocument;if(!d||d.getElementById('pinalConnectedCarry'))return;
+    const style=d.createElement('style');style.textContent='#pinalConnectedCarry{position:relative;z-index:2147480000;margin:0;padding:11px 15px;background:#eaf4f7;border-bottom:3px solid #e4a72b;color:#17324d;font:700 13px/1.45 Arial,sans-serif}#pinalConnectedMap{position:fixed;right:16px;bottom:16px;z-index:2147483000;padding:11px 15px;border-radius:999px;background:#0d2741;color:#fff;text-decoration:none;font:900 13px Arial,sans-serif;box-shadow:0 10px 25px #0005;border:2px solid #fff8}';d.head.appendChild(style);
+    const bar=d.createElement('div');bar.id='pinalConnectedCarry';bar.innerHTML=carrySummary(window.PinalBOOST?.get?.()||{});d.body.insertBefore(bar,d.body.firstChild);
+    const a=d.createElement('a');a.id='pinalConnectedMap';a.href='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';a.target='_top';a.textContent='My Journey Map';d.body.appendChild(a);
+  }catch(e){console.warn('Connected BOOST panel could not be injected',e)}
+}
+frame.addEventListener('load',()=>{setTimeout(injectConnectedUI,250)});
+
+document.getElementById('finishBtn').addEventListener('click',async()=>{
+  const evidence=extractSafeEvidence();
+  if(window.PinalBOOST){window.PinalBOOST.captureModule(m,evidence);await window.PinalBOOST.save();}
   BOOSTPortal.markComplete(m);
   location.href='index.html';
 });
