@@ -2,18 +2,26 @@
   const STORAGE_KEY='boostPortalCompleted_v2';
   const PATHWAY_KEY='boostPortalPathway_v2';
   const INDUSTRY_KEY='boostPortalIndustry_v2';
+  const MAP_STATE_KEY='boostPathwaysV29';
+  const MAP_LEGACY_KEY='boostPathwaysV28';
   const routes={shared:['module1'],career:['module1','module2','module3','module4','ai','industry','investment'],rapid:['module1','financial','skillmobility','ai','jobsearch']};
   const labels={shared:'Shared BOOST Start',career:'Career Exploration & Development',rapid:'Rapid Employment'};
   const industryLabels={healthcare:'Healthcare Pathways',trades:'Skilled Trades Pathways',manufacturing:'Advanced Manufacturing Pathways',it:'Information Technology',cdl:'Transportation & Logistics'};
 
+  function mapState(){try{return JSON.parse(localStorage.getItem(MAP_STATE_KEY)||localStorage.getItem(MAP_LEGACY_KEY)||'{}')}catch{return{}}}
+  function saveMapState(s){s=s||{};s.complete=s.complete||{};localStorage.setItem(MAP_STATE_KEY,JSON.stringify(s))}
+  function mapId(id){return industryLabels[id]?`i:${id}`:`m:${id}`}
+  function mirrorToMap(completedId){const ms=mapState();ms.complete=ms.complete||{};if(completedId)ms.complete[mapId(completedId)]=true;ms.pathway=getPathway()==='shared'?null:getPathway();const ind=getIndustry();if(ind)ms.selectedIndustry=ind;saveMapState(ms)}
+  function importFromMap(){const ms=mapState(),done=getCompleted();Object.entries(ms.complete||{}).forEach(([k,v])=>{if(!v)return;if(k.startsWith('m:'))done.add(k.slice(2));if(k.startsWith('i:')){const id=k.slice(2);done.add(id);done.add('industry');if(industryLabels[id])localStorage.setItem(INDUSTRY_KEY,id)}});saveCompleted(done);if(ms.pathway&&routes[ms.pathway])localStorage.setItem(PATHWAY_KEY,ms.pathway)}
+
   function getPathway(){return localStorage.getItem(PATHWAY_KEY)||'shared'}
-  function setPathway(id){if(!routes[id])return;localStorage.setItem(PATHWAY_KEY,id);syncCloudState();updateProgress();document.dispatchEvent(new CustomEvent('boostpathway',{detail:{pathway:id}}))}
+  function setPathway(id){if(!routes[id])return;localStorage.setItem(PATHWAY_KEY,id);mirrorToMap();syncCloudState();updateProgress();document.dispatchEvent(new CustomEvent('boostpathway',{detail:{pathway:id}}))}
   function getIndustry(){return localStorage.getItem(INDUSTRY_KEY)||''}
-  function setIndustry(id){if(!industryLabels[id])return;localStorage.setItem(INDUSTRY_KEY,id);setPathway('career');syncCloudState();updateProgress()}
+  function setIndustry(id){if(!industryLabels[id])return;localStorage.setItem(INDUSTRY_KEY,id);setPathway('career');mirrorToMap(id);syncCloudState();updateProgress()}
   function getCompleted(){try{return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'))}catch{return new Set()}}
   function saveCompleted(set){localStorage.setItem(STORAGE_KEY,JSON.stringify([...set]))}
-  function markComplete(id){const s=getCompleted();s.add(id);if(industryLabels[id]){localStorage.setItem(INDUSTRY_KEY,id);s.add('industry');localStorage.setItem(PATHWAY_KEY,'career')}saveCompleted(s);syncCloudState(id);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress',{detail:{id}}))}
-  function reset(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(PATHWAY_KEY);localStorage.removeItem(INDUSTRY_KEY);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress'))}
+  function markComplete(id){const s=getCompleted();s.add(id);if(industryLabels[id]){localStorage.setItem(INDUSTRY_KEY,id);s.add('industry');localStorage.setItem(PATHWAY_KEY,'career')}saveCompleted(s);mirrorToMap(id);syncCloudState(id);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress',{detail:{id}}))}
+  function reset(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(PATHWAY_KEY);localStorage.removeItem(INDUSTRY_KEY);localStorage.removeItem(MAP_STATE_KEY);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress'))}
   function routeIsComplete(done,id){return id==='industry'?done.has('industry'):done.has(id)}
   function updateProgress(){
     const pathway=getPathway(),route=routes[pathway]||routes.career,done=getCompleted();
@@ -33,8 +41,8 @@
 
   function loadScript(src){return new Promise((resolve,reject)=>{if(document.querySelector(`script[src="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
   async function ensureCloud(){try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');await loadScript(new URL('assets/js/pinal-cloud-config.js',location.href.includes('/topic/')?new URL('../',location.href):location.href).toString());await loadScript(new URL('assets/js/pinal-cloud.js',location.href.includes('/topic/')?new URL('../',location.href):location.href).toString());return window.PinalBOOST||null}catch(e){console.warn('Pinal BOOST cloud unavailable',e);return null}}
-  function syncCloudState(completedId){if(!window.PinalBOOST)return;const j=window.PinalBOOST.get();j.selectedPathway=getPathway();j.selectedIndustry=getIndustry();j.portal=j.portal||{};j.portal.completed=[...getCompleted()];j.progress=j.progress||{};if(completedId)j.progress[completedId]='complete';window.PinalBOOST.put(j)}
-  async function restoreCloudState(){const cloud=await ensureCloud();if(!cloud)return;await cloud.finishAuth();const j=cloud.get();if(j.selectedPathway&&routes[j.selectedPathway])localStorage.setItem(PATHWAY_KEY,j.selectedPathway);if(j.selectedIndustry&&industryLabels[j.selectedIndustry])localStorage.setItem(INDUSTRY_KEY,j.selectedIndustry);const fromCloud=new Set(j.portal?.completed||Object.entries(j.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k));if(fromCloud.size){const merged=getCompleted();fromCloud.forEach(x=>merged.add(x));saveCompleted(merged)}updateProgress()}
+  function syncCloudState(completedId){if(!window.PinalBOOST)return;const j=window.PinalBOOST.get();j.selectedPathway=getPathway();j.selectedIndustry=getIndustry();j.portal=j.portal||{};j.portal.completed=[...getCompleted()];j.portal.mapState=mapState();j.progress=j.progress||{};if(completedId)j.progress[completedId]='complete';window.PinalBOOST.put(j)}
+  async function restoreCloudState(){const cloud=await ensureCloud();if(!cloud)return;await cloud.finishAuth();const j=cloud.get();if(j.selectedPathway&&routes[j.selectedPathway])localStorage.setItem(PATHWAY_KEY,j.selectedPathway);if(j.selectedIndustry&&industryLabels[j.selectedIndustry])localStorage.setItem(INDUSTRY_KEY,j.selectedIndustry);if(j.portal?.mapState)saveMapState(j.portal.mapState);const fromCloud=new Set(j.portal?.completed||Object.entries(j.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k));if(fromCloud.size){const merged=getCompleted();fromCloud.forEach(x=>merged.add(x));saveCompleted(merged)}importFromMap();mirrorToMap();updateProgress()}
 
   function isModule1Activity(){return /activity\.html$/i.test(location.pathname)&&new URLSearchParams(location.search).get('m')==='module1'}
   async function requireModule1SignIn(){if(!isModule1Activity())return;const cloud=await ensureCloud();if(!cloud)return;const cl=cloud.client();const {data:{session}}=await cl.auth.getSession();if(session?.user)return;
@@ -58,5 +66,5 @@
   });
 
   window.BOOSTPortal={getCompleted,markComplete,reset,getPathway,setPathway,getIndustry,setIndustry,routes,labels,industryLabels,toast,updateProgress,syncCloudState};
-  document.addEventListener('DOMContentLoaded',async()=>{updateProgress();await restoreCloudState();await requireModule1SignIn()});
+  document.addEventListener('DOMContentLoaded',async()=>{importFromMap();updateProgress();await restoreCloudState();await requireModule1SignIn()});
 })();
