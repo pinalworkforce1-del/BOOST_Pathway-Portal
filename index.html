@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BOOST Pathways v3.2</title>
+  <title>BOOST Pathways v3.3</title>
   <style>
     :root{
       --navy:#0d2741;
@@ -99,28 +99,9 @@
     }
     .hotspot.is-complete .complete-badge{display:flex}
 
-    .investment-card{
-      position:absolute;z-index:9;left:78.6%;top:86.7%;width:19.7%;min-height:9.0%;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-      padding:9px 10px;border-radius:14px;text-decoration:none;color:#fff;
-      background:linear-gradient(135deg,rgba(13,39,65,.98),rgba(32,91,130,.98));
-      border:2px solid rgba(244,204,106,.96);box-shadow:0 9px 22px rgba(0,0,0,.36),0 0 0 3px rgba(244,204,106,.10);
-      font-size:clamp(.56rem,1vw,.84rem);line-height:1.12;
-      transition:transform .16s ease,box-shadow .16s ease,filter .16s ease,opacity .16s ease
-    }
-    .investment-card::before{
-      content:"CAREER STEP 6";display:block;margin-bottom:4px;padding:3px 7px;border-radius:999px;
-      background:rgba(244,204,106,.98);color:#17324a;font-size:.72em;font-weight:950;letter-spacing:.045em
-    }
-    .investment-card strong{font-size:1.08em}
-    .investment-card span{opacity:.9;font-size:.82em;margin-top:4px}
-    .investment-card:not(.is-locked):hover,.investment-card:not(.is-locked):focus-visible{
-      transform:translateY(-2px);box-shadow:0 13px 30px rgba(0,0,0,.42),0 0 0 4px rgba(244,204,106,.18);outline:none
-    }
-    .investment-card.is-locked{
-      filter:saturate(.62);opacity:.90;cursor:not-allowed;
-      background:linear-gradient(135deg,rgba(50,62,72,.97),rgba(60,84,101,.97));
-      border-style:dashed
+    .investment-card strong,.investment-card [data-investment-status]{
+      position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0,0,0,0);white-space:nowrap;border:0
     }
 
     dialog{border:0;padding:0}
@@ -236,45 +217,45 @@
 
   <div class="stage-wrap">
     <div class="tipbar">
-      <div><strong>Select a step on the map.</strong> Rosie introduces the pathway decision, and the Rapid Employment Pathway now includes the active 48-Hour Job Search Strategy.</div>
+      <div><strong>Select a step on the map.</strong> Both pathways begin together, branch after Module 1, and reconnect through shared career-readiness steps on the way to employment.</div>
     </div>
 
     <div class="stage" aria-label="Interactive BOOST Pathways map">
-      <img src="assets/images/boost-home.png" alt="BOOST Pathways map with Rapid Employment and Career Exploration and Development routes leading to employment opportunities">
+      <img src="assets/images/boost-home-v33.webp" alt="BOOST Pathways map with Rapid Employment and Career Exploration and Development routes leading to employment opportunities">
 
       <!-- Shared launch sequence -->
-      <a class="hotspot pulse" style="left:3.3%;top:7.1%;width:8.4%;height:23.5%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
-      <a class="hotspot" style="left:14.4%;top:7.2%;width:8.7%;height:23.6%" href="https://forms.cloud.microsoft/r/ZTsLaQY4qC" target="_blank" rel="noopener" aria-label="Complete the Interest Form"><span class="hotspot-label">Complete the Interest Form</span></a>
-      <a class="hotspot" style="left:25.0%;top:7.0%;width:8.3%;height:24.0%" href="https://www.azjobconnection.gov/" target="_blank" rel="noopener" aria-label="Create Arizona Job Connection account"><span class="hotspot-label">Create AJC Account</span></a>
-      <a class="hotspot required" data-module-id="module1" style="left:35.3%;top:7.0%;width:8.8%;height:24.2%" href="topic/module1.html" aria-label="Open Module 1 Career Direction topic page"><span class="hotspot-label">Open Career Direction</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" style="left:44.2%;top:6.6%;width:9.1%;height:24.8%" href="#" data-coming="Career Coach scheduling / contact resource" aria-label="Meet with a Career Coach"><span class="hotspot-label">Meet with a Career Coach</span></a>
-      <a class="hotspot pulse" style="left:57.4%;top:7.8%;width:10.4%;height:24.1%" href="#" data-choose-pathway aria-label="Start Your BOOST Pathway"><span class="hotspot-label">Choose Your BOOST Pathway</span></a>
+      <a class="hotspot pulse" style="left:21.1%;top:7.3%;width:10.0%;height:17.8%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
+      <a class="hotspot" style="left:34.2%;top:7.2%;width:10.5%;height:18.0%" href="https://forms.cloud.microsoft/r/ZTsLaQY4qC" target="_blank" rel="noopener" aria-label="Complete the Interest Form"><span class="hotspot-label">Complete the Interest Form</span></a>
+      <a class="hotspot" style="left:46.0%;top:7.2%;width:9.7%;height:18.0%" href="https://www.azjobconnection.gov/" target="_blank" rel="noopener" aria-label="Create Arizona Job Connection account"><span class="hotspot-label">Create AJC Account</span></a>
+      <a class="hotspot required pulse" data-module-id="module1" style="left:58.0%;top:7.1%;width:10.9%;height:18.1%" href="topic/module1.html" aria-label="Open Module 1 Career Direction topic page"><span class="hotspot-label">Open Career Direction</span><span class="complete-badge">✓</span></a>
 
       <!-- Rapid Employment pathway -->
-      <a class="hotspot" data-module-id="financial" data-set-pathway="rapid" style="left:17.3%;top:35.5%;width:17.6%;height:11.8%" href="https://pinalworkforce1-del.github.io/Financial_Assessment/" target="_blank" rel="noopener" aria-label="Open Build Strong Financial Habits"><span class="hotspot-label">Open Build Strong Financial Habits</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" data-module-id="skillmobility" data-set-pathway="rapid" style="left:16.7%;top:45.1%;width:17.9%;height:11.8%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-module-id="ai" data-set-pathway="rapid" style="left:15.7%;top:55.0%;width:17.9%;height:12.4%" href="topic/ai.html" aria-label="Open AI and You topic page"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-module-id="jobsearch" data-set-pathway="rapid" style="left:14.3%;top:68.0%;width:19.0%;height:18.0%" href="https://pinalworkforce1-del.github.io/48_hour_job_search/" aria-label="Open 48-Hour Job Search Strategy"><span class="hotspot-label">Open 48-Hour Job Search Strategy</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="skillmobility" data-set-pathway="rapid" style="left:21.3%;top:35.1%;width:12.0%;height:16.0%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="jobsearch" data-set-pathway="rapid" style="left:21.0%;top:53.5%;width:13.4%;height:17.0%" href="https://pinalworkforce1-del.github.io/48_hour_job_search/" target="_blank" rel="noopener" aria-label="Open 48-Hour Job Search Strategy"><span class="hotspot-label">Open 48-Hour Job Search Strategy</span><span class="complete-badge">✓</span></a>
+
+      <!-- Shared convergence steps -->
+      <a class="hotspot required" data-module-id="financial" style="left:40.4%;top:55.5%;width:14.7%;height:15.2%" href="https://pinalworkforce1-del.github.io/Financial_Assessment/" target="_blank" rel="noopener" aria-label="Open Build Strong Financial Habits"><span class="hotspot-label">Open Build Strong Financial Habits</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="ai" style="left:41.2%;top:69.8%;width:13.8%;height:13.6%" href="topic/ai.html" aria-label="Open AI and You topic page"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
 
       <!-- Career Exploration pathway -->
-      <a class="hotspot required" data-module-id="module2" data-set-pathway="career" style="left:53.2%;top:30.6%;width:18.1%;height:10.1%" href="topic/module2.html" aria-label="Open Module 2 Career Reality Check"><span class="hotspot-label">Open Career Reality Check</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-module-id="module3" data-set-pathway="career" style="left:53.3%;top:39.5%;width:18.0%;height:10.7%" href="topic/module3.html" aria-label="Open Module 3 Career Mobility Exploration"><span class="hotspot-label">Open Career Mobility Exploration</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-module-id="module4" data-set-pathway="career" style="left:53.3%;top:48.8%;width:18.0%;height:10.3%" href="topic/module4.html" aria-label="Open Module 4 Decide with your Career Coach"><span class="hotspot-label">Open Decide • Coach Supported</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-module-id="ai" data-set-pathway="career" style="left:53.5%;top:57.7%;width:17.5%;height:10.3%" href="topic/ai.html" aria-label="Open Module 5 AI and You"><span class="hotspot-label">Open AI &amp; You</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" data-industry-choice data-set-pathway="career" style="left:53.5%;top:66.8%;width:18.2%;height:11.9%" href="#industry-start" aria-label="Choose Your Industry Path"><span class="hotspot-label">Choose Your Industry Path</span></a>
+      <a class="hotspot required" data-module-id="module2" data-set-pathway="career" style="left:62.0%;top:30.0%;width:13.5%;height:11.8%" href="topic/module2.html" aria-label="Open Module 2 Career Reality Check"><span class="hotspot-label">Open Career Reality Check</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="module3" data-set-pathway="career" style="left:64.8%;top:40.2%;width:11.3%;height:10.8%" href="topic/module3.html" aria-label="Open Module 3 Career Mobility Exploration"><span class="hotspot-label">Open Career Mobility Exploration</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-module-id="module4" data-set-pathway="career" style="left:65.4%;top:49.9%;width:10.7%;height:9.4%" href="topic/module4.html" aria-label="Open Module 4 Decide with your Career Coach"><span class="hotspot-label">Open Decide • Coach Supported</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-industry-choice data-set-pathway="career" style="left:64.8%;top:58.2%;width:12.6%;height:11.7%" href="#industry-start" aria-label="Choose Your Industry Path"><span class="hotspot-label">Choose Your Industry Path</span></a>
 
       <!-- Live industry repositories -->
-      <a class="hotspot required" data-industry-id="trades" data-set-pathway="career" style="left:79.0%;top:29.0%;width:19.2%;height:9.5%" href="activity.html?m=trades" aria-label="Open Skilled Trades Workplace Skills Challenge"><span class="hotspot-label">Open Skilled Trades Pathways</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-industry-id="manufacturing" data-set-pathway="career" style="left:79.0%;top:38.6%;width:19.2%;height:9.4%" href="activity.html?m=manufacturing" aria-label="Open Advanced Manufacturing Workplace Skills Challenge"><span class="hotspot-label">Open Advanced Manufacturing Pathways</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-industry-id="healthcare" data-set-pathway="career" style="left:79.0%;top:48.1%;width:19.2%;height:9.4%" href="activity.html?m=healthcare" aria-label="Open Healthcare Workplace Skills Challenge"><span class="hotspot-label">Open Healthcare Pathways</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-industry-id="it" data-set-pathway="career" style="left:79.0%;top:57.7%;width:19.2%;height:9.2%" href="activity.html?m=it" aria-label="Open Information Technology Workplace Skills Challenge"><span class="hotspot-label">Open Information Technology</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot required" data-industry-id="cdl" data-set-pathway="career" style="left:79.0%;top:67.2%;width:19.2%;height:9.7%" href="activity.html?m=cdl" aria-label="Open Transportation and Logistics CDL Workplace Skills Challenge"><span class="hotspot-label">Open Transportation &amp; Logistics</span><span class="complete-badge">✓</span></a>
-      <a class="hotspot" data-career-skillmobility data-set-pathway="career" style="left:79.0%;top:76.9%;width:19.2%;height:10.1%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span></a>
+      <a class="hotspot required" data-industry-id="trades" data-set-pathway="career" style="left:81.8%;top:30.3%;width:17.8%;height:9.4%" href="activity.html?m=trades" aria-label="Open Skilled Trades Workplace Skills Challenge"><span class="hotspot-label">Open Skilled Trades Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="manufacturing" data-set-pathway="career" style="left:81.8%;top:39.4%;width:17.8%;height:9.5%" href="activity.html?m=manufacturing" aria-label="Open Advanced Manufacturing Workplace Skills Challenge"><span class="hotspot-label">Open Advanced Manufacturing Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="healthcare" data-set-pathway="career" style="left:81.8%;top:48.6%;width:17.8%;height:9.5%" href="activity.html?m=healthcare" aria-label="Open Healthcare Workplace Skills Challenge"><span class="hotspot-label">Open Healthcare Pathways</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="it" data-set-pathway="career" style="left:81.8%;top:57.8%;width:17.8%;height:9.5%" href="activity.html?m=it" aria-label="Open Information Technology Workplace Skills Challenge"><span class="hotspot-label">Open Information Technology</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot required" data-industry-id="cdl" data-set-pathway="career" style="left:81.8%;top:67.0%;width:17.8%;height:9.6%" href="activity.html?m=cdl" aria-label="Open Transportation and Logistics CDL Workplace Skills Challenge"><span class="hotspot-label">Open Transportation &amp; Logistics</span><span class="complete-badge">✓</span></a>
+      <a class="hotspot" data-career-skillmobility data-set-pathway="career" style="left:81.8%;top:75.7%;width:17.8%;height:8.8%" href="https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/" target="_blank" rel="noopener" aria-label="Open Skill Mobility"><span class="hotspot-label">Open Skill Mobility</span></a>
 
-      <a class="investment-card" data-investment-card data-set-pathway="career" href="https://pinalworkforce1-del.github.io/BOOST_Skill_Gap_Closure/" target="_blank" rel="noopener" aria-label="Open Career Investment Explorer">
+      <a class="hotspot investment-card" style="left:69.7%;top:73.2%;width:13.7%;height:12.0%" data-investment-card data-set-pathway="career" href="https://pinalworkforce1-del.github.io/BOOST_Skill_Gap_Closure/" target="_blank" rel="noopener" aria-label="Open Skill Investments in the Career Investment Explorer">
         <strong>Career Investment Explorer</strong>
         <span data-investment-status>Open Career Investment Explorer</span>
       </a>
+      <a class="hotspot" style="left:62.5%;top:84.3%;width:11.7%;height:13.8%" href="#" data-coming="Training connection" aria-label="Training"><span class="hotspot-label">Training</span></a>
     </div>
   </div>
 </main>
