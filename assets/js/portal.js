@@ -4,7 +4,7 @@
   const INDUSTRY_KEY='boostPortalIndustry_v2';
   const MAP_STATE_KEY='boostPathwaysV29';
   const MAP_LEGACY_KEY='boostPathwaysV28';
-  const routes={shared:['module1'],career:['module1','module2','module3','module4','ai','industry','investment'],rapid:['module1','financial','skillmobility','ai','jobsearch']};
+  const routes={shared:['module1'],career:['module1','module2','module3','module4','financial','ai','industry','investment'],rapid:['module1','skillmobility','jobsearch','financial','ai']};
   const labels={shared:'Shared BOOST Start',career:'Career Exploration & Development',rapid:'Rapid Employment'};
   const industryLabels={healthcare:'Healthcare Pathways',trades:'Skilled Trades Pathways',manufacturing:'Advanced Manufacturing Pathways',it:'Information Technology',cdl:'Transportation & Logistics'};
 
