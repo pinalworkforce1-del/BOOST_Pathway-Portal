@@ -3,4 +3,17 @@
 <div class="stage-wrap"><div class="tipbar"><div><strong>Module 1 — Career Direction</strong> — Steps 1–5 are completed inside the live Module 1 experience. Select anywhere across the five cards to begin.</div></div><div class="stage topic"><img src="../assets/images/module1.png" alt="Module 1 — Career Direction illustrated BOOST topic page">
 <a class="hotspot required" style="left:26.9%;top:37.8%;width:49.5%;height:36.3%" href="../activity.html?m=module1" data-module-id="module1" aria-label="Open Module 1 — Career Direction. The module guides you through steps 1 through 5."><span class="hotspot-label">Open Module 1 — Career Direction</span><span class="complete-badge">✓</span></a>
 <a class="hotspot" style="left:0.5%;top:79.8%;width:40.4%;height:18.6%" href="#" data-coming="Optional discovery reflection / future supporting resource" aria-label="Optional discovery reflection"><span class="hotspot-label">Optional Supporting Resource</span></a>
-</div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script></body></html>
+</div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script><script>
+(function(){
+ const incoming=new URLSearchParams(location.search);
+ const names=['boost_return','boost_module','boost_nonce'];
+ if(!names.every(name=>incoming.get(name)))return;
+ document.querySelectorAll('a[href]').forEach(a=>{
+   let u;try{u=new URL(a.href,location.href)}catch(_){return}
+   if(u.origin!==location.origin||u.pathname.includes('/BOOST_Pathway-Portal/'))return;
+   names.forEach(name=>u.searchParams.set(name,incoming.get(name)));
+   a.href=u.toString();
+ });
+})();
+</script>
+</body></html>
