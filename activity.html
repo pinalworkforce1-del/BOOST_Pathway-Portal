@@ -9,7 +9,7 @@
 <body>
 <main class="activity-shell">
   <header class="boost-nav">
-    <div class="nav-left"><a class="map-link" id="backTopic" href="index.html">← Back to Topic</a></div>
+    <div class="nav-left"><a class="map-link" id="backTopic" href="index.html">← Back to BOOST Map</a></div>
     <div class="nav-center">
       <div class="nav-title" id="activityTitle">BOOST Activity</div>
       <div class="progress-row"><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><span class="progress-count" data-progress-count></span></div>
@@ -17,104 +17,171 @@
     </div>
     <div class="nav-right activity-actions">
       <a class="external-btn" id="externalBtn" href="#" target="_blank" rel="noopener">Open in New Tab ↗</a>
-      <button class="finish-btn" id="finishBtn">✓ Finish &amp; Return to BOOST Map</button>
+      <button class="finish-btn" id="finishBtn">✓ Save Results &amp; Return to BOOST</button>
     </div>
   </header>
   <iframe class="activity-frame" id="activityFrame" title="BOOST module activity" allow="fullscreen; clipboard-read; clipboard-write"></iframe>
 </main>
 <div class="toast"></div>
-<script src="assets/js/config.js"></script>
-<script src="assets/js/portal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/boost-config.js?v=20260908f"></script>
+<script src="assets/js/boost-cloud.js?v=20260908f"></script>
+<script src="assets/js/config.js?v=20260908f"></script>
+<script src="assets/js/portal.js?v=20260908f"></script>
 <script>
 const links=window.BOOST_LINKS||{};
 const cfg={
-  module1:{title:'Module 1 — Career Direction',src:links.module1,topic:'topic/module1.html',note:'Discover career possibilities using your O*NET interests and regional H3 opportunity.'},
-  module2:{title:'Module 2 — Career Reality Check',src:links.module2,topic:'topic/module2.html',note:'Validate career possibilities against jobs, wages, life fit, and future opportunity.'},
-  module3:{title:'Module 3 — Career Mobility Exploration',src:links.module3,topic:'topic/module3.html',note:'Connect what you already bring to realistic career moves and growth.'},
-  module4:{title:'Module 4 — Decide',src:links.module4,topic:'topic/module4.html',note:'Coach-supported: review the evidence and choose your most efficient next step.',finishLabel:'✓ Coach Review Complete & Return'},
-  ai:{title:'Module 5 — AI & You',src:links.ai,topic:'topic/ai.html',note:'Learn it. See it. Try it. Use it — with human judgment in the loop.'},
-  healthcare:{title:'Healthcare Workplace Skills Challenge',src:links.healthcare,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
-  trades:{title:'Skilled Trades Workplace Skills Challenge',src:links.trades,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
-  manufacturing:{title:'Advanced Manufacturing Workplace Skills Challenge',src:links.manufacturing,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
-  it:{title:'Information Technology Workplace Skills Challenge',src:links.it,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
-  cdl:{title:'Transportation & Logistics • CDL Workplace Skills Challenge',src:links.cdl,topic:'index.html',note:'Experience the work, test your judgment, and capture what the experience tells you.',industry:true},
-  investment:{title:'Career Investment Explorer',src:links.investment,topic:'index.html',note:'Bring your evidence together and determine whether — and where — skill-gap closure or training investment is justified.'}
+  module1:{title:'Module 1 — Career Direction',src:links.module1,note:'Discover career possibilities using your O*NET interests and regional opportunity.'},
+  module2:{title:'Module 2 — Career Reality Check',src:links.module2,note:'Your Module 1 career and interest evidence carries forward here.'},
+  module3:{title:'Module 3 — Career Mobility Exploration',src:links.module3,note:'Your validated careers carry forward so you can compare what you already bring and what may need development.'},
+  module4:{title:'Module 4 — Decide',src:links.module4,note:'Your Discover, Reality Check, and Mobility evidence carries forward into this decision.'},
+  module5:{title:'Module 5 — Skill Investment',src:links.investment,note:'Your selected career, validation, mobility evidence, and decision carry forward to determine whether skill investment is justified.'},
+  healthcare:{title:'Healthcare Workplace Skills Challenge',src:links.healthcare,note:'Experience the work and add applied evidence to your BOOST journey.',industry:true},
+  trades:{title:'Skilled Trades Workplace Skills Challenge',src:links.trades,note:'Experience the work and add applied evidence to your BOOST journey.',industry:true},
+  manufacturing:{title:'Advanced Manufacturing Workplace Skills Challenge',src:links.manufacturing,note:'Experience the work and add applied evidence to your BOOST journey.',industry:true},
+  it:{title:'Information Technology Workplace Skills Challenge',src:links.it,note:'Experience the work and add applied evidence to your BOOST journey.',industry:true},
+  cdl:{title:'Transportation & Logistics • CDL Workplace Skills Challenge',src:links.cdl,note:'Experience the work and add applied evidence to your BOOST journey.',industry:true}
 };
-const q=new URLSearchParams(location.search),m=q.get('m')||'module1',c=cfg[m]||cfg.module1;
+const q=new URLSearchParams(location.search);
+const raw=q.get('m')||'module1';
+const m=raw==='investment'?'module5':raw;
+const c=cfg[m]||cfg.module1;
+const requestedModule=q.get('boost_module')||(c.industry?'industry-'+m:m);
+const returnUrl=q.get('boost_return')||'index.html';
+const receipt=q.get('boost_nonce')||'';
+const frame=document.getElementById('activityFrame');
+const finishBtn=document.getElementById('finishBtn');
+
 document.title=c.title+' | BOOST';
 document.getElementById('activityTitle').textContent=c.title;
 document.getElementById('moduleNote').textContent=c.note||'';
-document.getElementById('backTopic').href=c.topic;
-document.getElementById('backTopic').textContent=c.topic==='index.html'?'← Back to BOOST Map':'← Back to Topic';
-const frame=document.getElementById('activityFrame');frame.src=c.src;
-document.getElementById('externalBtn').href=c.src;
-if(c.finishLabel)document.getElementById('finishBtn').textContent=c.finishLabel;
+document.getElementById('externalBtn').href=c.src||'#';
 
-function cleanChoice(t){return String(t||'').replace(/\s*[•·].*$/,'').replace(/\s+Remove\s*$/i,'').replace(/^\d+\.\s*/,'').trim()}
-function extractSafeEvidence(){
-  const evidence={module:m};
-  try{
-    const d=frame.contentDocument;if(!d)return evidence;
-    if(m==='module1'){
-      const scores={};['R','I','A','S','E','C'].forEach(k=>{const el=d.getElementById(k);if(el&&el.value!=='')scores[k]=Number(el.value)});
-      evidence.interestScores=scores;
-      const choices=[...d.querySelectorAll('#selected .choice')].map(x=>cleanChoice(x.textContent)).filter(Boolean);
-      const careers=[];
-      [...d.querySelectorAll('.card')].forEach(card=>{const cb=card.querySelector('input[type="checkbox"]');if(!cb?.checked)return;const title=card.querySelector('h3')?.textContent?.trim();if(!title)return;careers.push({title,h3:card.querySelector('.tag.h3')?.textContent?.trim()||'',sector:card.querySelector('.tag.priority')?.textContent?.trim()||card.querySelector('.tag')?.textContent?.trim()||''})});
-      const byTitle=new Map(careers.map(x=>[x.title,x]));
-      evidence.careers=choices.map(title=>byTitle.get(title)||{title}).filter(x=>x.title);
-      if(!evidence.careers.length)evidence.careers=careers;
-      evidence.primaryCareer=evidence.careers[0]?.title||'';
-      evidence.h3Status=evidence.careers[0]?.h3||'';
-      evidence.topInterests=Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([code,score])=>({code,score}));
-    }else{
-      const fields={};
-      d.querySelectorAll('select').forEach(el=>{const key=(el.id||el.name||'').toLowerCase();if(!/(career|occupation|soc|industry|sector|pathway|direction|decision)/.test(key))return;const opt=el.selectedOptions?.[0];if(el.value)fields[key]=opt?.textContent?.trim()||el.value});
-      if(Object.keys(fields).length)evidence.selectionFields=fields;
-    }
-  }catch(err){console.warn('BOOST carry-forward extraction unavailable',err)}
-  return evidence;
+function readJourney(){
+  if(window.PinalBOOST?.get)return window.PinalBOOST.get();
+  try{return JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')}catch(_){return{}}
+}
+function writeJourney(j){
+  if(window.PinalBOOST?.put)return window.PinalBOOST.put(j);
+  j.region='Pinal County';j.updated_at=new Date().toISOString();
+  localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));return j;
+}
+function titleOf(x){return typeof x==='string'?x:(x?.title||x?.careerTitle||x?.occupation||'')}
+function socOf(x){return typeof x==='object'?(x?.soc||x?.socCode||''):''}
+function previousCareers(j){
+  const mods=j?.modules||{};
+  if(m==='module2')return mods.module1?.careers||[];
+  if(m==='module3')return mods.module2?.careers||mods.module1?.careers||[];
+  if(m==='module4')return mods.module3?.careers||mods.module2?.careers||mods.module1?.careers||[];
+  if(m==='module5'){
+    const picked=mods.module4?.career||mods.module4?.selectedCareer||mods.module4?.decision?.career;
+    if(picked)return [picked];
+    return mods.module3?.careers||mods.module2?.careers||mods.module1?.careers||[];
+  }
+  return [];
 }
 function carrySummary(j){
-  const m1=j?.modules?.module1||{};const cs=(m1.careers||[]).map(x=>typeof x==='string'?x:x.title).filter(Boolean);
-  const h3=(m1.careers||[]).map(x=>typeof x==='object'&&x.h3?`${x.title}: ${x.h3}`:'').filter(Boolean);
+  const mods=j?.modules||{},careers=previousCareers(j).map(titleOf).filter(Boolean).slice(0,4);
   const completed=Object.entries(j?.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k);
-  let html='<strong>BOOST is carrying forward:</strong> ';
-  if(cs.length)html+='Careers: '+cs.join(', ')+'. ';
-  if(h3.length)html+='H3: '+h3.join(' • ')+'. ';
-  if(completed.length)html+='Completed: '+completed.join(', ')+'.';
-  if(!cs.length&&!completed.length)html+='Your structured career evidence will appear here as you complete the journey.';
-  return html;
+  const decision=mods.module4?.participantDirection||mods.module4?.decision?.code||mods.module4?.direction||'';
+  let parts=[];
+  if(careers.length)parts.push('Career evidence: '+careers.join(', '));
+  if(decision)parts.push('Decision: '+decision);
+  if(completed.length)parts.push('Completed: '+completed.join(', '));
+  return '<strong>BOOST carried forward your prior evidence.</strong> '+(parts.join(' • ')||'Your saved journey will build as you complete each step.');
+}
+function setValue(d,id,value){const el=d.getElementById(id);if(!el||value==null||value==='')return false;el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return true}
+function applyCarryForward(){
+  try{
+    const d=frame.contentDocument,w=frame.contentWindow,j=readJourney(),mods=j.modules||{};
+    if(!d)return;
+    if(m==='module2'){
+      const r=mods.module1?.interestScores||{};['R','I','A','S','E','C'].forEach(k=>setValue(d,k,r[k]));
+      previousCareers(j).slice(0,3).forEach((career,i)=>{const n=i+1,title=titleOf(career),soc=socOf(career);setValue(d,'c'+n,title);setValue(d,'c'+n+'soc',soc);});
+    }
+    if(m==='module3'){
+      const cs=previousCareers(j);if(cs[0]){setValue(d,'primaryQuery',titleOf(cs[0]));setValue(d,'primarySoc',socOf(cs[0]));}if(cs[1]){setValue(d,'secondaryQuery',titleOf(cs[1]));setValue(d,'secondarySoc',socOf(cs[1]));}
+      try{if(typeof w.applyHandoffToInputs==='function')w.applyHandoffToInputs()}catch(_){}
+    }
+    if(m==='module4'){
+      const cs=previousCareers(j),first=cs[0]||{};['career','careerTitle','targetCareer','targetOccupation','occupation'].forEach(id=>setValue(d,id,titleOf(first)));['careerSoc','targetSoc','soc'].forEach(id=>setValue(d,id,socOf(first)));
+      const m2=mods.module2?.careers?.[0]||{},m3=mods.module3?.careers?.[0]||{};
+      setValue(d,'jobs',m2.jobsInterpretation);setValue(d,'wageFit',m2.wagesInterpretation);setValue(d,'lifeFit',m2.lifeInterpretation);setValue(d,'mobility',m3.mobilityPath);setValue(d,'currentOcc',mods.module3?.startingPoint?.title||mods.module3?.startingPoint?.occupation||'');
+    }
+    if(m==='module5'){
+      const cs=previousCareers(j),first=cs[0]||{};
+      d.querySelectorAll('input,select,textarea').forEach(el=>{const key=(el.id||el.name||'').toLowerCase();if(!el.value&&/(career|occupation|target)/.test(key)&&!/(cost|wage|amount)/.test(key)){el.value=titleOf(first);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}});
+    }
+  }catch(e){console.warn('BOOST carry-forward prefill unavailable',e)}
 }
 function injectConnectedUI(){
   try{
     const d=frame.contentDocument;if(!d||d.getElementById('pinalConnectedCarry'))return;
     const style=d.createElement('style');style.textContent='#pinalConnectedCarry{position:relative;z-index:2147480000;margin:0;padding:11px 15px;background:#eaf4f7;border-bottom:3px solid #e4a72b;color:#17324d;font:700 13px/1.45 Arial,sans-serif}#pinalConnectedMap{position:fixed;right:16px;bottom:16px;z-index:2147483000;padding:11px 15px;border-radius:999px;background:#0d2741;color:#fff;text-decoration:none;font:900 13px Arial,sans-serif;box-shadow:0 10px 25px #0005;border:2px solid #fff8}';d.head.appendChild(style);
-    const bar=d.createElement('div');bar.id='pinalConnectedCarry';bar.innerHTML=carrySummary(window.PinalBOOST?.get?.()||{});d.body.insertBefore(bar,d.body.firstChild);
+    const bar=d.createElement('div');bar.id='pinalConnectedCarry';bar.innerHTML=carrySummary(readJourney());d.body.insertBefore(bar,d.body.firstChild);
     const a=d.createElement('a');a.id='pinalConnectedMap';a.href='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';a.target='_top';a.textContent='My Journey Map';d.body.appendChild(a);
   }catch(e){console.warn('Connected BOOST panel could not be injected',e)}
 }
-frame.addEventListener('load',()=>{setTimeout(injectConnectedUI,250)});
-
-document.getElementById('finishBtn').addEventListener('click',async()=>{
+function cleanChoice(t){return String(t||'').replace(/\s*[•·].*$/,'').replace(/\s+Remove\s*$/i,'').replace(/^\d+\.\s*/,'').trim()}
+function genericFields(d){
+  const fields={};d.querySelectorAll('input,select,textarea').forEach(el=>{if(el.type==='password'||el.type==='hidden')return;const key=(el.id||el.name||'').trim();if(!key)return;if(el.type==='checkbox'||el.type==='radio'){if(el.checked)(fields[key]||(fields[key]=[])).push(el.value||true);return}const value=el.value?.trim?.()??el.value;if(value!==''&&value!=null&&String(value).length<2000)fields[key]=value});return fields;
+}
+function extractSafeEvidence(){
+  const evidence={module:m,source:'pinal_connected_activity',capturedAt:new Date().toISOString()};
+  try{
+    const d=frame.contentDocument,w=frame.contentWindow;if(!d)return evidence;
+    if(m==='module1'){
+      const scores={};['R','I','A','S','E','C'].forEach(k=>{const el=d.getElementById(k);if(el&&el.value!=='')scores[k]=Number(el.value)});evidence.interestScores=scores;
+      const choices=[...d.querySelectorAll('#selected .choice')].map(x=>cleanChoice(x.textContent)).filter(Boolean);
+      const careers=[];[...d.querySelectorAll('.card')].forEach(card=>{const cb=card.querySelector('input[type="checkbox"]');if(!cb?.checked)return;const title=card.querySelector('h3')?.textContent?.trim();if(!title)return;careers.push({title,soc:cb.dataset?.soc||cb.value||card.dataset?.soc||'',h3:card.querySelector('.tag.h3')?.textContent?.trim()||'',sector:card.querySelector('.tag.priority')?.textContent?.trim()||card.querySelector('.tag')?.textContent?.trim()||''})});
+      const byTitle=new Map(careers.map(x=>[x.title,x]));evidence.careers=choices.map(title=>byTitle.get(title)||{title}).filter(x=>x.title);if(!evidence.careers.length)evidence.careers=careers;evidence.primaryCareer=evidence.careers[0]?.title||'';evidence.h3Status=evidence.careers[0]?.h3||'';evidence.topInterests=Object.entries(scores).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([code,score])=>({code,score}));
+    }else if(m==='module2'){
+      try{if(typeof w.getCareerSummaries==='function')evidence.careers=w.getCareerSummaries()}catch(_){}
+      evidence.fields=genericFields(d);if(!evidence.careers)evidence.careers=[];
+    }else if(m==='module3'){
+      evidence.fields=genericFields(d);evidence.careers=[];['primary','secondary'].forEach(prefix=>{const title=d.getElementById(prefix+'Query')?.value||'',soc=d.getElementById(prefix+'Soc')?.value||'';if(title)evidence.careers.push({title,soc})});
+      const report=d.getElementById('reportSection');if(report&&!report.classList.contains('hidden'))evidence.reportCreated=true;
+    }else if(m==='module4'){
+      if(w.BOOST_MODULE4)evidence.decision=w.BOOST_MODULE4;
+      evidence.fields=genericFields(d);const dec=evidence.decision||{};evidence.career=dec.module1?.target||dec.career||null;evidence.participantDirection=dec.decision?.code||dec.participant?.direction||evidence.fields.direction||'';
+    }else if(m==='module5'){
+      evidence.fields=genericFields(d);const j=readJourney();evidence.forwardContext={module1:j.modules?.module1||null,module2:j.modules?.module2||null,module3:j.modules?.module3||null,module4:j.modules?.module4||null};evidence.primaryCareer=titleOf(previousCareers(j)[0]||'');
+      const text=(d.body?.innerText||'').toLowerCase();evidence.summaryVisible=/investment|training|skill gap|recommendation|summary|plan/.test(text);
+    }else{
+      evidence.fields=genericFields(d);evidence.appliedExperience=true;
+    }
+  }catch(err){console.warn('BOOST carry-forward extraction unavailable',err)}
+  return evidence;
+}
+function completionOkay(evidence){
+  try{
+    const d=frame.contentDocument,w=frame.contentWindow;
+    if(m==='module1')return Object.keys(evidence.interestScores||{}).length===6&&(evidence.careers||[]).length>0;
+    if(m==='module2'&&typeof w.isModule2Complete==='function')return !!w.isModule2Complete();
+    if(m==='module2')return (evidence.careers||[]).filter(x=>x?.tested!==false).length>=2||Object.keys(evidence.fields||{}).length>=8;
+    if(m==='module3')return !!evidence.reportCreated||!d.getElementById('reportSection')?.classList.contains('hidden');
+    if(m==='module4')return !!w.BOOST_MODULE4||!!evidence.participantDirection;
+    if(m==='module5')return Object.keys(evidence.fields||{}).length>=3||!!evidence.summaryVisible;
+    return Object.keys(evidence.fields||{}).length>=1;
+  }catch(_){return false}
+}
+function saveEvidence(evidence){
+  if(window.PinalBOOST?.captureModule)return window.PinalBOOST.captureModule(requestedModule,evidence);
+  const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};j.modules[requestedModule]=Object.assign({},j.modules[requestedModule]||{},evidence,{completedAt:new Date().toISOString()});j.progress[requestedModule]='complete';writeJourney(j);return j;
+}
+async function finish(){
   const evidence=extractSafeEvidence();
-  if(window.PinalBOOST){window.PinalBOOST.captureModule(m,evidence);await window.PinalBOOST.save();}
-  BOOSTPortal.markComplete(m);
-  location.href='index.html';
-});
-</script>
-<script>
-(function(){
- const incoming=new URLSearchParams(location.search);
- const names=['boost_return','boost_module','boost_nonce'];
- if(!names.every(name=>incoming.get(name)))return;
- document.querySelectorAll('a[href]').forEach(a=>{
-   let u;try{u=new URL(a.href,location.href)}catch(_){return}
-   if(u.origin!==location.origin||u.pathname.includes('/BOOST_Pathway-Portal/'))return;
-   names.forEach(name=>u.searchParams.set(name,incoming.get(name)));
-   a.href=u.toString();
- });
-})();
+  if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
+  finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
+  saveEvidence(evidence);
+  try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST cloud save did not finish before return',e)}
+  const target=new URL(returnUrl,location.href);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}
+  target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);location.assign(target.toString());
+}
+
+frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectConnectedUI()},250)});
+finishBtn.addEventListener('click',finish);
+frame.src=c.src;
 </script>
 </body>
 </html>
