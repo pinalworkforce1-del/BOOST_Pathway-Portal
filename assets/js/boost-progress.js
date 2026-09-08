@@ -5,6 +5,7 @@
   const REGION=cfg.region||"Pinal County";
   const MAP_KEY="boostPathwaysV29";
   const OLD_MAP_KEY="boostPathwaysV28";
+  const JOURNEY_KEY="pinal_boost_journey_v1";
   const NONCE_PREFIX="boost_completion_nonce:";
   const RETURN_FLAG="boost_complete";
   const SYNC_FLAG="boost_progress_synced";
@@ -34,6 +35,14 @@
     try{return JSON.parse(localStorage.getItem(MAP_KEY)||localStorage.getItem(OLD_MAP_KEY)||'{"pathway":null,"complete":{}}')}
     catch(_){return {pathway:null,complete:{}}}
   }
+  function journey(){
+    try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}
+    catch(_){return{}}
+  }
+  function hasPayload(moduleId){
+    const m=journey().modules?.[moduleId];
+    return !!(m&&typeof m==="object"&&Object.keys(m).length);
+  }
 
   function notify(message){
     if(window.BOOSTPortal?.toast)window.BOOSTPortal.toast(message);
@@ -54,20 +63,21 @@
       notify("Complete the previous BOOST module before continuing.");
       return false;
     }
-    if(moduleId.startsWith("industry-")&&!complete["m:module4"]){
-      notify("Complete Module 4 — Decide before starting your Industry Experience.");
+    if(previous&&!hasPayload(previous)){
+      notify("Your previous completion predates BOOST data sharing. Reopen and save the previous module once so its results can carry forward.");
       return false;
     }
+    if(moduleId.startsWith("industry-")){
+      if(!complete["m:module4"]){notify("Complete Module 4 — Decide before starting your Industry Experience.");return false;}
+      if(!hasPayload("module4")){notify("Reopen and save Module 4 once so its decision evidence can carry into your Industry Experience.");return false;}
+    }
     if(moduleId==="module5"){
-      if(!complete["m:module4"]){
-        notify("Complete Module 4 — Decide before opening Skill Investment.");
-        return false;
-      }
-      const industryDone=Object.entries(complete).some(([k,v])=>k.startsWith("i:")&&v===true);
-      if(!industryDone){
-        notify("Complete your selected Industry Experience before opening Skill Investment.");
-        return false;
-      }
+      if(!complete["m:module4"]){notify("Complete Module 4 — Decide before opening Skill Investment.");return false;}
+      if(!hasPayload("module4")){notify("Reopen and save Module 4 once so its decision evidence can carry into Skill Investment.");return false;}
+      const industryEntry=Object.entries(complete).find(([k,v])=>k.startsWith("i:")&&v===true);
+      if(!industryEntry){notify("Complete your selected Industry Experience before opening Skill Investment.");return false;}
+      const industryId="industry-"+industryEntry[0].slice(2);
+      if(!hasPayload(industryId)){notify("Your Industry Experience completion predates data sharing. Reopen and save that experience once so its evidence can carry into Skill Investment.");return false;}
     }
     return true;
   }
@@ -105,9 +115,7 @@
       destination=new URL("activity.html",location.href);
       destination.searchParams.set("m",activity);
       destination.searchParams.set("boost_source",new URL(href,location.href).toString());
-    }else{
-      destination=new URL(href,location.href);
-    }
+    }else destination=new URL(href,location.href);
     destination.searchParams.set("boost_return",returnUrl);
     destination.searchParams.set("boost_module",moduleId);
     destination.searchParams.set("boost_nonce",nonce);
@@ -130,6 +138,12 @@
       console.warn("BOOST completion return was not accepted because its session receipt did not match.");
       return false;
     }
+    if(!hasPayload(moduleId)){
+      history.replaceState({},"",clean.toString());
+      console.warn("BOOST completion return was not accepted because its journey evidence was not saved.");
+      notify("Your module results were not saved, so BOOST did not mark this step complete. Please reopen the module and save again.");
+      return false;
+    }
 
     const now=new Date().toISOString();
     const {error}=await c.from("boost_module_progress").upsert({
@@ -143,10 +157,7 @@
       updated_at:now
     },{onConflict:"user_id,region,module_id"});
 
-    if(error){
-      console.error("BOOST completion could not be saved:",error.message);
-      return false;
-    }
+    if(error){console.error("BOOST completion could not be saved:",error.message);return false;}
 
     try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after completion failed",e)}
     sessionStorage.removeItem(NONCE_PREFIX+moduleId);
@@ -155,41 +166,21 @@
   }
 
   async function syncValidatedProgress(c,session,forceReload){
-    const {data,error}=await c.from("boost_module_progress")
-      .select("module_id")
-      .eq("user_id",session.user.id)
-      .eq("region",REGION)
-      .eq("status","completed");
-
-    if(error){
-      console.error("BOOST validated progress could not be loaded:",error.message);
-      return;
-    }
-
-    const map=parseMap();
-    const next={};
+    const {data,error}=await c.from("boost_module_progress").select("module_id").eq("user_id",session.user.id).eq("region",REGION).eq("status","completed");
+    if(error){console.error("BOOST validated progress could not be loaded:",error.message);return;}
+    const map=parseMap(),next={};
     (data||[]).forEach(row=>{next[keyForModule(row.module_id)]=true});
-    const changed=JSON.stringify(map.complete||{})!==JSON.stringify(next);
-    map.complete=next;
-    localStorage.setItem(MAP_KEY,JSON.stringify(map));
-
+    const changed=JSON.stringify(map.complete||{})!==JSON.stringify(next);map.complete=next;localStorage.setItem(MAP_KEY,JSON.stringify(map));
     if((changed||forceReload)&&sessionStorage.getItem(SYNC_FLAG)!=="1"){
-      sessionStorage.setItem(SYNC_FLAG,"1");
-      location.reload();
-      return;
+      sessionStorage.setItem(SYNC_FLAG,"1");location.reload();return;
     }
     sessionStorage.removeItem(SYNC_FLAG);
   }
 
   async function boot(){
-    const c=getClient();
-    if(!c)return;
-    const {data}=await c.auth.getSession();
-    const session=data.session;
-    if(!session?.user)return;
-
-    const recorded=await recordReturn(c,session);
-    await syncValidatedProgress(c,session,recorded);
+    const c=getClient();if(!c)return;
+    const {data}=await c.auth.getSession();const session=data.session;if(!session?.user)return;
+    const recorded=await recordReturn(c,session);await syncValidatedProgress(c,session,recorded);
   }
 
   document.addEventListener("click",event=>{
@@ -197,8 +188,6 @@
     if(el)launchModule(el,event);
   },true);
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);
-  else boot();
-
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
   window.BOOSTValidatedProgress={refresh:boot};
 })();
