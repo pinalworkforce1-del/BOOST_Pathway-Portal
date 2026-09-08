@@ -122,6 +122,23 @@ function bindUserInteractions(){
     d.addEventListener('click',e=>{if(e.target?.closest?.('button,[role="button"]'))interactionCount++},true);
   }catch(_){}
 }
+function injectOnetProfilerStep(){
+  if(m!=='module1')return;
+  try{
+    const d=frame.contentDocument;if(!d||d.getElementById('boostOnetProfilerStart'))return;
+    const scorePanel=d.getElementById('onetEntry');if(!scorePanel)return;
+    const style=d.createElement('style');
+    style.textContent='#boostOnetProfilerStart{border:2px solid #cfe6e2;background:linear-gradient(135deg,#f5fbfa,#fff)}#boostOnetProfilerStart .onetLead{font-size:16px;line-height:1.55;color:#3f5669;max-width:900px}#boostOnetProfilerStart .onetHow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}#boostOnetProfilerStart .onetHow div{background:#fff;border:1px solid #dbe5ec;border-radius:12px;padding:12px;font-size:13px;line-height:1.45;color:#4f6375}#boostOnetProfilerStart .onetHow b{display:block;color:#17324d;margin-bottom:3px}.boostOnetBtn{display:inline-block;margin-top:4px;background:#0b3158;color:#fff!important;text-decoration:none;border-radius:11px;padding:14px 19px;font-weight:900;font-size:15px}.boostOnetBtn:hover,.boostOnetBtn:focus{background:#124a78;outline:3px solid rgba(22,140,135,.18)}#boostOnetProfilerStart .already{margin:13px 0 0;padding:10px 12px;border-radius:10px;background:#eef8f6;color:#176e69;font-size:13px;font-weight:800}@media(max-width:700px){#boostOnetProfilerStart .onetHow{grid-template-columns:1fr}}';
+    d.head.appendChild(style);
+    const panel=d.createElement('section');panel.className='panel';panel.id='boostOnetProfilerStart';
+    panel.innerHTML='<div class="step">Step 1</div><h2>Take the O*NET Interest Profiler</h2><p class="onetLead">If you have not already completed the O*NET Interest Profiler, do that first. It helps identify the kinds of work activities and environments that may interest you. BOOST will use your six interest scores as one piece of evidence — not as a test you can pass or fail.</p><div class="onetHow"><div><b>1. Open the profiler</b>Use the button below to open the official O*NET Interest Profiler in a new tab.</div><div><b>2. Complete the questions</b>Answer based on whether you would like or dislike doing the activity — not whether you already know how to do it.</div><div><b>3. Bring back your six scores</b>On your results screen, note the scores for Realistic, Investigative, Artistic, Social, Enterprising, and Conventional. Keep that results tab open and return to BOOST.</div></div><a class="boostOnetBtn" href="https://www.mynextmove.org/explore/ip" target="_blank" rel="noopener">TAKE THE O*NET INTEREST PROFILER ↗</a><p class="already">Already completed the profiler? Great — skip ahead to Step 2 and enter the six scores from your results.</p>';
+    scorePanel.parentNode.insertBefore(panel,scorePanel);
+    const scoreStep=scorePanel.querySelector('.step');if(scoreStep)scoreStep.textContent='Step 2';
+    const scoreTitle=scorePanel.querySelector('h2');if(scoreTitle)scoreTitle.textContent='Record your O*NET Interest Profiler scores';
+    const scoreSub=scorePanel.querySelector('.sub');if(scoreSub)scoreSub.textContent='Enter the six scores shown on your O*NET Interest Profiler results page. BOOST uses them to identify work that may appeal to you, then combines that preference signal with regional opportunity. Interest does not measure readiness, qualification, or training need.';
+    const results=d.getElementById('resultsPanel');const resultsStep=results?.querySelector('.step');if(resultsStep)resultsStep.textContent='Step 3';
+  }catch(e){console.warn('O*NET profiler guidance could not be inserted',e)}
+}
 function injectConnectedUI(){
   try{
     const d=frame.contentDocument;if(!d||d.getElementById('pinalConnectedCarry'))return;
@@ -186,7 +203,7 @@ async function finish(){
   target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);location.assign(target.toString());
 }
 
-frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
+frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
 finishBtn.addEventListener('click',finish);
 frame.src=c.src;
 </script>
