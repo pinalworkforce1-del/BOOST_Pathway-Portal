@@ -65,9 +65,8 @@
     if(!session||!session.user)return false;
     const meta=session.user.user_metadata||{};
     const name=[meta.first_name,meta.last_name].filter(Boolean).join(" ")||meta.full_name||"";
-    const cred=credentials();
     const payload=snapshot(name,session.user.email||"");
-    const result=await c.rpc("boost_save_journey",{p_journey_id:cred.id,p_access_token:cred.token,p_journey:payload});
+    const result=await c.rpc("boost_save_my_journey_for_region",{p_region:REGION,p_journey:payload});
     if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);return false}
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
