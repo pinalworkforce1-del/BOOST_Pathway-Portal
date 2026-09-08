@@ -10,7 +10,7 @@
  if(!names.every(name=>incoming.get(name)))return;
  document.querySelectorAll('a[href]').forEach(a=>{
    let u;try{u=new URL(a.href,location.href)}catch(_){return}
-   if(u.origin!==location.origin||u.pathname.includes('/BOOST_Pathway-Portal/'))return;
+   if(u.origin!==location.origin)return;if(u.pathname.endsWith('/BOOST_Pathway-Portal/')||u.pathname.endsWith('/BOOST_Pathway-Portal/index.html'))return;
    names.forEach(name=>u.searchParams.set(name,incoming.get(name)));
    a.href=u.toString();
  });
