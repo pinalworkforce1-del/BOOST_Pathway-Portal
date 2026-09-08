@@ -134,7 +134,11 @@
     const session=(await c.auth.getSession()).data.session;
     if(session&&session.user){
       if(hasLocalProgress())await saveNow();
-      else{const remote=await loadMine();if(remote&&restore(remote)){location.reload();return}}
+      else{
+        const remote=await loadMine();
+        if(remote&&restore(remote)){location.reload();return}
+        await saveNow();
+      }
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
