@@ -19,8 +19,34 @@ window.BOOST_LINKS = Object.freeze({
   try{
     const params=new URLSearchParams(location.search);
     if(!/activity\.html$/i.test(location.pathname)||params.get('m')!=='module3')return;
+
+    function getJourney(){
+      try{
+        if(window.PinalBOOST?.get)return window.PinalBOOST.get()||{};
+        return JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
+      }catch(_){return{}}
+    }
+
+    function carryOnetScores(frame){
+      try{
+        const d=frame.contentDocument;
+        if(!d)return 0;
+        const scores=getJourney()?.modules?.module1?.interestScores||{};
+        let loaded=0;
+        ['R','I','A','S','E','C'].forEach(k=>{
+          const el=d.getElementById(k),value=scores[k];
+          if(!el||value==null||value==='')return;
+          el.value=String(value);
+          el.dispatchEvent(new Event('input',{bubbles:true}));
+          el.dispatchEvent(new Event('change',{bubbles:true}));
+          loaded++;
+        });
+        return loaded;
+      }catch(e){console.warn('BOOST Module 3 O*NET carry-forward unavailable',e);return 0}
+    }
+
     const script=document.createElement('script');
-    script.src='assets/js/module3-customer.js?v=20260908b';
+    script.src='assets/js/module3-customer.js?v=20260908c';
     script.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Customer)return;
@@ -31,7 +57,8 @@ window.BOOST_LINKS = Object.freeze({
           if(title)title.textContent='Module 3 — Where Can My Experience Take Me?';
           if(note)note.textContent='See what you already bring, where it may have value now, and what you may want to build next.';
           document.title='Module 3 — Where Can My Experience Take Me? | BOOST';
-          window.BOOSTModule3Customer.inject(frame,()=>window.PinalBOOST?.get?.()||{});
+          carryOnetScores(frame);
+          window.BOOSTModule3Customer.inject(frame,getJourney);
         }catch(e){console.warn('BOOST Module 3 customer experience unavailable',e)}
       },350);
       frame.addEventListener('load',apply);
