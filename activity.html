@@ -51,6 +51,7 @@ const returnUrl=q.get('boost_return')||'index.html';
 const receipt=q.get('boost_nonce')||'';
 const frame=document.getElementById('activityFrame');
 const finishBtn=document.getElementById('finishBtn');
+let interactionCount=0;
 
 document.title=c.title+' | BOOST';
 document.getElementById('activityTitle').textContent=c.title;
@@ -114,6 +115,13 @@ function applyCarryForward(){
     }
   }catch(e){console.warn('BOOST carry-forward prefill unavailable',e)}
 }
+function bindUserInteractions(){
+  try{
+    const d=frame.contentDocument;if(!d||d.__boostInteractionBound)return;d.__boostInteractionBound=true;
+    d.addEventListener('change',e=>{if(e.target?.matches?.('input,select,textarea'))interactionCount++},true);
+    d.addEventListener('click',e=>{if(e.target?.closest?.('button,[role="button"]'))interactionCount++},true);
+  }catch(_){}
+}
 function injectConnectedUI(){
   try{
     const d=frame.contentDocument;if(!d||d.getElementById('pinalConnectedCarry'))return;
@@ -145,10 +153,9 @@ function extractSafeEvidence(){
       if(w.BOOST_MODULE4)evidence.decision=w.BOOST_MODULE4;
       evidence.fields=genericFields(d);const dec=evidence.decision||{};evidence.career=dec.module1?.target||dec.career||null;evidence.participantDirection=dec.decision?.code||dec.participant?.direction||evidence.fields.direction||'';
     }else if(m==='module5'){
-      evidence.fields=genericFields(d);const j=readJourney();evidence.forwardContext={module1:j.modules?.module1||null,module2:j.modules?.module2||null,module3:j.modules?.module3||null,module4:j.modules?.module4||null};evidence.primaryCareer=titleOf(previousCareers(j)[0]||'');
-      const text=(d.body?.innerText||'').toLowerCase();evidence.summaryVisible=/investment|training|skill gap|recommendation|summary|plan/.test(text);
+      evidence.fields=genericFields(d);const j=readJourney();evidence.forwardContext={module1:j.modules?.module1||null,module2:j.modules?.module2||null,module3:j.modules?.module3||null,module4:j.modules?.module4||null};evidence.primaryCareer=titleOf(previousCareers(j)[0]||'');evidence.interactionCount=interactionCount;
     }else{
-      evidence.fields=genericFields(d);evidence.appliedExperience=true;
+      evidence.fields=genericFields(d);evidence.appliedExperience=true;evidence.interactionCount=interactionCount;
     }
   }catch(err){console.warn('BOOST carry-forward extraction unavailable',err)}
   return evidence;
@@ -159,10 +166,10 @@ function completionOkay(evidence){
     if(m==='module1')return Object.keys(evidence.interestScores||{}).length===6&&(evidence.careers||[]).length>0;
     if(m==='module2'&&typeof w.isModule2Complete==='function')return !!w.isModule2Complete();
     if(m==='module2')return (evidence.careers||[]).filter(x=>x?.tested!==false).length>=2||Object.keys(evidence.fields||{}).length>=8;
-    if(m==='module3')return !!evidence.reportCreated||!d.getElementById('reportSection')?.classList.contains('hidden');
+    if(m==='module3'){const report=d.getElementById('reportSection');return !!evidence.reportCreated||!!(report&&!report.classList.contains('hidden'));}
     if(m==='module4')return !!w.BOOST_MODULE4||!!evidence.participantDirection;
-    if(m==='module5')return Object.keys(evidence.fields||{}).length>=3||!!evidence.summaryVisible;
-    return Object.keys(evidence.fields||{}).length>=1;
+    if(m==='module5')return interactionCount>=3&&Object.keys(evidence.fields||{}).length>=3;
+    return interactionCount>=1&&Object.keys(evidence.fields||{}).length>=1;
   }catch(_){return false}
 }
 function saveEvidence(evidence){
@@ -179,7 +186,7 @@ async function finish(){
   target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);location.assign(target.toString());
 }
 
-frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectConnectedUI()},250)});
+frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
 finishBtn.addEventListener('click',finish);
 frame.src=c.src;
 </script>
