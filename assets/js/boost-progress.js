@@ -14,6 +14,7 @@
 
   function getClient(){
     if(client)return client;
+    if(window.PinalBOOSTCloud?.getClient){client=window.PinalBOOSTCloud.getClient();return client}
     if(!cfg.supabaseUrl||!cfg.supabaseAnonKey||!window.supabase?.createClient)return null;
     client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{
       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
