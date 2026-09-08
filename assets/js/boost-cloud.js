@@ -6,10 +6,11 @@
   const MAP_OLD_KEY="boostPathwaysV28";
   const COMPLETED_KEY="boostPortalCompleted_v2";
   const PATH_KEY="boostPortalPathway_v2";
+  const JOURNEY_KEY="pinal_boost_journey_v1";
   const JOURNEY_ID_KEY="boost_pinal_cloud_journey_id";
   const TOKEN_KEY="boost_pinal_cloud_access_token";
   const DEVICE_KEY="boost_pinal_device_only_mode";
-  const WATCHED=new Set([MAP_KEY,MAP_OLD_KEY,COMPLETED_KEY,PATH_KEY]);
+  const WATCHED=new Set([MAP_KEY,MAP_OLD_KEY,COMPLETED_KEY,PATH_KEY,JOURNEY_KEY]);
   const originalSetItem=Storage.prototype.setItem;
   let client=null,saveTimer=null,saving=false,pending=false;
 
@@ -34,26 +35,47 @@
     if(!token){token=randomToken();originalSetItem.call(localStorage,TOKEN_KEY,token)}
     return {id,token};
   }
+  function readJourney(){
+    try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||"{}")||{}}catch(e){return{}}
+  }
   function hasLocalProgress(){
     const map=parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}");
     const completed=parse(COMPLETED_KEY,"[]");
-    return !!(map.pathway||Object.keys(map.complete||{}).length||completed.length||localStorage.getItem(PATH_KEY));
+    const journey=readJourney();
+    return !!(map.pathway||Object.keys(map.complete||{}).length||completed.length||localStorage.getItem(PATH_KEY)||Object.keys(journey.modules||{}).length||Object.keys(journey.progress||{}).length);
+  }
+  function mergeJourney(base,overlay){
+    base=base&&typeof base==="object"?base:{};overlay=overlay&&typeof overlay==="object"?overlay:{};
+    return Object.assign({},base,overlay,{
+      participant:Object.assign({},base.participant||{},overlay.participant||{}),
+      portal:Object.assign({},base.portal||{},overlay.portal||{}),
+      progress:Object.assign({},base.progress||{},overlay.progress||{}),
+      modules:Object.assign({},base.modules||{},overlay.modules||{})
+    });
   }
   function snapshot(name,email){
-    return {
-      schema_version:1,
+    const existing=readJourney();
+    const participant=Object.assign({},existing.participant||{});
+    if(name)participant.name=name;
+    if(email)participant.email=String(email).toLowerCase();
+    return mergeJourney(existing,{
+      schema_version:2,
       region:REGION,
-      participant:{name:name||"",email:(email||"").toLowerCase()},
+      participant,
       portal:{
         map:parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}"),
         completed:parse(COMPLETED_KEY,"[]"),
         pathway:localStorage.getItem(PATH_KEY)||""
       },
       updated_at:new Date().toISOString()
-    };
+    });
   }
   function restore(journey){
-    const p=journey&&journey.portal;if(!p)return false;
+    if(!journey||typeof journey!=="object")return false;
+    const local=readJourney();
+    const merged=mergeJourney(journey,local);
+    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(merged));
+    const p=merged.portal||{};
     if(p.map)originalSetItem.call(localStorage,MAP_KEY,JSON.stringify(p.map));
     if(Array.isArray(p.completed))originalSetItem.call(localStorage,COMPLETED_KEY,JSON.stringify(p.completed));
     if(p.pathway)originalSetItem.call(localStorage,PATH_KEY,p.pathway);
@@ -64,8 +86,9 @@
     const session=(await c.auth.getSession()).data.session;
     if(!session||!session.user)return false;
     const meta=session.user.user_metadata||{};
-    const name=[meta.first_name,meta.last_name].filter(Boolean).join(" ")||meta.full_name||"";
-    const payload=snapshot(name,session.user.email||"");
+    const name=[meta.first_name,meta.last_name].filter(Boolean).join(" ")||meta.full_name||readJourney().participant?.name||"";
+    const payload=snapshot(name,session.user.email||readJourney().participant?.email||"");
+    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(payload));
     const result=await c.rpc("boost_save_my_journey_for_region",{p_region:REGION,p_journey:payload});
     if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);return false}
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
@@ -132,15 +155,12 @@
     const c=getClient();
     const session=(await c.auth.getSession()).data.session;
     if(session&&session.user){
-      if(hasLocalProgress())await saveNow();
-      else{
-        const remote=await loadMine();
-        if(remote&&restore(remote)){location.reload();return}
-        await saveNow();
-      }
+      const remote=await loadMine();
+      if(remote){restore(remote);await saveNow();}
+      else await saveNow();
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
-  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine};
+  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore};
   bootstrap();
 })();
