@@ -8,6 +8,8 @@
   const NONCE_PREFIX="boost_completion_nonce:";
   const RETURN_FLAG="boost_complete";
   const SYNC_FLAG="boost_progress_synced";
+  const CORE_WRAPPED=new Set(["module1","module2","module3","module4","module5"]);
+  const CORE_PREVIOUS={module2:"module1",module3:"module2",module4:"module3"};
   let client=null;
 
   const keyForModule=id=>id.startsWith("industry-")?"i:"+id.slice(9):"m:"+id;
@@ -28,16 +30,63 @@
     return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
   }
 
+  function parseMap(){
+    try{return JSON.parse(localStorage.getItem(MAP_KEY)||localStorage.getItem(OLD_MAP_KEY)||'{"pathway":null,"complete":{}}')}
+    catch(_){return {pathway:null,complete:{}}}
+  }
+
+  function notify(message){
+    if(window.BOOSTPortal?.toast)window.BOOSTPortal.toast(message);
+    else alert(message);
+  }
+
+  function moduleIdFor(el){
+    if(el.hasAttribute("data-investment-card"))return "module5";
+    return el.dataset.moduleId
+      ||(el.dataset.industryId?"industry-"+el.dataset.industryId:null)
+      ||(el.hasAttribute("data-career-skillmobility")?"industry-skillmobility":null);
+  }
+
+  function prerequisitesMet(moduleId){
+    const map=parseMap(),complete=map.complete||{};
+    const previous=CORE_PREVIOUS[moduleId];
+    if(previous&&!complete[keyForModule(previous)]){
+      notify("Complete the previous BOOST module before continuing.");
+      return false;
+    }
+    if(moduleId.startsWith("industry-")&&!complete["m:module4"]){
+      notify("Complete Module 4 — Decide before starting your Industry Experience.");
+      return false;
+    }
+    if(moduleId==="module5"){
+      if(!complete["m:module4"]){
+        notify("Complete Module 4 — Decide before opening Skill Investment.");
+        return false;
+      }
+      const industryDone=Object.entries(complete).some(([k,v])=>k.startsWith("i:")&&v===true);
+      if(!industryDone){
+        notify("Complete your selected Industry Experience before opening Skill Investment.");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function wrappedActivity(moduleId){
+    if(CORE_WRAPPED.has(moduleId))return moduleId;
+    if(moduleId.startsWith("industry-")&&moduleId!=="industry-skillmobility")return moduleId.slice(9);
+    return null;
+  }
+
   function launchModule(el,event){
     const href=el.getAttribute("href");
     if(!href||href==="#"||el.dataset.coming)return;
-    const moduleId=el.dataset.moduleId
-      ||(el.dataset.industryId?"industry-"+el.dataset.industryId:null)
-      ||(el.hasAttribute("data-career-skillmobility")?"industry-skillmobility":null);
+    const moduleId=moduleIdFor(el);
     if(!moduleId)return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
+    if(!prerequisitesMet(moduleId))return;
 
     const nonce=randomNonce();
     sessionStorage.setItem(NONCE_PREFIX+moduleId,nonce);
@@ -47,17 +96,22 @@
       map.pathway=el.dataset.setPathway;
       localStorage.setItem(MAP_KEY,JSON.stringify(map));
     }
+    if(moduleId==="module5")localStorage.setItem("boostPortalPathway_v2","career");
 
-    const destination=new URL(href,location.href);
-    destination.searchParams.set("boost_return",location.origin+location.pathname);
+    const returnUrl=location.origin+location.pathname;
+    const activity=wrappedActivity(moduleId);
+    let destination;
+    if(activity){
+      destination=new URL("activity.html",location.href);
+      destination.searchParams.set("m",activity);
+      destination.searchParams.set("boost_source",new URL(href,location.href).toString());
+    }else{
+      destination=new URL(href,location.href);
+    }
+    destination.searchParams.set("boost_return",returnUrl);
     destination.searchParams.set("boost_module",moduleId);
     destination.searchParams.set("boost_nonce",nonce);
     location.assign(destination.toString());
-  }
-
-  function parseMap(){
-    try{return JSON.parse(localStorage.getItem(MAP_KEY)||localStorage.getItem(OLD_MAP_KEY)||'{"pathway":null,"complete":{}}')}
-    catch(_){return {pathway:null,complete:{}}}
   }
 
   async function recordReturn(c,session){
@@ -77,15 +131,16 @@
       return false;
     }
 
+    const now=new Date().toISOString();
     const {error}=await c.from("boost_module_progress").upsert({
       user_id:session.user.id,
       region:REGION,
       module_id:moduleId,
-      pathway:moduleId==="module1"?"shared":(localStorage.getItem("boostPortalPathway_v2")||null),
+      pathway:moduleId==="module1"?"shared":(moduleId.startsWith("industry-")||moduleId==="module5"?"career":(localStorage.getItem("boostPortalPathway_v2")||null)),
       status:"completed",
-      evidence:{source:"module_completion_return",version:1},
-      completed_at:new Date().toISOString(),
-      updated_at:new Date().toISOString()
+      evidence:{source:"module_completion_return",version:2,journey_payload_saved:true},
+      completed_at:now,
+      updated_at:now
     },{onConflict:"user_id,region,module_id"});
 
     if(error){
@@ -93,6 +148,7 @@
       return false;
     }
 
+    try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after completion failed",e)}
     sessionStorage.removeItem(NONCE_PREFIX+moduleId);
     history.replaceState({},"",clean.toString());
     return true;
@@ -137,7 +193,7 @@
   }
 
   document.addEventListener("click",event=>{
-    const el=event.target.closest("[data-module-id], [data-industry-id], [data-career-skillmobility]");
+    const el=event.target.closest("[data-module-id], [data-industry-id], [data-career-skillmobility], [data-investment-card]");
     if(el)launchModule(el,event);
   },true);
 
