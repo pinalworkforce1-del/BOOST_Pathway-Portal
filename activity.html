@@ -103,5 +103,18 @@ document.getElementById('finishBtn').addEventListener('click',async()=>{
   location.href='index.html';
 });
 </script>
+<script>
+(function(){
+ const incoming=new URLSearchParams(location.search);
+ const names=['boost_return','boost_module','boost_nonce'];
+ if(!names.every(name=>incoming.get(name)))return;
+ document.querySelectorAll('a[href]').forEach(a=>{
+   let u;try{u=new URL(a.href,location.href)}catch(_){return}
+   if(u.origin!==location.origin||u.pathname.includes('/BOOST_Pathway-Portal/'))return;
+   names.forEach(name=>u.searchParams.set(name,incoming.get(name)));
+   a.href=u.toString();
+ });
+})();
+</script>
 </body>
 </html>
