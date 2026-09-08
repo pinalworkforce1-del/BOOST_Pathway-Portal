@@ -39,4 +39,17 @@
   <span class="complete-badge">✓</span>
 </a>
 <a class="hotspot" style="left:69.5%;top:1.4%;width:29.4%;height:22.5%" href="#" data-coming="Optional Module 2 video / TED Talk / labor-market resource" aria-label="Optional Module 2 supporting resource"><span class="hotspot-label">Optional Supporting Resource</span></a>
-</div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script></body></html>
+</div></div></main><div class="toast"></div><script src="../assets/js/config.js"></script><script src="../assets/js/portal.js"></script><script>
+(function(){
+ const incoming=new URLSearchParams(location.search);
+ const names=['boost_return','boost_module','boost_nonce'];
+ if(!names.every(name=>incoming.get(name)))return;
+ document.querySelectorAll('a[href]').forEach(a=>{
+   let u;try{u=new URL(a.href,location.href)}catch(_){return}
+   if(u.origin!==location.origin||u.pathname.includes('/BOOST_Pathway-Portal/'))return;
+   names.forEach(name=>u.searchParams.set(name,incoming.get(name)));
+   a.href=u.toString();
+ });
+})();
+</script>
+</body></html>
