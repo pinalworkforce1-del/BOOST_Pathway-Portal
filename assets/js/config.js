@@ -15,6 +15,84 @@ window.BOOST_LINKS = Object.freeze({
   onet: 'https://www.mynextmove.org/explore/ip'
 });
 
+(function wirePinalModule2CompletionRepair(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(!/activity\.html$/i.test(location.pathname)||params.get('m')!=='module2')return;
+    const frame=document.getElementById('activityFrame');
+    const finish=document.getElementById('finishBtn');
+    if(!frame||!finish)return;
+
+    function sharedState(){
+      try{return JSON.parse(localStorage.getItem('pinal_boost_career_exploration_v1')||'{}')||{}}
+      catch(_){return{}}
+    }
+    function value(el){return String(el?.value||'').trim()}
+    function liveRealityCheck(){
+      try{
+        const d=frame.contentDocument;if(!d)return null;
+        const cards=[...d.querySelectorAll('.career[data-soc]')];
+        if(!cards.length)return null;
+        const required=['jobs','wages','prep','employerSupport','life','future'];
+        const validationBySoc={};
+        let complete=true;
+        cards.forEach(card=>{
+          const soc=card.dataset.soc||'';
+          const row={};
+          card.querySelectorAll('[data-field]').forEach(el=>row[el.dataset.field]=value(el));
+          validationBySoc[soc]=row;
+          if(!required.every(k=>value(card.querySelector(`[data-field="${k}"]`))))complete=false;
+        });
+        return{complete,validationBySoc,cards};
+      }catch(e){console.warn('BOOST Module 2 live completion check unavailable',e);return null}
+    }
+    function recoveredEvidence(live){
+      const s=sharedState(),selected=s?.module1?.selected||[];
+      const saved=s?.module2?.validationBySoc||{};
+      const merged={...saved,...live.validationBySoc};
+      const careers=selected.map(o=>{
+        const v=merged[o.soc]||{};
+        return{
+          title:o.title||'',soc:o.soc||'',origin:o.origin||'Saved in Module 1',pathway:o.pathway||null,regional:o.regional||null,
+          jobsInterpretation:v.jobs||'',wagesInterpretation:v.wages||'',preparationReadiness:v.prep||'',employerSupport:v.employerSupport||'',lifeInterpretation:v.life||'',future:v.future||'',
+          entryWage:v.entryWage||null,preparationIntel:v.preparationIntel||null,validation:v
+        };
+      });
+      return{
+        module:'module2',source:'pinal_module2_saved_reality_check',capturedAt:new Date().toISOString(),
+        careers,validationBySoc:merged,intelligenceVersion:s?.module2?.intelligenceVersion||'QI-v1/BLS-baseline-v1',
+        originalModule2CompletedAt:s?.module2?.completedAt||null,recoveredSavedEvidence:true
+      };
+    }
+
+    finish.addEventListener('click',async event=>{
+      const live=liveRealityCheck();
+      if(!live?.complete)return;
+      event.preventDefault();event.stopImmediatePropagation();
+      finish.disabled=true;finish.textContent='Restoring Module 2 completion…';
+      try{
+        const evidence=recoveredEvidence(live);
+        if(window.PinalBOOST?.captureModule)window.PinalBOOST.captureModule('module2',evidence);
+        else{
+          const j=window.PinalBOOST?.get?.()||JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{};
+          j.modules=j.modules||{};j.progress=j.progress||{};j.modules.module2=Object.assign({},j.modules.module2||{},evidence,{completedAt:new Date().toISOString()});j.progress.module2='complete';
+          localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
+        }
+        try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST Module 2 recovery cloud save did not finish before return',e)}
+        const ret=params.get('boost_return')||'index.html',nonce=params.get('boost_nonce')||'';
+        const target=new URL(ret,location.href);
+        if(target.origin!==location.origin)throw new Error('Unsafe BOOST return URL');
+        target.searchParams.set('boost_complete','module2');if(nonce)target.searchParams.set('boost_nonce',nonce);
+        location.assign(target.toString());
+      }catch(e){
+        console.error('BOOST Module 2 completion recovery failed',e);
+        finish.disabled=false;finish.textContent='✓ Save Results & Return to BOOST';
+        window.BOOSTPortal?.toast?.('Your Module 2 answers are still saved, but BOOST could not restore the map completion yet. Please try the green button again.');
+      }
+    },true);
+  }catch(e){console.warn('BOOST Module 2 completion repair unavailable',e)}
+})();
+
 (function wirePinalModule3CustomerExperience(){
   try{
     const params=new URLSearchParams(location.search);
