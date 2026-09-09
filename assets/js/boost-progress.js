@@ -6,6 +6,7 @@
   const MAP_KEY="boostPathwaysV29";
   const OLD_MAP_KEY="boostPathwaysV28";
   const JOURNEY_KEY="pinal_boost_journey_v1";
+  const SHARED_CAREER_KEY="pinal_boost_career_exploration_v1";
   const NONCE_PREFIX="boost_completion_nonce:";
   const RETURN_FLAG="boost_complete";
   const SYNC_FLAG="boost_progress_synced";
@@ -37,6 +38,10 @@
   }
   function journey(){
     try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}
+    catch(_){return{}}
+  }
+  function sharedCareerState(){
+    try{return JSON.parse(localStorage.getItem(SHARED_CAREER_KEY)||'{}')||{}}
     catch(_){return{}}
   }
   function hasPayload(moduleId){
@@ -165,23 +170,54 @@
     return true;
   }
 
-  function module2SavedEvidenceIsComplete(){
-    const j=journey(),m=j.modules?.module2;
-    if(!m||typeof m!=="object")return false;
+  function completeValidationRows(rows){
     const required=["jobs","wages","prep","employerSupport","life","future"];
-    const rows=Object.values(m.validationBySoc||{}).filter(v=>v&&typeof v==="object");
-    if(rows.length&&rows.every(v=>required.every(k=>String(v[k]??"").trim())))return true;
-    const careers=(m.careers||[]).filter(v=>v&&typeof v==="object");
+    const list=Object.values(rows||{}).filter(v=>v&&typeof v==="object");
+    return !!(list.length&&list.every(v=>required.every(k=>String(v[k]??"").trim())));
+  }
+
+  function recoverableModule2Evidence(){
+    const j=journey(),jm=j.modules?.module2||{};
+    if(completeValidationRows(jm.validationBySoc))return {source:"journey",module2:jm,validationBySoc:jm.validationBySoc};
+    const careers=(jm.careers||[]).filter(v=>v&&typeof v==="object");
     if(careers.length&&careers.every(v=>[
       v.jobsInterpretation,v.wagesInterpretation,v.preparationReadiness,
       v.employerSupport,v.lifeInterpretation,v.future
-    ].every(x=>String(x??"").trim())))return true;
-    return false;
+    ].every(x=>String(x??"").trim())))return {source:"journey-careers",module2:jm,validationBySoc:jm.validationBySoc||{}};
+
+    const shared=sharedCareerState(),sm=shared.module2||{};
+    if(completeValidationRows(sm.validationBySoc))return {source:"shared-career-record",module2:sm,validationBySoc:sm.validationBySoc};
+    return null;
+  }
+
+  function ensureJourneyModule2(recovery){
+    const j=journey(),shared=sharedCareerState(),existing=j.modules?.module2||{};
+    j.modules=j.modules||{};j.progress=j.progress||{};
+    if(!Object.keys(existing).length||!completeValidationRows(existing.validationBySoc)){
+      const selected=shared.module1?.selected||[];
+      const rows=recovery.validationBySoc||{};
+      const careers=selected.map(o=>{
+        const v=rows[o.soc]||{};
+        return {
+          title:o.title||"",soc:o.soc||"",origin:o.origin||"Saved in Module 1",pathway:o.pathway||null,regional:o.regional||null,
+          jobsInterpretation:v.jobs||"",wagesInterpretation:v.wages||"",preparationReadiness:v.prep||"",employerSupport:v.employerSupport||"",lifeInterpretation:v.life||"",future:v.future||"",
+          entryWage:v.entryWage||null,preparationIntel:v.preparationIntel||null,validation:v
+        };
+      });
+      j.modules.module2=Object.assign({},existing,recovery.module2||{}, {
+        module:"module2",source:"recovered_from_saved_reality_check",validationBySoc:rows,careers,
+        completedAt:existing.completedAt||recovery.module2?.completedAt||new Date().toISOString()
+      });
+    }
+    j.progress.module2="complete";
+    localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+    return j.modules.module2;
   }
 
   async function repairValidatedModule2(c,session){
-    if(!module2SavedEvidenceIsComplete())return false;
-    const j=journey(),m=j.modules?.module2||{};
+    const recovery=recoverableModule2Evidence();
+    if(!recovery)return false;
+    const module2=ensureJourneyModule2(recovery);
     const {data,error}=await c.from("boost_module_progress")
       .select("module_id")
       .eq("user_id",session.user.id)
@@ -193,21 +229,19 @@
     if(data?.module_id)return false;
 
     const now=new Date().toISOString();
-    const completedAt=m.completedAt||m.originalModule2CompletedAt||m.capturedAt||now;
+    const completedAt=module2.completedAt||module2.originalModule2CompletedAt||module2.capturedAt||now;
     const {error:upsertError}=await c.from("boost_module_progress").upsert({
       user_id:session.user.id,
       region:REGION,
       module_id:"module2",
       pathway:"career",
       status:"completed",
-      evidence:{source:"saved_module2_evidence_repair",version:1,journey_payload_saved:true},
+      evidence:{source:"saved_module2_evidence_repair",version:2,journey_payload_saved:true,recovered_from:recovery.source},
       completed_at:completedAt,
       updated_at:now
     },{onConflict:"user_id,region,module_id"});
     if(upsertError){console.warn("BOOST Module 2 validated progress repair failed:",upsertError.message);return false;}
 
-    j.progress=j.progress||{};j.progress.module2="complete";
-    localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
     try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after Module 2 repair did not finish",e)}
     console.info("BOOST restored Module 2 validated completion from saved Reality Check evidence.");
     return true;
