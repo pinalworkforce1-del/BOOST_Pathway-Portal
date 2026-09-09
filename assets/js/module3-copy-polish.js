@@ -17,19 +17,10 @@ function polish(frame){
     }
   }catch(e){console.warn('BOOST Module 3 copy polish unavailable',e)}
 }
-function loadReviewFlow(){
-  if(document.querySelector('script[data-boost-m3-review-flow]'))return;
-  const s=document.createElement('script');
-  s.dataset.boostM3ReviewFlow='1';
-  s.src='assets/js/module3-review-flow.js?v=20260909a';
-  s.onerror=()=>console.warn('BOOST Module 3 sequential review flow could not load.');
-  document.head.appendChild(s);
-}
 function init(){
   const p=new URLSearchParams(location.search);
   if(!/activity\.html$/i.test(location.pathname)||p.get('m')!=='module3')return;
   const frame=document.getElementById('activityFrame');if(!frame)return;
-  loadReviewFlow();
   let observer=null;
   const apply=()=>setTimeout(()=>{
     polish(frame);
