@@ -100,6 +100,7 @@ window.BOOST_LINKS = Object.freeze({
     const params=new URLSearchParams(location.search);
     if(!/activity\.html$/i.test(location.pathname)||params.get('m')!=='module3')return;
     const frame=document.getElementById('activityFrame');
+    const finish=document.getElementById('finishBtn');
     if(!frame)return;
 
     const title=document.getElementById('activityTitle');
@@ -113,6 +114,10 @@ window.BOOST_LINKS = Object.freeze({
         if(window.PinalBOOST?.get)return window.PinalBOOST.get()||{};
         return JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
       }catch(_){return{}}
+    }
+    function getShared(){
+      try{return JSON.parse(localStorage.getItem('pinal_boost_career_exploration_v1')||'{}')||{}}
+      catch(_){return{}}
     }
     function carryOnetScores(){
       try{
@@ -149,5 +154,37 @@ window.BOOST_LINKS = Object.freeze({
     },'BOOST Module 3 finalized two-lane experience');
 
     load('assets/js/module3-copy-polish.js?v=20260909safe6',null,'BOOST Module 3 transition copy polish');
+
+    if(finish&&!finish.dataset.boostM3AuthoritativeSave){
+      finish.dataset.boostM3AuthoritativeSave='1';
+      finish.addEventListener('click',async event=>{
+        const shared=getShared(),m3=shared?.module3||{};
+        if(!m3.completionReady)return;
+        event.preventDefault();event.stopImmediatePropagation();
+        finish.disabled=true;finish.textContent='Saving your Module 3 story…';
+        try{
+          const evidence={
+            module:'module3',source:'pinal_module3_finalized_handoff',handoffVersion:'m3-active-v1',capturedAt:new Date().toISOString(),
+            startingPoint:m3.startingPoint||null,selfAssessment:m3.selfAssessment||[],skillLab:m3.skillLab||null,workPreferences:m3.workPreferences||[],
+            skillEvidence:m3.skillEvidence||null,skillAlignmentBySoc:m3.skillAlignmentBySoc||{},careerDecisionsBySoc:m3.careerDecisionsBySoc||{},
+            careers:Array.isArray(m3.careers)?m3.careers:[],newExplorations:m3.newExplorations||[],workNowViewed:!!m3.workNowViewed,
+            comparisonUpdatedAt:m3.comparisonUpdatedAt||null,finalizedAt:m3.finalizedAt||new Date().toISOString(),completionReady:true
+          };
+          if(window.PinalBOOST?.captureModule)window.PinalBOOST.captureModule('module3',evidence);
+          else{
+            const j=getJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+            j.modules.module3=Object.assign({},j.modules.module3||{},evidence,{completedAt:new Date().toISOString()});j.progress.module3='complete';
+            localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
+          }
+          try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST Module 3 cloud save did not finish before return',e)}
+          const ret=params.get('boost_return')||'index.html',nonce=params.get('boost_nonce')||'';
+          const target=new URL(ret,location.href);if(target.origin!==location.origin)throw new Error('Unsafe BOOST return URL');
+          target.searchParams.set('boost_complete','module3');if(nonce)target.searchParams.set('boost_nonce',nonce);location.assign(target.toString());
+        }catch(e){
+          console.error('BOOST Module 3 finalized handoff save failed',e);finish.disabled=false;finish.textContent='✓ Save Results & Return to BOOST';
+          window.BOOSTPortal?.toast?.('Your Module 3 choices are still saved. BOOST could not finish the map handoff yet, so please try again.');
+        }
+      },true);
+    }
   }catch(e){console.warn('BOOST Module 3 safe experience wiring unavailable',e)}
 })();
