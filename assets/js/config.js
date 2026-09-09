@@ -82,6 +82,16 @@ window.BOOST_LINKS = Object.freeze({
     scores.onerror=()=>console.warn('BOOST Module 3 O*NET lab score bridge could not load.');
     document.head.appendChild(scores);
 
+    const skillmatch=document.createElement('script');
+    skillmatch.src='assets/js/module3-skill-match.js?v=20260909a';
+    skillmatch.onload=()=>{
+      const frame=document.getElementById('activityFrame');
+      if(!frame||!window.BOOSTModule3SkillMatch)return;
+      window.BOOSTModule3SkillMatch.init(frame);
+    };
+    skillmatch.onerror=()=>console.warn('BOOST Module 3 career skill alignment could not load.');
+    document.head.appendChild(skillmatch);
+
     const output=document.createElement('script');
     output.src='assets/js/module3-output.js?v=20260909a';
     output.onload=()=>{
