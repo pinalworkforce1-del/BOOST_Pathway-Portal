@@ -17,7 +17,7 @@
   function getPathway(){return localStorage.getItem(PATHWAY_KEY)||'shared'}
   function setPathway(id){if(!routes[id])return;localStorage.setItem(PATHWAY_KEY,id);mirrorToMap();syncCloudState();updateProgress();document.dispatchEvent(new CustomEvent('boostpathway',{detail:{pathway:id}}))}
   function getIndustry(){return localStorage.getItem(INDUSTRY_KEY)||''}
-  function setIndustry(id){if(!industryLabels[id])return;localStorage.setItem(INDUSTRY_KEY,id);setPathway('career');mirrorToMap(id);syncCloudState();updateProgress()}
+  function setIndustry(id){if(!industryLabels[id])return;localStorage.setItem(INDUSTRY_KEY,id);localStorage.setItem(PATHWAY_KEY,'career');const ms=mapState();ms.pathway='career';ms.selectedIndustry=id;saveMapState(ms);syncCloudState();updateProgress()}
   function getCompleted(){try{return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'))}catch{return new Set()}}
   function saveCompleted(set){localStorage.setItem(STORAGE_KEY,JSON.stringify([...set]))}
   function markComplete(id){const s=getCompleted();s.add(id);if(industryLabels[id]){localStorage.setItem(INDUSTRY_KEY,id);s.add('industry');localStorage.setItem(PATHWAY_KEY,'career')}saveCompleted(s);mirrorToMap(id);syncCloudState(id);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress',{detail:{id}}))}
@@ -53,6 +53,42 @@
     $('#paVerify').onclick=async()=>{const em=$('#paEmail').value.trim(),code=$('#paCode').value.trim();if(!/^\d{6}$/.test(code)){status.textContent='Enter the six-digit code.';return}const {error}=await cloud.verify(em,code);if(error){status.textContent=error.message;return}await cloud.finishAuth();gate.remove();location.reload()};
   }
 
+  function installActivityHubGuard(){
+    if(!/activity\.html$/i.test(location.pathname))return;
+    const q=new URLSearchParams(location.search),m=(q.get('m')||'module1').replace(/^investment$/,'module5');
+    const frame=document.getElementById('activityFrame'),finish=document.getElementById('finishBtn'),external=document.getElementById('externalBtn');
+    if(external){external.style.display='none';external.setAttribute('aria-hidden','true')}
+    if(!frame)return;
+    const nextPath={module1:'/BOOST-Career-Validation/',module2:'/BOOST-Career-Mobility/',module3:'/BOOST-Decide/',module4:'/BOOST_Skill_Gap_Closure/'}[m]||'';
+    let observer=null;
+    function addHubNotice(d,anchor){
+      const host=anchor?.parentElement;if(!host||host.querySelector('.boostPortalHubNotice'))return;
+      const note=d.createElement('div');note.className='boostPortalHubNotice';note.innerHTML='<b>Results saved.</b> Use <b>Save Results & Return to BOOST</b> in the BOOST bar above to continue from your journey map.';host.appendChild(note);
+    }
+    function suppressInternalAdvance(){
+      try{
+        const d=frame.contentDocument;if(!d?.body)return;
+        if(!d.getElementById('boostPortalHubStyle')){const s=d.createElement('style');s.id='boostPortalHubStyle';s.textContent='.boostPortalInternalAdvance{display:none!important}.boostPortalHubNotice{margin:14px 0;padding:12px 14px;border-radius:11px;background:#eef8f6;border-left:5px solid #168c87;color:#17324d;font:800 13px/1.45 Arial,sans-serif}';d.head.appendChild(s)}
+        const patterns=/continue\s+to\s+module|continue\s+to\s+career\s+mobility|continue\s+to\s+decide|continue\s+to\s+career\s+investment|continue\s+to\s+skill\s+investment/i;
+        d.querySelectorAll('a[href],button').forEach(el=>{
+          const text=(el.textContent||'').trim();let direct=false;
+          if(el.tagName==='A'){
+            try{const u=new URL(el.getAttribute('href'),frame.contentWindow.location.href);direct=!!nextPath&&u.origin===location.origin&&u.pathname.includes(nextPath)}catch(_){}
+          }
+          if(direct||patterns.test(text)){el.classList.add('boostPortalInternalAdvance');addHubNotice(d,el)}
+        });
+      }catch(e){console.warn('BOOST map-return guard could not inspect activity',e)}
+    }
+    frame.addEventListener('load',()=>{setTimeout(()=>{suppressInternalAdvance();try{observer?.disconnect();observer=new MutationObserver(()=>suppressInternalAdvance());observer.observe(frame.contentDocument.body,{childList:true,subtree:true})}catch(_){}},350)});
+    if(finish)finish.addEventListener('click',()=>{
+      try{
+        const w=frame.contentWindow;
+        if(m==='module1'&&typeof w.saveModule==='function')w.saveModule();
+        if(m==='module2'&&typeof w.saveAndContinue==='function')w.saveAndContinue();
+      }catch(e){console.warn('BOOST module pre-save hook unavailable',e)}
+    },true);
+  }
+
   document.addEventListener('click',e=>{
     const pathLink=e.target.closest('[data-set-pathway]');if(pathLink?.dataset.setPathway)setPathway(pathLink.dataset.setPathway);
     const coming=e.target.closest('[data-coming]');if(coming){e.preventDefault();toast(`${coming.dataset.coming} is reserved in the portal and ready to wire when its live resource is available.`)}
@@ -66,5 +102,5 @@
   });
 
   window.BOOSTPortal={getCompleted,markComplete,reset,getPathway,setPathway,getIndustry,setIndustry,routes,labels,industryLabels,toast,updateProgress,syncCloudState};
-  document.addEventListener('DOMContentLoaded',async()=>{importFromMap();updateProgress();await restoreCloudState();await requireModule1SignIn()});
+  document.addEventListener('DOMContentLoaded',async()=>{installActivityHubGuard();importFromMap();updateProgress();await restoreCloudState();await requireModule1SignIn()});
 })();
