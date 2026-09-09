@@ -5,7 +5,6 @@ function polish(frame){
     const d=frame?.contentDocument;if(!d?.body)return;
     const skillBtn=d.getElementById('continueBtn');
     if(skillBtn)skillBtn.textContent='NEXT: THINK ABOUT WHICH STRENGTHS I WANT TO USE →';
-
     const lab=d.getElementById('boostM3Lab');
     if(lab){
       const step=lab.querySelector('.step');
@@ -19,19 +18,12 @@ function polish(frame){
 }
 function init(){
   const p=new URLSearchParams(location.search);
-  if(!/activity\.html$/i.test(location.pathname)||p.get('m')!=='module3')return;
+  if(!/activity\\.html$/i.test(location.pathname)||p.get('m')!=='module3')return;
   const frame=document.getElementById('activityFrame');if(!frame)return;
-  let observer=null;
-  const apply=()=>setTimeout(()=>{
-    polish(frame);
-    try{
-      observer?.disconnect();
-      observer=new frame.contentWindow.MutationObserver(()=>polish(frame));
-      observer.observe(frame.contentDocument.body,{childList:true,subtree:true});
-    }catch(_){}
-  },500);
+  const apply=()=>{[250,700,1400].forEach(ms=>setTimeout(()=>polish(frame),ms))};
   frame.addEventListener('load',apply);
   if(frame.contentDocument?.readyState==='complete')apply();
+  window.addEventListener('message',()=>setTimeout(()=>polish(frame),150));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
