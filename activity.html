@@ -142,7 +142,12 @@ function injectOnetProfilerStep(){
 }
 function injectConnectedUI(){
   try{
-    const d=frame.contentDocument;if(!d||d.getElementById('pinalConnectedCarry'))return;
+    const d=frame.contentDocument;if(!d)return;
+    if(m==='module4'){
+      const innerNav=d.querySelector('.moduleNav');
+      if(innerNav)innerNav.style.display='none';
+    }
+    if(d.getElementById('pinalConnectedCarry'))return;
     const style=d.createElement('style');style.textContent='#pinalConnectedCarry{position:relative;z-index:2147480000;margin:0;padding:11px 15px;background:#eaf4f7;border-bottom:3px solid #e4a72b;color:#17324d;font:700 13px/1.45 Arial,sans-serif}#pinalConnectedMap{position:fixed;right:16px;bottom:16px;z-index:2147483000;padding:11px 15px;border-radius:999px;background:#0d2741;color:#fff;text-decoration:none;font:900 13px Arial,sans-serif;box-shadow:0 10px 25px #0005;border:2px solid #fff8}';d.head.appendChild(style);
     const bar=d.createElement('div');bar.id='pinalConnectedCarry';bar.innerHTML=carrySummary(readJourney());d.body.insertBefore(bar,d.body.firstChild);
     const a=d.createElement('a');a.id='pinalConnectedMap';a.href='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';a.target='_top';a.textContent='My Journey Map';d.body.appendChild(a);
@@ -194,20 +199,24 @@ function saveEvidence(evidence){
   if(window.PinalBOOST?.captureModule)return window.PinalBOOST.captureModule(requestedModule,evidence);
   const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};j.modules[requestedModule]=Object.assign({},j.modules[requestedModule]||{},evidence,{completedAt:new Date().toISOString()});j.progress[requestedModule]='complete';writeJourney(j);return j;
 }
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function finish(){
   const evidence=extractSafeEvidence();
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
   saveEvidence(evidence);
-  try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST cloud save did not finish before return',e)}
+  const cloudAttempt=(async()=>{try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST cloud save did not finish before return',e)}})();
+  await Promise.race([cloudAttempt,wait(1800)]);
   const target=new URL(returnUrl,location.href);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}
-  target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);location.assign(target.toString());
+  target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);
+  finishBtn.textContent='✓ Saved — returning to BOOST…';
+  location.assign(target.toString());
 }
 
 frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
 finishBtn.addEventListener('click',finish);
 if(backTopic)backTopic.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();location.assign('index.html')},true);
-frame.src=c.src;
+frame.src=m==='module4'?(c.src+(c.src.includes('?')?'&':'?')+'shell=20260910ghost4'):c.src;
 </script>
 </body>
 </html>
