@@ -138,16 +138,16 @@ window.BOOST_LINKS = Object.freeze({
     frame.addEventListener('load',carry);
     if(frame.contentDocument?.readyState==='complete')carry();
 
-    load('assets/js/module3-funnel.js?v=20260909safe5',()=>{
+    load('assets/js/module3-funnel.js?v=20260909safe6',()=>{
       if(window.BOOSTModule3Funnel)window.BOOSTModule3Funnel.init(frame);
     },'BOOST Module 3 funnel experience');
 
-    load('assets/js/module3-lab-scores.js?v=20260909safe5',null,'BOOST Module 3 O*NET lab score bridge');
+    load('assets/js/module3-lab-scores.js?v=20260909safe6',null,'BOOST Module 3 O*NET lab score bridge');
 
-    load('assets/js/module3-final-v2.js?v=20260909safe5',()=>{
+    load('assets/js/module3-final-v2.js?v=20260909safe6',()=>{
       if(window.BOOSTModule3Final)window.BOOSTModule3Final.init(frame);
     },'BOOST Module 3 finalized two-lane experience');
 
-    load('assets/js/module3-copy-polish.js?v=20260909safe5',null,'BOOST Module 3 transition copy polish');
+    load('assets/js/module3-copy-polish.js?v=20260909safe6',null,'BOOST Module 3 transition copy polish');
   }catch(e){console.warn('BOOST Module 3 safe experience wiring unavailable',e)}
 })();
