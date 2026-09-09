@@ -77,6 +77,11 @@ window.BOOST_LINKS = Object.freeze({
     funnel.onerror=()=>console.warn('BOOST Module 3 funnel experience could not load.');
     document.head.appendChild(funnel);
 
+    const scores=document.createElement('script');
+    scores.src='assets/js/module3-lab-scores.js?v=20260909a';
+    scores.onerror=()=>console.warn('BOOST Module 3 O*NET lab score bridge could not load.');
+    document.head.appendChild(scores);
+
     const output=document.createElement('script');
     output.src='assets/js/module3-output.js?v=20260909a';
     output.onload=()=>{
