@@ -46,7 +46,7 @@ window.BOOST_LINKS = Object.freeze({
     }
 
     const script=document.createElement('script');
-    script.src='assets/js/module3-customer.js?v=20260908c';
+    script.src='assets/js/module3-customer.js?v=20260909a';
     script.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Customer)return;
@@ -55,7 +55,7 @@ window.BOOST_LINKS = Object.freeze({
           const title=document.getElementById('activityTitle');
           const note=document.getElementById('moduleNote');
           if(title)title.textContent='Module 3 — Where Can My Experience Take Me?';
-          if(note)note.textContent='See what you already bring, where it may have value now, and what you may want to build next.';
+          if(note)note.textContent='See what you already bring, compare it with the careers you validated, and explore what you may want to build next.';
           document.title='Module 3 — Where Can My Experience Take Me? | BOOST';
           carryOnetScores(frame);
           window.BOOSTModule3Customer.inject(frame,getJourney);
@@ -66,5 +66,15 @@ window.BOOST_LINKS = Object.freeze({
     };
     script.onerror=()=>console.warn('BOOST Module 3 customer experience could not load.');
     document.head.appendChild(script);
+
+    const funnel=document.createElement('script');
+    funnel.src='assets/js/module3-funnel.js?v=20260909a';
+    funnel.onload=()=>{
+      const frame=document.getElementById('activityFrame');
+      if(!frame||!window.BOOSTModule3Funnel)return;
+      window.BOOSTModule3Funnel.init(frame);
+    };
+    funnel.onerror=()=>console.warn('BOOST Module 3 funnel experience could not load.');
+    document.head.appendChild(funnel);
   }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
 })();
