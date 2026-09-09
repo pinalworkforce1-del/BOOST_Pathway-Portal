@@ -165,6 +165,54 @@
     return true;
   }
 
+  function module2SavedEvidenceIsComplete(){
+    const j=journey(),m=j.modules?.module2;
+    if(!m||typeof m!=="object")return false;
+    const required=["jobs","wages","prep","employerSupport","life","future"];
+    const rows=Object.values(m.validationBySoc||{}).filter(v=>v&&typeof v==="object");
+    if(rows.length&&rows.every(v=>required.every(k=>String(v[k]??"").trim())))return true;
+    const careers=(m.careers||[]).filter(v=>v&&typeof v==="object");
+    if(careers.length&&careers.every(v=>[
+      v.jobsInterpretation,v.wagesInterpretation,v.preparationReadiness,
+      v.employerSupport,v.lifeInterpretation,v.future
+    ].every(x=>String(x??"").trim())))return true;
+    return false;
+  }
+
+  async function repairValidatedModule2(c,session){
+    if(!module2SavedEvidenceIsComplete())return false;
+    const j=journey(),m=j.modules?.module2||{};
+    const {data,error}=await c.from("boost_module_progress")
+      .select("module_id")
+      .eq("user_id",session.user.id)
+      .eq("region",REGION)
+      .eq("module_id","module2")
+      .eq("status","completed")
+      .maybeSingle();
+    if(error){console.warn("BOOST Module 2 progress repair check failed:",error.message);return false;}
+    if(data?.module_id)return false;
+
+    const now=new Date().toISOString();
+    const completedAt=m.completedAt||m.originalModule2CompletedAt||m.capturedAt||now;
+    const {error:upsertError}=await c.from("boost_module_progress").upsert({
+      user_id:session.user.id,
+      region:REGION,
+      module_id:"module2",
+      pathway:"career",
+      status:"completed",
+      evidence:{source:"saved_module2_evidence_repair",version:1,journey_payload_saved:true},
+      completed_at:completedAt,
+      updated_at:now
+    },{onConflict:"user_id,region,module_id"});
+    if(upsertError){console.warn("BOOST Module 2 validated progress repair failed:",upsertError.message);return false;}
+
+    j.progress=j.progress||{};j.progress.module2="complete";
+    localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+    try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after Module 2 repair did not finish",e)}
+    console.info("BOOST restored Module 2 validated completion from saved Reality Check evidence.");
+    return true;
+  }
+
   async function syncValidatedProgress(c,session,forceReload){
     const {data,error}=await c.from("boost_module_progress").select("module_id").eq("user_id",session.user.id).eq("region",REGION).eq("status","completed");
     if(error){console.error("BOOST validated progress could not be loaded:",error.message);return;}
@@ -189,7 +237,9 @@
     retireStandaloneCareerSkillMobility();
     const c=getClient();if(!c)return;
     const {data}=await c.auth.getSession();const session=data.session;if(!session?.user)return;
-    const recorded=await recordReturn(c,session);await syncValidatedProgress(c,session,recorded);
+    const recorded=await recordReturn(c,session);
+    const repaired=await repairValidatedModule2(c,session);
+    await syncValidatedProgress(c,session,recorded||repaired);
   }
 
   document.addEventListener("click",event=>{
