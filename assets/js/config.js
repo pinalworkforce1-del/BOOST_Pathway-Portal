@@ -2,7 +2,7 @@ window.BOOST_LINKS = Object.freeze({
   module1: 'https://pinalworkforce1-del.github.io/BOOST/',
   module2: 'https://pinalworkforce1-del.github.io/BOOST-Career-Validation/',
   module3: 'https://pinalworkforce1-del.github.io/BOOST-Career-Mobility/',
-  module4: 'https://pinalworkforce1-del.github.io/BOOST-Decide/?v=20260910m4handoff1',
+  module4: 'https://pinalworkforce1-del.github.io/BOOST-Decide/?v=20260910m4interactive3',
   ai: 'https://pinalworkforce1-del.github.io/AI_Literacy/',
   investment: 'https://pinalworkforce1-del.github.io/BOOST_Skill_Gap_Closure/',
   healthcare: 'https://pinalworkforce1-del.github.io/MedicalSkills/',
