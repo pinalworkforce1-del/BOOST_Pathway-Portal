@@ -75,7 +75,9 @@ window.BOOST_LINKS = Object.freeze({
         if(window.PinalBOOST?.captureModule)window.PinalBOOST.captureModule('module2',evidence);
         else{
           const j=window.PinalBOOST?.get?.()||JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{};
-          j.modules=j.modules||{};j.progress=j.progress||{};j.modules.module2=Object.assign({},j.modules.module2||{},evidence,{completedAt:new Date().toISOString()});j.progress.module2='complete';
+          j.modules=j.modules||{};j.progress=j.progress||{};
+          j.modules.module2=Object.assign({},j.modules.module2||{},evidence,{completedAt:new Date().toISOString()});
+          j.progress.module2='complete';
           localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
         }
         try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST Module 2 recovery cloud save did not finish before return',e)}
@@ -93,10 +95,18 @@ window.BOOST_LINKS = Object.freeze({
   }catch(e){console.warn('BOOST Module 2 completion repair unavailable',e)}
 })();
 
-(function wirePinalModule3CustomerExperience(){
+(function wirePinalModule3SafeExperience(){
   try{
     const params=new URLSearchParams(location.search);
     if(!/activity\.html$/i.test(location.pathname)||params.get('m')!=='module3')return;
+    const frame=document.getElementById('activityFrame');
+    if(!frame)return;
+
+    const title=document.getElementById('activityTitle');
+    const note=document.getElementById('moduleNote');
+    if(title)title.textContent='Module 3 — Where Can My Experience Take Me?';
+    if(note)note.textContent='See what you already bring, compare it with the careers you validated, and explore what you may want to build next.';
+    document.title='Module 3 — Where Can My Experience Take Me? | BOOST';
 
     function getJourney(){
       try{
@@ -104,95 +114,40 @@ window.BOOST_LINKS = Object.freeze({
         return JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
       }catch(_){return{}}
     }
-
-    function carryOnetScores(frame){
+    function carryOnetScores(){
       try{
-        const d=frame.contentDocument;
-        if(!d)return 0;
+        const d=frame.contentDocument;if(!d)return;
         const scores=getJourney()?.modules?.module1?.interestScores||{};
-        let loaded=0;
         ['R','I','A','S','E','C'].forEach(k=>{
-          const el=d.getElementById(k),value=scores[k];
-          if(!el||value==null||value==='')return;
-          el.value=String(value);
+          const el=d.getElementById(k),v=scores[k];
+          if(!el||v==null||v==='')return;
+          el.value=String(v);
           el.dispatchEvent(new Event('input',{bubbles:true}));
           el.dispatchEvent(new Event('change',{bubbles:true}));
-          loaded++;
         });
-        return loaded;
-      }catch(e){console.warn('BOOST Module 3 O*NET carry-forward unavailable',e);return 0}
+      }catch(e){console.warn('BOOST Module 3 O*NET carry-forward unavailable',e)}
     }
+    function load(src,onload,label){
+      const s=document.createElement('script');
+      s.src=src;
+      if(onload)s.onload=onload;
+      s.onerror=()=>console.warn(label+' could not load.');
+      document.head.appendChild(s);
+    }
+    const carry=()=>setTimeout(carryOnetScores,300);
+    frame.addEventListener('load',carry);
+    if(frame.contentDocument?.readyState==='complete')carry();
 
-    const script=document.createElement('script');
-    script.src='assets/js/module3-customer.js?v=20260909stable2';
-    script.onload=()=>{
-      const frame=document.getElementById('activityFrame');
-      if(!frame||!window.BOOSTModule3Customer)return;
-      const apply=()=>setTimeout(()=>{
-        try{
-          const title=document.getElementById('activityTitle');
-          const note=document.getElementById('moduleNote');
-          if(title)title.textContent='Module 3 — Where Can My Experience Take Me?';
-          if(note)note.textContent='See what you already bring, compare it with the careers you validated, and explore what you may want to build next.';
-          document.title='Module 3 — Where Can My Experience Take Me? | BOOST';
-          carryOnetScores(frame);
-          window.BOOSTModule3Customer.inject(frame,getJourney);
-        }catch(e){console.warn('BOOST Module 3 customer experience unavailable',e)}
-      },350);
-      frame.addEventListener('load',apply);
-      if(frame.contentDocument?.readyState==='complete')apply();
-    };
-    script.onerror=()=>console.warn('BOOST Module 3 customer experience could not load.');
-    document.head.appendChild(script);
+    load('assets/js/module3-funnel.js?v=20260909safe5',()=>{
+      if(window.BOOSTModule3Funnel)window.BOOSTModule3Funnel.init(frame);
+    },'BOOST Module 3 funnel experience');
 
-    const funnel=document.createElement('script');
-    funnel.src='assets/js/module3-funnel.js?v=20260909stable2';
-    funnel.onload=()=>{
-      const frame=document.getElementById('activityFrame');
-      if(!frame||!window.BOOSTModule3Funnel)return;
-      window.BOOSTModule3Funnel.init(frame);
-    };
-    funnel.onerror=()=>console.warn('BOOST Module 3 funnel experience could not load.');
-    document.head.appendChild(funnel);
+    load('assets/js/module3-lab-scores.js?v=20260909safe5',null,'BOOST Module 3 O*NET lab score bridge');
 
-    const scores=document.createElement('script');
-    scores.src='assets/js/module3-lab-scores.js?v=20260909stable2';
-    scores.onerror=()=>console.warn('BOOST Module 3 O*NET lab score bridge could not load.');
-    document.head.appendChild(scores);
+    load('assets/js/module3-final-v2.js?v=20260909safe5',()=>{
+      if(window.BOOSTModule3Final)window.BOOSTModule3Final.init(frame);
+    },'BOOST Module 3 finalized two-lane experience');
 
-    const skillmatch=document.createElement('script');
-    skillmatch.src='assets/js/module3-skill-match.js?v=20260909stable2';
-    skillmatch.onload=()=>{
-      const frame=document.getElementById('activityFrame');
-      if(!frame||!window.BOOSTModule3SkillMatch)return;
-      window.BOOSTModule3SkillMatch.init(frame);
-    };
-    skillmatch.onerror=()=>console.warn('BOOST Module 3 career skill alignment could not load.');
-    document.head.appendChild(skillmatch);
-
-    const output=document.createElement('script');
-    output.src='assets/js/module3-output.js?v=20260909stable2';
-    output.onload=()=>{
-      const frame=document.getElementById('activityFrame');
-      if(!frame||!window.BOOSTModule3Output)return;
-      window.BOOSTModule3Output.init(frame);
-    };
-    output.onerror=()=>console.warn('BOOST Module 3 evidence summary could not load.');
-    document.head.appendChild(output);
-
-    const final=document.createElement('script');
-    final.src='assets/js/module3-final-v2.js?v=20260909stable2';
-    final.onload=()=>{
-      const frame=document.getElementById('activityFrame');
-      if(!frame||!window.BOOSTModule3Final)return;
-      window.BOOSTModule3Final.init(frame);
-    };
-    final.onerror=()=>console.warn('BOOST Module 3 finalized two-lane experience could not load.');
-    document.head.appendChild(final);
-
-    const copyPolish=document.createElement('script');
-    copyPolish.src='assets/js/module3-copy-polish.js?v=20260909stable2';
-    copyPolish.onerror=()=>console.warn('BOOST Module 3 transition copy polish could not load.');
-    document.head.appendChild(copyPolish);
-  }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
+    load('assets/js/module3-copy-polish.js?v=20260909safe5',null,'BOOST Module 3 transition copy polish');
+  }catch(e){console.warn('BOOST Module 3 safe experience wiring unavailable',e)}
 })();
