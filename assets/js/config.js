@@ -68,7 +68,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(script);
 
     const funnel=document.createElement('script');
-    funnel.src='assets/js/module3-funnel.js?v=20260909a';
+    funnel.src='assets/js/module3-funnel.js?v=20260909b';
     funnel.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Funnel)return;
@@ -76,5 +76,15 @@ window.BOOST_LINKS = Object.freeze({
     };
     funnel.onerror=()=>console.warn('BOOST Module 3 funnel experience could not load.');
     document.head.appendChild(funnel);
+
+    const output=document.createElement('script');
+    output.src='assets/js/module3-output.js?v=20260909a';
+    output.onload=()=>{
+      const frame=document.getElementById('activityFrame');
+      if(!frame||!window.BOOSTModule3Output)return;
+      window.BOOSTModule3Output.init(frame);
+    };
+    output.onerror=()=>console.warn('BOOST Module 3 evidence summary could not load.');
+    document.head.appendChild(output);
   }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
 })();
