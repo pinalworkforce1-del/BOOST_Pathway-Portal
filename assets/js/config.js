@@ -189,5 +189,10 @@ window.BOOST_LINKS = Object.freeze({
     };
     final.onerror=()=>console.warn('BOOST Module 3 finalized two-lane experience could not load.');
     document.head.appendChild(final);
+
+    const copyPolish=document.createElement('script');
+    copyPolish.src='assets/js/module3-copy-polish.js?v=20260909a';
+    copyPolish.onerror=()=>console.warn('BOOST Module 3 transition copy polish could not load.');
+    document.head.appendChild(copyPolish);
   }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
 })();
