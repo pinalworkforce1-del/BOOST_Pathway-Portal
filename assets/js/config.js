@@ -124,7 +124,7 @@ window.BOOST_LINKS = Object.freeze({
     }
 
     const script=document.createElement('script');
-    script.src='assets/js/module3-customer.js?v=20260909a';
+    script.src='assets/js/module3-customer.js?v=20260909stable2';
     script.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Customer)return;
@@ -146,7 +146,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(script);
 
     const funnel=document.createElement('script');
-    funnel.src='assets/js/module3-funnel.js?v=20260909b';
+    funnel.src='assets/js/module3-funnel.js?v=20260909stable2';
     funnel.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Funnel)return;
@@ -156,12 +156,12 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(funnel);
 
     const scores=document.createElement('script');
-    scores.src='assets/js/module3-lab-scores.js?v=20260909a';
+    scores.src='assets/js/module3-lab-scores.js?v=20260909stable2';
     scores.onerror=()=>console.warn('BOOST Module 3 O*NET lab score bridge could not load.');
     document.head.appendChild(scores);
 
     const skillmatch=document.createElement('script');
-    skillmatch.src='assets/js/module3-skill-match.js?v=20260909a';
+    skillmatch.src='assets/js/module3-skill-match.js?v=20260909stable2';
     skillmatch.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3SkillMatch)return;
@@ -171,7 +171,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(skillmatch);
 
     const output=document.createElement('script');
-    output.src='assets/js/module3-output.js?v=20260909a';
+    output.src='assets/js/module3-output.js?v=20260909stable2';
     output.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Output)return;
@@ -181,7 +181,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(output);
 
     const final=document.createElement('script');
-    final.src='assets/js/module3-final-v2.js?v=20260909d';
+    final.src='assets/js/module3-final-v2.js?v=20260909stable2';
     final.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Final)return;
@@ -191,7 +191,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(final);
 
     const copyPolish=document.createElement('script');
-    copyPolish.src='assets/js/module3-copy-polish.js?v=20260909a';
+    copyPolish.src='assets/js/module3-copy-polish.js?v=20260909stable2';
     copyPolish.onerror=()=>console.warn('BOOST Module 3 transition copy polish could not load.');
     document.head.appendChild(copyPolish);
   }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
