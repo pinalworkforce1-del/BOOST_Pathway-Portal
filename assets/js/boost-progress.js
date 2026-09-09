@@ -177,7 +177,16 @@
     sessionStorage.removeItem(SYNC_FLAG);
   }
 
+  function retireStandaloneCareerSkillMobility(){
+    document.querySelectorAll('[data-career-skillmobility]').forEach(el=>{
+      el.style.display='none';
+      el.setAttribute('aria-hidden','true');
+      el.setAttribute('tabindex','-1');
+    });
+  }
+
   async function boot(){
+    retireStandaloneCareerSkillMobility();
     const c=getClient();if(!c)return;
     const {data}=await c.auth.getSession();const session=data.session;if(!session?.user)return;
     const recorded=await recordReturn(c,session);await syncValidatedProgress(c,session,recorded);
