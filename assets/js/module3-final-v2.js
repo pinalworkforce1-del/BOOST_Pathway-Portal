@@ -45,6 +45,6 @@ function detectStartingPoint(d){const selected=q(d,'#selectedOcc');if(!selected|
 function stepLabels(d){const setup=q(d,'#setup'),skills=q(d,'#skills'),lab=q(d,'#boostM3Lab');if(setup){const st=q(setup,'.step');if(st)st.textContent='Step 1 • Start With Where You Are'}if(skills){const st=q(skills,'.step');if(st)st.textContent='Step 2 • What Do You Already Bring?'}if(lab){const st=q(lab,'.step');if(st)st.textContent='Step 3 • Optional Workplace Preference Check'}qa(d,'.boostPortalHubNotice').forEach(x=>x.remove())}
 function apply(f){const d=f?.contentDocument;if(!d?.body)return;frame=f;css(d);if(!installApi(d)){setTimeout(()=>apply(f),120);return}restoreStartingPoint(d);stepLabels(d);renderChoice(d);renderStory(d);wireFlow(d);detectStartingPoint(d);markCompletionGate(d);qa(d,'.boostPortalHubNotice').forEach(x=>x.remove())}
 function schedule(){clearTimeout(timer);timer=setTimeout(()=>{if(frame)apply(frame)},220)}
-function init(f){frame=f;const go=()=>setTimeout(()=>{apply(f);try{obs?.disconnect();obs=new f.contentWindow.MutationObserver(schedule);obs.observe(f.contentDocument.body,{childList:true,subtree:true})}catch(_){}},850);f.addEventListener('load',go);if(f.contentDocument?.readyState==='complete')go();window.addEventListener('message',schedule)}
+function init(f){frame=f;const go=()=>setTimeout(()=>apply(f),850);f.addEventListener('load',go);if(f.contentDocument?.readyState==='complete')go();window.addEventListener('message',schedule)}
 window.BOOSTModule3Final={init,apply};
 })();
