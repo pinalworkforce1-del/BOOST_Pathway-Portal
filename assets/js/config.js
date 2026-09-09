@@ -179,5 +179,15 @@ window.BOOST_LINKS = Object.freeze({
     };
     output.onerror=()=>console.warn('BOOST Module 3 evidence summary could not load.');
     document.head.appendChild(output);
+
+    const final=document.createElement('script');
+    final.src='assets/js/module3-final.js?v=20260909c';
+    final.onload=()=>{
+      const frame=document.getElementById('activityFrame');
+      if(!frame||!window.BOOSTModule3Final)return;
+      window.BOOSTModule3Final.init(frame);
+    };
+    final.onerror=()=>console.warn('BOOST Module 3 finalized two-lane experience could not load.');
+    document.head.appendChild(final);
   }catch(e){console.warn('BOOST Module 3 customer experience wiring unavailable',e)}
 })();
