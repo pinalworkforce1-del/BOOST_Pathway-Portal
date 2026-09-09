@@ -181,7 +181,7 @@ window.BOOST_LINKS = Object.freeze({
     document.head.appendChild(output);
 
     const final=document.createElement('script');
-    final.src='assets/js/module3-final.js?v=20260909c';
+    final.src='assets/js/module3-final-v2.js?v=20260909d';
     final.onload=()=>{
       const frame=document.getElementById('activityFrame');
       if(!frame||!window.BOOSTModule3Final)return;
