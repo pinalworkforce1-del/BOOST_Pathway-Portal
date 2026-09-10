@@ -103,6 +103,7 @@
       position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
       clip:rect(0,0,0,0);white-space:nowrap;border:0
     }
+    [data-career-skillmobility]{display:none}
 
     dialog{border:0;padding:0}
     .pathway-dialog{
@@ -186,14 +187,34 @@
     }
     .toast.show{opacity:1;transform:translate(-50%,0)}
 
+    .stage.rosie-intro-active .hotspot{pointer-events:none}
+    .rosie-welcome,.rosie-experience{position:absolute;inset:0;z-index:15;display:none}
+    .rosie-welcome.show,.rosie-experience.show{display:block}
+    .rosie-welcome{background:rgba(4,18,31,.60)}
+    .rosie-welcome-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90%);padding:25px;border-radius:20px;background:rgba(11,34,55,.95);color:#fff;border:2px solid var(--gold);box-shadow:0 22px 70px rgba(0,0,0,.6);text-align:center}
+    .rosie-welcome-card h2{margin:0 0 9px;font-size:clamp(1.5rem,3vw,2.4rem)}
+    .rosie-welcome-card p{margin:0 auto 18px;max-width:430px;line-height:1.5}
+    .rosie-welcome-actions,.rosie-intro-controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+    .rosie-intro-btn{border:1px solid rgba(255,255,255,.34);border-radius:999px;background:#123a5c;color:#fff;padding:10px 15px;font-weight:800;cursor:pointer}
+    .rosie-intro-btn.primary{background:var(--gold);color:#10243a;border-color:#f6d983}
+    .rosie-intro-btn:hover,.rosie-intro-btn:focus-visible{outline:2px solid #f6d983;outline-offset:2px;filter:brightness(1.06)}
+    .rosie-experience{background:rgba(3,16,27,.27)}
+    .rosie-video-wrap{position:absolute;left:2.5%;bottom:3%;height:91%;aspect-ratio:9/16;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 15px 45px rgba(0,0,0,.6);border:2px solid var(--gold)}
+    .rosie-video-wrap video{width:100%;height:100%;display:block;object-fit:contain}
+    .rosie-intro-controls{position:absolute;right:2.5%;top:2.5%;padding:8px;border-radius:999px;background:rgba(6,24,39,.85);box-shadow:0 8px 25px rgba(0,0,0,.4)}
+    .rosie-intro-caption{position:absolute;left:31%;right:3%;bottom:4%;min-height:58px;display:flex;align-items:center;justify-content:center;padding:12px 18px;border-radius:12px;background:rgba(0,0,0,.78);color:#fff;font-size:clamp(1.1rem,2vw,1.7rem);font-weight:800;line-height:1.3;text-align:center;text-shadow:0 2px 4px #000}
+    .rosie-intro-caption:empty{display:none}
+
     @media (max-width:900px){
       .boost-nav{grid-template-columns:1fr auto}.nav-center{grid-column:1/-1;grid-row:2}.nav-right{grid-column:2;grid-row:1}.stage-wrap{padding:10px}
       .guide-grid{grid-template-columns:1fr}.rosie-card{min-height:260px}.rosie-card img{max-height:360px;width:auto;max-width:100%}
+      .rosie-video-wrap{height:78%;left:2%;bottom:12%}.rosie-intro-caption{left:30%;right:2%;bottom:3%}.rosie-intro-controls{right:2%;top:2%}
     }
     @media (max-width:640px){
       .boost-nav{padding:10px;gap:8px}.nav-right .nav-chip:last-child{display:none}.stage-wrap{padding:6px}.tipbar{font-size:.82rem;margin-bottom:7px}
       .pathway-choices{grid-template-columns:1fr}.guide-grid{padding:15px;gap:15px}.dialog-top{padding:16px}.dialog-foot{padding:0 15px 16px}
       .pathway-dialog{width:calc(100vw - 12px);max-height:calc(100vh - 12px);border-radius:16px}
+      .rosie-video-wrap{height:65%;left:2%;bottom:18%}.rosie-intro-caption{left:2%;right:2%;bottom:2%;font-size:.95rem;min-height:48px}.rosie-intro-controls{left:2%;right:2%;top:2%;border-radius:14px}.rosie-intro-btn{padding:8px 10px;font-size:.75rem}
     }
     @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
   </style>
@@ -210,6 +231,7 @@
       </div>
     </div>
     <div class="nav-right">
+      <button class="nav-chip" type="button" id="rosieIntroReplay">Play Rosie Intro</button>
       <a href="#" class="nav-chip" data-choose-pathway>Choose Pathway</a>
       <a href="#" class="nav-chip" data-reset-progress>Reset</a>
     </div>
@@ -221,7 +243,16 @@
     </div>
 
     <div class="stage" aria-label="Interactive BOOST Pathways map">
-      <img src="assets/images/boost-home-v33.webp" alt="BOOST Pathways map with Rapid Employment and Career Exploration and Development routes leading to employment opportunities">
+      <img src="assets/images/boost-home-desert-outcomes-v4.webp" alt="BOOST Pathways map in a Pinal County desert landscape surrounded by health care, advanced manufacturing, information technology, skilled trades, and transportation and logistics workplaces">
+
+      <section class="rosie-welcome" id="rosieIntroWelcome" role="dialog" aria-modal="true" aria-labelledby="rosieIntroWelcomeTitle">
+        <div class="rosie-welcome-card"><h2 id="rosieIntroWelcomeTitle">Meet Rosie</h2><p>Rosie is your guide to BOOST. Listen to her short welcome and learn how the pathways can help you plan your next move. Captions will appear over the map.</p><div class="rosie-welcome-actions"><button class="rosie-intro-btn primary" type="button" id="meetRosieIntro">▶ Meet Rosie</button><button class="rosie-intro-btn" type="button" id="skipRosieIntroWelcome">Continue to the Map</button></div></div>
+      </section>
+      <section class="rosie-experience" id="rosieIntroExperience" aria-label="Rosie BOOST introduction">
+        <div class="rosie-video-wrap"><video id="rosieIntroVideo" playsinline preload="metadata"><source src="assets/video/rosie-boost-intro.mp4" type="video/mp4"><track kind="captions" srclang="en" label="English" src="assets/captions/rosie-boost-intro.vtt" default></video></div>
+        <div class="rosie-intro-controls" aria-label="Rosie introduction controls"><button class="rosie-intro-btn" type="button" id="rosieIntroPlayPause">❚❚ Pause</button><button class="rosie-intro-btn" type="button" id="rosieIntroMute">🔊 Audio on</button><button class="rosie-intro-btn" type="button" id="rosieIntroRestart">↻ Replay</button><button class="rosie-intro-btn" type="button" id="rosieIntroSkip">≫ Skip intro</button></div>
+        <div class="rosie-intro-caption" id="rosieIntroCaption" aria-live="off"></div>
+      </section>
 
       <!-- Shared launch sequence -->
       <a class="hotspot pulse" style="left:21.1%;top:7.3%;width:10.0%;height:17.8%" href="https://www.youtube.com/watch?v=bUI5bDvHBCY" target="_blank" rel="noopener" aria-label="Watch Orientation Video"><span class="hotspot-label">Watch Orientation Video</span></a>
@@ -337,6 +368,7 @@
 (() => {
   const STORAGE_KEY = 'boostPathwaysV29';
   const LEGACY_STORAGE_KEY = 'boostPathwaysV28';
+  const ROSIE_INTRO_KEY = 'boost_pinal_rosie_intro_seen_v1';
   let state = {};
   try { state = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || '{}'); } catch(e) { state = {}; }
   state.complete = state.complete || {};
@@ -356,6 +388,14 @@
   const investmentCard = document.querySelector('[data-investment-card]');
   const investmentStatus = document.querySelector('[data-investment-status]');
   const toast = document.querySelector('.toast');
+  const stage = document.querySelector('.stage');
+  const rosieIntroVideo = document.getElementById('rosieIntroVideo');
+  const rosieIntroWelcome = document.getElementById('rosieIntroWelcome');
+  const rosieIntroExperience = document.getElementById('rosieIntroExperience');
+  const rosieIntroCaption = document.getElementById('rosieIntroCaption');
+  const rosieIntroReplay = document.getElementById('rosieIntroReplay');
+  const rosieIntroPlayPause = document.getElementById('rosieIntroPlayPause');
+  const rosieIntroMute = document.getElementById('rosieIntroMute');
   let captionsOn = true;
   let toastTimer;
 
@@ -409,6 +449,33 @@
   function showToast(message){
     clearTimeout(toastTimer); toast.textContent = message; toast.classList.add('show');
     toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+  function markRosieIntroSeen(){ localStorage.setItem(ROSIE_INTRO_KEY, '1'); rosieIntroReplay.textContent = 'Replay Rosie'; }
+  function syncRosieIntroButtons(){
+    rosieIntroPlayPause.textContent = rosieIntroVideo.paused ? '▶ Play' : '❚❚ Pause';
+    rosieIntroMute.textContent = rosieIntroVideo.muted ? '🔇 Audio off' : '🔊 Audio on';
+  }
+  function showRosieIntroWelcome(){
+    rosieIntroVideo.pause(); rosieIntroExperience.classList.remove('show'); rosieIntroCaption.textContent = '';
+    rosieIntroWelcome.classList.add('show'); stage.classList.add('rosie-intro-active');
+    document.getElementById('meetRosieIntro').focus();
+  }
+  function playRosieIntro(restart=true){
+    markRosieIntroSeen(); rosieIntroWelcome.classList.remove('show'); rosieIntroExperience.classList.add('show');
+    stage.classList.add('rosie-intro-active'); if (restart) rosieIntroVideo.currentTime = 0;
+    const attempt = rosieIntroVideo.play();
+    if (attempt) attempt.catch(() => { syncRosieIntroButtons(); showToast('Select Play to begin Rosie’s welcome.'); });
+    syncRosieIntroButtons();
+  }
+  function closeRosieIntro(){
+    markRosieIntroSeen(); rosieIntroVideo.pause(); rosieIntroExperience.classList.remove('show');
+    rosieIntroWelcome.classList.remove('show'); rosieIntroCaption.textContent = '';
+    stage.classList.remove('rosie-intro-active'); syncRosieIntroButtons(); rosieIntroReplay.focus();
+  }
+  function connectRosieIntroCaptions(){
+    const track = rosieIntroVideo.textTracks && rosieIntroVideo.textTracks[0]; if (!track) return;
+    track.mode = 'hidden';
+    track.addEventListener('cuechange', () => { rosieIntroCaption.textContent = Array.from(track.activeCues || []).map(cue => cue.text).join(' '); });
   }
   function setPathway(pathway, announce=false){
     state.pathway = pathway; save();
@@ -500,6 +567,19 @@
     save(); updateProgress();
   }));
 
+  document.getElementById('meetRosieIntro').addEventListener('click', () => playRosieIntro(true));
+  document.getElementById('skipRosieIntroWelcome').addEventListener('click', closeRosieIntro);
+  rosieIntroReplay.addEventListener('click', () => playRosieIntro(true));
+  rosieIntroPlayPause.addEventListener('click', () => { if (rosieIntroVideo.paused) rosieIntroVideo.play().catch(() => {}); else rosieIntroVideo.pause(); syncRosieIntroButtons(); });
+  rosieIntroMute.addEventListener('click', () => { rosieIntroVideo.muted = !rosieIntroVideo.muted; syncRosieIntroButtons(); });
+  document.getElementById('rosieIntroRestart').addEventListener('click', () => playRosieIntro(true));
+  document.getElementById('rosieIntroSkip').addEventListener('click', closeRosieIntro);
+  rosieIntroVideo.addEventListener('play', syncRosieIntroButtons);
+  rosieIntroVideo.addEventListener('pause', syncRosieIntroButtons);
+  rosieIntroVideo.addEventListener('ended', closeRosieIntro);
+  rosieIntroVideo.addEventListener('loadedmetadata', connectRosieIntroCaptions, { once:true });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && (rosieIntroWelcome.classList.contains('show') || rosieIntroExperience.classList.contains('show'))) closeRosieIntro(); });
+
   document.querySelectorAll('[data-coming]').forEach(el => el.addEventListener('click', e => {
     e.preventDefault(); showToast(`${el.dataset.coming} is reserved in this prototype.`);
   }));
@@ -526,6 +606,29 @@
   setPathway(state.pathway || null);
   updateProgress();
   updateCaption();
+  const hotspotPositions = [
+    ['.hotspot[aria-label="Watch Orientation Video"]','21.8%','7.0%','9.2%','17.5%'],
+    ['.hotspot[aria-label="Complete the Interest Form"]','33.9%','7.0%','9.8%','17.5%'],
+    ['.hotspot[aria-label="Create Arizona Job Connection account"]','46.2%','7.0%','9.3%','17.5%'],
+    ['[data-module-id="module1"]','57.9%','7.0%','10.7%','17.5%'],
+    ['[data-module-id="skillmobility"]','20.9%','35.0%','12.8%','15.0%'],
+    ['[data-module-id="jobsearch"]','20.9%','51.1%','13.3%','19.1%'],
+    ['[data-module-id="financial"]','40.5%','58.2%','15.9%','12.4%'],
+    ['[data-module-id="ai"]','40.9%','71.5%','14.8%','12.1%'],
+    ['[data-module-id="module2"]','61.7%','31.1%','13.7%','10.6%'],
+    ['[data-module-id="module3"]','63.7%','41.3%','11.9%','9.1%'],
+    ['[data-module-id="module4"]','66.3%','49.5%','9.8%','9.4%'],
+    ['[data-industry-choice]','65.6%','57.7%','11.1%','11.5%'],
+    ['[data-industry-id="trades"]','82.0%','31.1%','17.3%','8.6%'],
+    ['[data-industry-id="manufacturing"]','82.0%','40.2%','17.3%','8.7%'],
+    ['[data-industry-id="healthcare"]','82.0%','49.6%','17.3%','7.7%'],
+    ['[data-industry-id="it"]','82.0%','58.0%','17.3%','7.8%'],
+    ['[data-industry-id="cdl"]','82.0%','66.4%','17.3%','8.2%'],
+    ['[data-investment-card]','70.2%','75.0%','13.2%','9.7%'],
+    ['[data-coming="Training connection"]','62.5%','83.8%','11.4%','10.1%']
+  ];
+  hotspotPositions.forEach(([selector,left,top,width,height]) => { const el = document.querySelector(selector); if (el) Object.assign(el.style,{left,top,width,height}); });
+  if (localStorage.getItem(ROSIE_INTRO_KEY)) rosieIntroReplay.textContent = 'Replay Rosie'; else showRosieIntroWelcome();
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n<script src="assets/js/boost-config.js?v=20260908d"></script>\n<script src="assets/js/boost-cloud.js?v=20260908d"></script>\n<script src="assets/js/boost-progress.js?v=20260908a"></script>\n<script src="assets/js/sequence-guide.js"></script>
