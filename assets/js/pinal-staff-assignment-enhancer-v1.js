@@ -4,6 +4,7 @@ const AREA='pinal';
 const cfg=window.PINAL_BOOST_CONFIG||{};
 if(!window.supabase?.createClient||!cfg.url||!cfg.key)return;
 const sb=window.supabase.createClient(cfg.url,cfg.key,{auth:{storageKey:'boost-staff-auth-pinal',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+document.documentElement.style.visibility='hidden';
 let staff=[],assignments=new Map(),me='',notices=[];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=v=>v?new Date(v).toLocaleString():'—';
@@ -19,6 +20,11 @@ function filterRows(){const f=document.getElementById('assignmentFilter');if(!f)
 async function loadNotices(){ensureNotificationPanel();const list=document.getElementById('noticeList');if(!list)return;const {data,error}=await sb.rpc('boost_staff_list_notifications',{p_area:AREA,p_limit:50});if(error){list.innerHTML=`<div class="empty">${esc(error.message)}</div>`;return}notices=data||[];const count=document.getElementById('countNotices');if(count)count.textContent=notices.filter(n=>!n.read_at).length;list.innerHTML=notices.length?notices.map(n=>`<div class="notif ${n.read_at?'':'unread'}" data-notice="${esc(n.notification_id)}" data-journey="${esc(n.journey_id)}"><strong>${esc(n.title)}</strong><div>${esc(n.body)}</div><small>${esc(fmt(n.created_at))}${n.email_status&&n.email_status!=='disabled'?' • '+esc(n.email_status):''}</small></div>`).join(''):'<div class="empty">No staff notifications yet.</div>'}
 function status(msg,ok){const el=document.getElementById('assignmentStatus');if(!el)return;el.textContent=msg;el.className='assignStatus '+(ok?'ok':'err');el.style.display='block';setTimeout(()=>{el.style.display='none'},4500)}
 function observe(){const rows=document.getElementById('rows');if(!rows)return;new MutationObserver(()=>decorateRows()).observe(rows,{childList:true,subtree:false})}
-async function init(){injectCss();observe();await loadContext();}
+async function init(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.replace('staff-login.html');return;}
+  document.documentElement.style.visibility='';
+  injectCss();observe();await loadContext();
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
