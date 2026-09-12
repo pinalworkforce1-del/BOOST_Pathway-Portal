@@ -8,7 +8,6 @@ if(!['module2','module3','module4'].includes(moduleId))return;
 
 const SHARED_KEY='pinal_boost_career_exploration_v1';
 const JOURNEY_KEY='pinal_boost_journey_v1';
-const REPORT_V2='https://pinalworkforce1-del.github.io/BOOST-Decide/career-decision-report-v2.html';
 const frame=document.getElementById('activityFrame');
 const finish=document.getElementById('finishBtn');
 if(!frame)return;
@@ -37,7 +36,7 @@ function syncModule2Baseline(wage){
   s.participant=s.participant||{};s.participant.currentHourlyWage=wage;
   s.module2=s.module2||{};s.module2.currentHourlyWage=wage;s.module2.wageBaseline={...baselineObject(wage),updatedAt:now};
   writeShared(s);
-  const j=getJourney();j.modules=j.modules||{};j.modules.module2=j.modules.module2||{};
+  const j=getJourney();j.participant=j.participant||{};j.participant.currentHourlyWage=wage;j.modules=j.modules||{};j.modules.module2=j.modules.module2||{};
   j.modules.module2.currentHourlyWage=wage;j.modules.module2.wageBaseline={...baselineObject(wage),updatedAt:now};
   putJourney(j);
   return true;
@@ -139,11 +138,6 @@ function wireModule4(){
       context.dataset.boostWageBaseline='1';
     }
     persistModule4Comparison(wage,entry);
-    const report=d.getElementById('openReport');
-    if(report&&!report.dataset.boostWageReport){
-      report.dataset.boostWageReport='1';
-      report.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();window.open(REPORT_V2,'_blank','noopener')},true);
-    }
     return true;
   }
   frame.addEventListener('load',()=>{let n=0;const t=setInterval(()=>{enhance();if(++n>=80)clearInterval(t)},250)});
