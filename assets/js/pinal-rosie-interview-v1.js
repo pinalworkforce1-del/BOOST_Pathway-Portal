@@ -2,7 +2,7 @@
 'use strict';
 const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-rosie-interview';
 const DATA_FILES=[1,2,3,4,5,6].map(n=>`https://pinalworkforce1-del.github.io/BOOST/assets/data/career-data-v1-0${n}.js`);
-let mode='coach',voiceOn=true,allOccs=[],transcript=[],currentQuestion='',currentTarget=null,lastResponse=null,occLoading=false;
+let mode='coach',voiceOn=true,allOccs=[],transcript=[],currentQuestion='',currentTarget=null,lastResponse=null,occLoading=false,stopVoiceCapture=()=>{};
 const $=s=>document.querySelector(s);
 function read(k){try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch{return{}}}
 function journey(){try{return window.PinalBOOST?.get?.()||read('pinal_boost_journey_v1')}catch{return read('pinal_boost_journey_v1')}}
@@ -17,14 +17,58 @@ function resolveTarget(){const title=$('#targetRole').value.trim(),soc=$('#targe
 async function call(payload){const c=await getClient();if(!c)throw new Error('BOOST sign-in connection is unavailable. Return to the BOOST map, sign in, and try Interview Coach again.');const result=await c.auth.getSession();const sess=result?.data?.session;if(!sess?.access_token)throw new Error('Please sign in to BOOST before starting Interview Coach. Your interview uses your saved journey securely.');const r=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${sess.access_token}`},body:JSON.stringify(payload)});const out=await r.json().catch(()=>({}));if(!r.ok)throw new Error(out.error||out.detail||`Rosie could not continue the interview (${r.status}).`);return out}
 function fillList(id,items){const ul=$(id);ul.innerHTML='';for(const x of(items||[])){const li=document.createElement('li');li.textContent=x;ul.appendChild(li)}}
 function renderFeedback(f){if(!f)return;$('#worked').textContent=f.worked||'—';$('#strengthen').textContent=f.strengthen||'—';$('#nextTime').textContent=f.next_time||'—';const sc=$('#scores');sc.innerHTML='';for(const [k,v] of Object.entries(f.scores||{})){const d=document.createElement('span');d.className='score';d.textContent=`${k.replaceAll('_',' ')} ${v}/5`;sc.appendChild(d)}$('#feedback').classList.add('show')}
-function showQuestion(q,n,total){currentQuestion=q;$('#question').textContent=q;$('#qnum').textContent=`Question ${n} of ${total}`;$('#answer').value='';$('#feedback').classList.remove('show');$('#answer').focus();speak(q)}
-function renderReport(r){$('#interview').classList.remove('show');$('#report').classList.add('show');$('#readiness').textContent=r.readiness||'';$('#reportSummary').textContent=r.summary||'';fillList('#strongest',r.strongest_evidence);fillList('#skills',r.skills_communicated);fillList('#priorities',r.practice_priorities);fillList('#stars',r.star_stories_to_prepare);fillList('#practiceQs',r.questions_to_practice);speak(`Interview complete. ${r.summary||''}`)}
+function showQuestion(q,n,total){stopVoiceCapture();currentQuestion=q;$('#question').textContent=q;$('#qnum').textContent=`Question ${n} of ${total}`;$('#answer').value='';$('#feedback').classList.remove('show');$('#answer').focus();speak(q)}
+function renderReport(r){stopVoiceCapture();$('#interview').classList.remove('show');$('#report').classList.add('show');$('#readiness').textContent=r.readiness||'';$('#reportSummary').textContent=r.summary||'';fillList('#strongest',r.strongest_evidence);fillList('#skills',r.skills_communicated);fillList('#priorities',r.practice_priorities);fillList('#stars',r.star_stories_to_prepare);fillList('#practiceQs',r.questions_to_practice);speak(`Interview complete. ${r.summary||''}`)}
 async function start(){currentTarget=resolveTarget();if(!currentTarget.title&&!currentTarget.soc){setStatus('Choose a target occupation first.',true);$('#targetRole').focus();return}transcript=[];lastResponse=null;setThinking(true);setStatus('Rosie is building your interview from your BOOST and occupation evidence…');try{const out=await call({action:'start',target:currentTarget,resumeText:$('#resumeText').value.trim(),journey:sanitizedJourney(),transcript,mode});$('#setup').classList.add('hidden');$('#interview').classList.add('show');$('#roleBadge').textContent=out.target?.title||currentTarget.title||'Target role';$('#modeBadge').textContent=mode==='coach'?'Coach Mode':'Mock Interview';$('#sourceBadge').textContent=`O*NET ${out.sources?.onet_version||''}${out.sources?.onet_live?' · live':''}${out.sources?.pinal_live?' · Pinal LMI':''}`;showQuestion(out.question,out.question_number||1,out.total_questions||5);if(out.opening){setTimeout(()=>speak(out.opening),80)}}catch(e){console.error('Interview Coach start failed',e);setStatus(e?.message||'Rosie could not start the interview.',true)}finally{setThinking(false)}}
-async function submit(){const ans=$('#answer').value.trim();if(!ans){$('#micStatus').textContent='Give Rosie an answer first.';return}setThinking(true);$('#micStatus').textContent='';try{const out=await call({action:'answer',target:currentTarget,resumeText:$('#resumeText').value.trim(),journey:sanitizedJourney(),transcript,answer:ans,mode});transcript.push({question:currentQuestion,answer:ans,feedback:out.feedback||null});lastResponse=out;renderFeedback(out.feedback);if(out.complete){setTimeout(()=>renderReport(out.report||{}),mode==='coach'?900:250);return}if(mode==='mock'){setTimeout(()=>showQuestion(out.next_question,out.question_number||transcript.length+1,out.total_questions||5),350)}else speak([out.feedback?.worked,out.feedback?.strengthen].filter(Boolean).join(' '))}catch(e){console.error('Interview Coach answer failed',e);$('#micStatus').textContent=e?.message||'Rosie could not review that answer.'}finally{setThinking(false)}}
+async function submit(){stopVoiceCapture(true);const ans=$('#answer').value.trim();if(!ans){$('#micStatus').textContent='Give Rosie an answer first.';return}setThinking(true);$('#micStatus').textContent='';try{const out=await call({action:'answer',target:currentTarget,resumeText:$('#resumeText').value.trim(),journey:sanitizedJourney(),transcript,answer:ans,mode});transcript.push({question:currentQuestion,answer:ans,feedback:out.feedback||null});lastResponse=out;renderFeedback(out.feedback);if(out.complete){setTimeout(()=>renderReport(out.report||{}),mode==='coach'?900:250);return}if(mode==='mock'){setTimeout(()=>showQuestion(out.next_question,out.question_number||transcript.length+1,out.total_questions||5),350)}else speak([out.feedback?.worked,out.feedback?.strengthen].filter(Boolean).join(' '))}catch(e){console.error('Interview Coach answer failed',e);$('#micStatus').textContent=e?.message||'Rosie could not review that answer.'}finally{setThinking(false)}}
 function next(){if(!lastResponse?.next_question)return;showQuestion(lastResponse.next_question,lastResponse.question_number||transcript.length+1,lastResponse.total_questions||5)}
-function setupVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('#mic').disabled=true;$('#mic').textContent='🎙 Voice input unavailable';return}let rec=null;$('#mic').onclick=()=>{if(rec){try{rec.stop()}catch{}return}rec=new SR();rec.lang='en-US';rec.interimResults=true;rec.continuous=false;let finalText='';rec.onstart=()=>{$('#mic').classList.add('recording');$('#mic').textContent='■ Stop recording';$('#micStatus').textContent='Listening…'};rec.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t+' ';else interim+=t}$('#answer').value=(finalText+interim).trim()};rec.onerror=e=>{$('#micStatus').textContent=`Voice input: ${e.error}`};rec.onend=()=>{$('#mic').classList.remove('recording');$('#mic').textContent='🎙 Answer by voice';$('#micStatus').textContent=finalText?'Transcript ready — review it before submitting.':'';rec=null};rec.start()}}
+function setupVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$('#mic').disabled=true;$('#mic').textContent='🎙 Voice input unavailable';return}
+  let rec=null,wantsListening=false,committed='',restartTimer=null;
+  const setMicUi=(active)=>{const b=$('#mic');if(!b)return;b.classList.toggle('recording',active);b.textContent=active?'■ Stop recording':'🎙 Answer by voice'};
+  function stopCapture(forSubmit=false){
+    wantsListening=false;clearTimeout(restartTimer);restartTimer=null;
+    if(rec){try{rec.stop()}catch{}}
+    else setMicUi(false);
+    if(!forSubmit&&$('#micStatus'))$('#micStatus').textContent=$('#answer').value.trim()?'Transcript ready — review it or continue recording.':'';
+  }
+  stopVoiceCapture=stopCapture;
+  function beginSession(){
+    if(!wantsListening||rec)return;
+    const r=new SR();rec=r;r.lang='en-US';r.interimResults=true;r.continuous=true;
+    let sessionFinal='';
+    r.onstart=()=>{setMicUi(true);$('#micStatus').textContent='Listening — pause naturally. I’ll keep your answer together.'};
+    r.onresult=e=>{
+      let finalNow='',interim='';
+      for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalNow+=t+' ';else interim+=t+' '}
+      sessionFinal=finalNow.trim();
+      $('#answer').value=[committed,sessionFinal,interim.trim()].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
+    };
+    r.onerror=e=>{
+      if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){
+        wantsListening=false;$('#micStatus').textContent=`Voice input: ${e.error}. You can keep typing your answer.`;
+      }else if(e.error!=='no-speech'){$('#micStatus').textContent='Voice paused briefly — keeping your answer and reconnecting…'}
+    };
+    r.onend=()=>{
+      committed=$('#answer').value.trim();rec=null;
+      if(wantsListening){
+        $('#micStatus').textContent='Still listening — take your time.';
+        restartTimer=setTimeout(beginSession,180);
+      }else{
+        setMicUi(false);
+        $('#micStatus').textContent=committed?'Transcript ready — review it or continue recording.':'';
+      }
+    };
+    try{r.start()}catch(e){rec=null;if(wantsListening)restartTimer=setTimeout(beginSession,300)}
+  }
+  $('#mic').onclick=()=>{
+    if(wantsListening){stopCapture();return}
+    wantsListening=true;committed=$('#answer').value.trim();setMicUi(true);$('#micStatus').textContent='Starting microphone…';beginSession();
+  };
+}
 function prefill(){const j=sanitizedJourney(),soc=j.modules?.module4?.selectedSoc,title=j.modules?.module4?.careerTitle;if(title)$('#targetRole').value=title;if(soc)$('#targetSoc').value=soc}
-function wireImmediate(){prefill();document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode||'coach'});$('#voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('#voiceToggle').textContent=`${voiceOn?'🔊':'🔇'} Rosie voice: ${voiceOn?'On':'Off'}`;if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};$('#startInterview').onclick=start;$('#submitAnswer').onclick=submit;$('#nextQuestion').onclick=next;$('#clearAnswer').onclick=()=>{$('#answer').value='';$('#answer').focus()};$('#restart').onclick=()=>location.reload();$('#copyReport').onclick=async()=>{const txt=$('#report').innerText;try{await navigator.clipboard.writeText(txt);$('#copyReport').textContent='Copied';setTimeout(()=>$('#copyReport').textContent='Copy Report',1200)}catch{}};setupVoice();setStatus('Five adaptive questions · answer by typing or microphone where supported')}
+function wireImmediate(){prefill();document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode||'coach'});$('#voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('#voiceToggle').textContent=`${voiceOn?'🔊':'🔇'} Rosie voice: ${voiceOn?'On':'Off'}`;if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};$('#startInterview').onclick=start;$('#submitAnswer').onclick=submit;$('#nextQuestion').onclick=next;$('#clearAnswer').onclick=()=>{stopVoiceCapture();$('#answer').value='';$('#micStatus').textContent='';$('#answer').focus()};$('#restart').onclick=()=>location.reload();$('#copyReport').onclick=async()=>{const txt=$('#report').innerText;try{await navigator.clipboard.writeText(txt);$('#copyReport').textContent='Copied';setTimeout(()=>$('#copyReport').textContent='Copy Report',1200)}catch{}};setupVoice();setStatus('Five adaptive questions · answer by typing or microphone where supported')}
 async function hydrateOccupations(){if(occLoading)return;occLoading=true;const rows=await loadOccs();allOccs=rows;const dl=$('#roleList');if(dl){dl.innerHTML='';for(const o of allOccs){const opt=document.createElement('option');opt.value=o.title;opt.label=o.soc;dl.appendChild(opt)}}$('#targetRole').addEventListener('change',()=>{const n=$('#targetRole').value.trim().toLowerCase(),o=allOccs.find(x=>x.title.toLowerCase()===n)||allOccs.find(x=>x.title.toLowerCase().includes(n));if(o)$('#targetSoc').value=o.soc},{once:false});occLoading=false}
 function init(){wireImmediate();hydrateOccupations()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
