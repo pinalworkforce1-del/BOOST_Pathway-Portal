@@ -164,3 +164,16 @@
   window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore};
   bootstrap();
 })();
+
+(function loadPinalAskRosie(){
+  try{
+    if(!location.pathname.includes('/BOOST_Pathway-Portal/'))return;
+    if(!(/\/BOOST_Pathway-Portal\/$/.test(location.pathname)||/\/BOOST_Pathway-Portal\/index\.html$/i.test(location.pathname)||/\/BOOST_Pathway-Portal\/activity\.html$/i.test(location.pathname)))return;
+    if(document.querySelector('script[data-pinal-ask-rosie]'))return;
+    const s=document.createElement('script');
+    s.src='assets/js/pinal-ask-rosie-v1.js?v=20260912rosie1';
+    s.dataset.pinalAskRosie='1';
+    s.onerror=()=>console.warn('Ask Rosie could not load.');
+    document.head.appendChild(s);
+  }catch(e){console.warn('Ask Rosie loader unavailable',e)}
+})();
