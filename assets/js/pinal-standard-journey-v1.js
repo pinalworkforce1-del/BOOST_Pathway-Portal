@@ -47,9 +47,29 @@ function buildBar(d){
  bar.innerHTML=`<div class="psjInner"><div class="psjLabel">Your BOOST Journey</div><div class="psjTrack" aria-label="BOOST journey progress">${stages}</div><div class="psjHere">You are here: ${descriptions[moduleId]||'Continue building your BOOST journey.'}</div></div>`;
  return bar;
 }
+function normalizeModule4Opening(d){
+ if(moduleId!=='module4'||d.getElementById('boostM4OpeningExperience'))return;
+ const hero=d.querySelector('header.hero'),visual=hero?.querySelector('.heroVisual'),audio=hero?.querySelector('.introAudio'),bar=d.getElementById('pinalStandardJourney');
+ if(!hero||!visual||!bar)return;
+ if(!d.getElementById('boostM4OpeningStyle')){
+  const style=d.createElement('style');style.id='boostM4OpeningStyle';style.textContent=`
+   header.hero .wrap{max-width:1120px}
+   #boostM4OpeningExperience{margin:18px 0 24px;background:#fff;border:1px solid #d9e3ec;border-radius:22px;overflow:hidden;box-shadow:0 12px 34px rgba(7,31,56,.09)}
+   #boostM4OpeningExperience .heroVisual{margin:0;border-radius:0;max-height:none;background:#0e3049}
+   #boostM4OpeningExperience .heroVisual img{width:100%;display:block;aspect-ratio:16/7;object-fit:cover;max-height:none}
+   #boostM4OpeningExperience .introAudio{margin:0;padding:14px 18px 16px;background:#fff}
+   #boostM4OpeningExperience .introAudio audio{width:100%;max-width:520px}
+   @media(max-width:700px){#boostM4OpeningExperience{margin:14px 0 20px}#boostM4OpeningExperience .heroVisual img{aspect-ratio:16/8}}
+  `;d.head.appendChild(style);
+ }
+ const opening=d.createElement('section');opening.id='boostM4OpeningExperience';opening.className='noPrint';
+ opening.appendChild(visual);
+ if(audio)opening.appendChild(audio);
+ bar.insertAdjacentElement('afterend',opening);
+}
 function inject(){
  let d;try{d=frame.contentDocument}catch(_){return false}if(!d?.body||!d.head)return false;
- if(d.getElementById('pinalStandardJourney'))return true;
+ if(d.getElementById('pinalStandardJourney')){normalizeModule4Opening(d);return true}
 
  // Module 3 is the visual gold master. Keep its native journey bar exactly where it is.
  if(moduleId==='module3'&&d.querySelector('.journeyWrap'))return true;
@@ -76,14 +96,14 @@ function inject(){
 
  const bar=buildBar(d);
  const legacy=findLegacyProgress(d);
- if(legacy){legacy.replaceWith(bar);return true}
+ if(legacy){legacy.replaceWith(bar);normalizeModule4Opening(d);return true}
 
  // Conservative fallback: same structural position as Module 3, directly below hero/header.
  const hero=d.querySelector('.hero, header.hero, body > header');
- if(hero){hero.insertAdjacentElement('afterend',bar);return true}
+ if(hero){hero.insertAdjacentElement('afterend',bar);normalizeModule4Opening(d);return true}
  const main=d.querySelector('main');
- if(main){main.insertAdjacentElement('beforebegin',bar);return true}
- d.body.insertBefore(bar,d.body.firstChild);
+ if(main){main.insertAdjacentElement('beforebegin',bar);normalizeModule4Opening(d);return true}
+ d.body.insertBefore(bar,d.body.firstChild);normalizeModule4Opening(d);
  return true;
 }
 function run(){let n=0;const t=setInterval(()=>{if(inject()||++n>=60)clearInterval(t)},200)}
