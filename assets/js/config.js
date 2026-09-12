@@ -15,6 +15,17 @@ window.BOOST_LINKS = Object.freeze({
   onet: 'https://www.mynextmove.org/explore/ip'
 });
 
+(function loadPinalWageContinuity(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(!/activity\.html$/i.test(location.pathname)||!['module2','module3','module4'].includes(params.get('m')||''))return;
+    const s=document.createElement('script');
+    s.src='assets/js/pinal-wage-continuity-v1.js?v=20260911wage2';
+    s.onerror=()=>console.warn('Pinal BOOST wage continuity helper could not load.');
+    document.head.appendChild(s);
+  }catch(e){console.warn('Pinal BOOST wage continuity loader unavailable',e)}
+})();
+
 (function wirePinalModule2CompletionRepair(){
   try{
     const params=new URLSearchParams(location.search);
@@ -35,7 +46,9 @@ window.BOOST_LINKS = Object.freeze({
         if(!cards.length)return null;
         const required=['jobs','wages','prep','employerSupport','life','future'];
         const validationBySoc={};
-        let complete=true;
+        const wage=Number(d.getElementById('currentHourlyWage')?.value||0);
+        const wageValid=Number.isFinite(wage)&&wage>0&&wage<=250;
+        let complete=wageValid;
         cards.forEach(card=>{
           const soc=card.dataset.soc||'';
           const row={};
@@ -43,13 +56,15 @@ window.BOOST_LINKS = Object.freeze({
           validationBySoc[soc]=row;
           if(!required.every(k=>value(card.querySelector(`[data-field="${k}"]`))))complete=false;
         });
-        return{complete,validationBySoc,cards};
+        return{complete,validationBySoc,cards,currentHourlyWage:wageValid?wage:null};
       }catch(e){console.warn('BOOST Module 2 live completion check unavailable',e);return null}
     }
     function recoveredEvidence(live){
       const s=sharedState(),selected=s?.module1?.selected||[];
       const saved=s?.module2?.validationBySoc||{};
       const merged={...saved,...live.validationBySoc};
+      const wage=Number(live?.currentHourlyWage||s?.module2?.currentHourlyWage||s?.module2?.wageBaseline?.hourly||s?.participant?.currentHourlyWage||0);
+      const wageValid=Number.isFinite(wage)&&wage>0&&wage<=250;
       const careers=selected.map(o=>{
         const v=merged[o.soc]||{};
         return{
@@ -61,6 +76,8 @@ window.BOOST_LINKS = Object.freeze({
       return{
         module:'module2',source:'pinal_module2_saved_reality_check',capturedAt:new Date().toISOString(),
         careers,validationBySoc:merged,intelligenceVersion:s?.module2?.intelligenceVersion||'QI-v1/BLS-baseline-v1',
+        currentHourlyWage:wageValid?wage:null,
+        wageBaseline:wageValid?{hourly:wage,annual:wage*2080,annualHours:2080,source:'Participant current or most recent hourly wage',required:true,updatedAt:new Date().toISOString()}:null,
         originalModule2CompletedAt:s?.module2?.completedAt||null,recoveredSavedEvidence:true
       };
     }
@@ -75,6 +92,7 @@ window.BOOST_LINKS = Object.freeze({
         if(window.PinalBOOST?.captureModule)window.PinalBOOST.captureModule('module2',evidence);
         else{
           const j=window.PinalBOOST?.get?.()||JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{};
+          j.participant=j.participant||{};if(evidence.currentHourlyWage)j.participant.currentHourlyWage=evidence.currentHourlyWage;
           j.modules=j.modules||{};j.progress=j.progress||{};
           j.modules.module2=Object.assign({},j.modules.module2||{},evidence,{completedAt:new Date().toISOString()});
           j.progress.module2='complete';
@@ -163,11 +181,13 @@ window.BOOST_LINKS = Object.freeze({
         event.preventDefault();event.stopImmediatePropagation();
         finish.disabled=true;finish.textContent='Saving your Module 3 story…';
         try{
+          const carriedWage=Number(m3.currentWage||shared?.module2?.currentHourlyWage||shared?.module2?.wageBaseline?.hourly||shared?.participant?.currentHourlyWage||0);
           const evidence={
             module:'module3',source:'pinal_module3_finalized_handoff',handoffVersion:'m3-active-v1',capturedAt:new Date().toISOString(),
             startingPoint:m3.startingPoint||null,selfAssessment:m3.selfAssessment||[],skillLab:m3.skillLab||null,workPreferences:m3.workPreferences||[],
             skillEvidence:m3.skillEvidence||null,skillAlignmentBySoc:m3.skillAlignmentBySoc||{},careerDecisionsBySoc:m3.careerDecisionsBySoc||{},
             careers:Array.isArray(m3.careers)?m3.careers:[],newExplorations:m3.newExplorations||[],workNowViewed:!!m3.workNowViewed,
+            currentWage:Number.isFinite(carriedWage)&&carriedWage>0?carriedWage:null,currentWageSource:'module2',
             comparisonUpdatedAt:m3.comparisonUpdatedAt||null,finalizedAt:m3.finalizedAt||new Date().toISOString(),completionReady:true
           };
           if(window.PinalBOOST?.captureModule)window.PinalBOOST.captureModule('module3',evidence);
