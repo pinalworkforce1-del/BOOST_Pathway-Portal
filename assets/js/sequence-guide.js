@@ -5,6 +5,7 @@ const CAREER_STATE='pinal_boost_career_exploration_v1';
 const ROSIE_IMG='assets/images/rosie-master.webp';
 const ORIENTATION_URL='https://www.youtube.com/watch?v=bUI5bDvHBCY';
 const INTEREST_URL='https://forms.cloud.microsoft/r/ZTsLaQY4qC';
+const START_URL='https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=B5g44f9pukus8ui6NzWh9oMizKqrSvNIoO8HO9ayO39UREQ0UzVBV0RLWjI0V1BGWTI3NkVFTlQ3SS4u';
 const SCENARIO_LABELS={healthcare:'Healthcare',trades:'Skilled Trades',manufacturing:'Advanced Manufacturing',it:'Information Technology',cdl:'Transportation & Logistics'};
 const steps={
  module1:{title:'Module 1 — Discover',unlock:'Start here',text:'This is where your BOOST journey begins. We’ll use your interests, strengths, and career ideas to identify possibilities worth exploring. What you save here becomes evidence that follows you into the next steps.',audio:'assets/audio/rosie-map-module1.mp3'},
@@ -43,12 +44,11 @@ function injectStartHotspot(){
  if(!orientation||!interest||document.querySelector('[data-pinal-start]'))return;
  orientation.hidden=true;interest.hidden=true;
  const start=document.createElement('a');
- start.className='hotspot pulse';start.href='#start';start.dataset.pinalStart='';
- start.setAttribute('aria-label','Start Here — Orientation and Interest Form');
+ start.className='hotspot pulse';start.href=START_URL;start.target='_blank';start.rel='noopener';start.dataset.pinalStart='';
+ start.setAttribute('aria-label','Start Here — BOOST Priority of Service Application');
  Object.assign(start.style,{left:'21.8%',top:'7.0%',width:'21.9%',height:'17.5%'});
  start.innerHTML='<span class="hotspot-label">Start Here — Orientation + Interest Form</span>';
  orientation.parentNode.insertBefore(start,orientation);
- start.addEventListener('click',e=>{e.preventDefault();ensureStartModal();startModal.classList.add('show')});
 }
 function module4Scenario(){
  const s=careerState(),m4=s.module4||{};
