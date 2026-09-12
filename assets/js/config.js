@@ -15,6 +15,31 @@ window.BOOST_LINKS = Object.freeze({
   onet: 'https://www.mynextmove.org/explore/ip'
 });
 
+(function loadPinalStandardJourney(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(!/activity\.html$/i.test(location.pathname))return;
+    const raw=params.get('m')||'';
+    const supported=['module1','module2','module3','module4','investment','healthcare','trades','manufacturing','it','cdl'];
+    if(!supported.includes(raw))return;
+    const s=document.createElement('script');
+    s.src='assets/js/pinal-standard-journey-v1.js?v=20260911journey1';
+    s.onerror=()=>console.warn('Pinal BOOST standard journey bar could not load.');
+    document.head.appendChild(s);
+  }catch(e){console.warn('Pinal BOOST standard journey loader unavailable',e)}
+})();
+
+(function loadPinalModule4SavedResult(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(!/activity\.html$/i.test(location.pathname)||params.get('m')!=='module4')return;
+    const s=document.createElement('script');
+    s.src='assets/js/pinal-module4-result-resume-v1.js?v=20260911m4resume1';
+    s.onerror=()=>console.warn('Pinal BOOST Module 4 saved decision helper could not load.');
+    document.head.appendChild(s);
+  }catch(e){console.warn('Pinal BOOST Module 4 saved decision loader unavailable',e)}
+})();
+
 (function loadPinalWageContinuity(){
   try{
     const params=new URLSearchParams(location.search);
