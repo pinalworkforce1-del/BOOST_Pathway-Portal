@@ -31,6 +31,7 @@ function css(d){
  .boostStandardAudioBtn:hover,.boostStandardAudioBtn:focus-visible{transform:translateY(-1px);outline:3px solid rgba(42,157,143,.16)}
  .boostStandardAudioStatus{min-height:17px;margin-top:7px;font-size:.75rem;color:#60717d}
  .boostStandardAudioSource{display:none!important}
+ .boostLegacyNarrationHidden{display:none!important;visibility:hidden!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;overflow:hidden!important}
  .boostAudioCompact{margin-top:9px;padding:10px 11px;border-radius:11px;background:#f7fbff;border:1px solid #cbd8e6}
  .boostAudioCompact .boostStandardAudioControls{gap:6px}
  .boostAudioCompact .boostStandardAudioBtn{padding:7px 10px;font-size:.76rem}
@@ -54,10 +55,15 @@ function wireControls(d,audio,mount,title,compact=false){
 }
 function hideLegacy(d,audio){
  audio.classList.add('boostStandardAudioSource');audio.removeAttribute('controls');
- if(moduleId==='module1')d.getElementById('audioBtn')?.setAttribute('hidden','');
- if(moduleId==='module2')d.querySelector('.audioRow')?.setAttribute('hidden','');
- if(moduleId==='module3'){const box=d.querySelector('.audioBox');if(box)box.style.display='none'}
- if(moduleId==='module4'){const old=d.querySelector('.introAudio');if(old)old.style.display='none'}
+ if(moduleId==='module1'){
+   const old=d.getElementById('audioBtn');if(old){old.classList.add('boostLegacyNarrationHidden');old.style.setProperty('display','none','important')}
+ }
+ if(moduleId==='module2'){
+   d.querySelectorAll('.opening .audioRow,.audioRow').forEach(row=>{row.classList.add('boostLegacyNarrationHidden');row.style.setProperty('display','none','important');row.setAttribute('aria-hidden','true')});
+   const old=d.getElementById('audioBtn');if(old){old.style.setProperty('display','none','important');old.setAttribute('aria-hidden','true')}
+ }
+ if(moduleId==='module3'){const box=d.querySelector('.audioBox');if(box)box.style.setProperty('display','none','important')}
+ if(moduleId==='module4'){const old=d.querySelector('.introAudio');if(old)old.style.setProperty('display','none','important')}
 }
 function placement(d,audio){
  if(moduleId==='module1')return d.querySelector('.hero')||audio.parentElement;
@@ -68,16 +74,14 @@ function placement(d,audio){
 }
 function installPrimary(){
  let d;try{d=frame.contentDocument}catch(_){return false}if(!d?.body||!d.head)return false;
- if(d.getElementById('boostStandardAudio'))return true;
  const audio=d.querySelector(cfg.audio);if(!audio)return false;
  css(d);hideLegacy(d,audio);
+ if(d.getElementById('boostStandardAudio'))return true;
  const shell=d.createElement('div');shell.id='boostStandardAudio';shell.className='boostStandardAudio';
  const card=d.createElement('div');card.className='boostStandardAudioCard';
  const portrait=d.createElement('div');portrait.className='boostStandardAudioRosie';portrait.innerHTML=`<img src="${ROSIE}" alt="Rosie, your BOOST guide">`;
  card.appendChild(portrait);wireControls(d,audio,card,cfg.title,false);shell.appendChild(card);
- const host=placement(d,audio);
- if(moduleId==='module2'||moduleId==='module3')host.insertAdjacentElement('afterend',shell);
- else host.insertAdjacentElement('afterend',shell);
+ const host=placement(d,audio);host.insertAdjacentElement('afterend',shell);
  return true;
 }
 function compactModule4Audio(){
@@ -89,7 +93,7 @@ function compactModule4Audio(){
    wireControls(d,audio,box,i===0?'Rosie Tip':'Rosie Reminder',true);
  });
 }
-function run(){let n=0;const t=setInterval(()=>{const ok=installPrimary();compactModule4Audio();if(ok&&++n>=8)clearInterval(t);else if(++n>=80)clearInterval(t)},250)}
+function run(){let n=0;const t=setInterval(()=>{const ok=installPrimary();compactModule4Audio();if(ok&&++n>=12)clearInterval(t);else if(++n>=80)clearInterval(t)},250)}
 frame.addEventListener('load',run);run();
 if(moduleId==='module4'){const mo=new MutationObserver(()=>compactModule4Audio());setTimeout(()=>{try{mo.observe(frame.contentDocument.body,{childList:true,subtree:true})}catch(_){ }},800)}
 })();
