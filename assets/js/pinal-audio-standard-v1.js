@@ -21,6 +21,7 @@ function css(d){
  const s=d.createElement('style');s.id='boostStandardAudioStyle';s.textContent=`
  .boostStandardAudio{max-width:1120px;margin:18px auto;padding:0 16px;font-family:Arial,sans-serif}
  #boostM1OpeningExperience>.boostStandardAudio,#boostM4OpeningExperience>.boostStandardAudio{max-width:none;margin:0;padding:14px 18px 16px;background:#fff}
+ .openingCopy>.boostStandardAudio{max-width:none;margin:16px 0 18px;padding:0}
  .boostStandardAudioCard{display:grid;grid-template-columns:104px minmax(0,1fr);gap:16px;align-items:center;padding:14px 16px;border:1px solid #cbd8e6;border-radius:16px;background:#f7fbff;box-shadow:0 7px 22px rgba(7,31,56,.08);color:#17324d}
  .boostStandardAudioRosie{width:104px;height:112px;border-radius:13px;overflow:hidden;background:#eaf3f7;border:1px solid #c8d9e3;display:flex;align-items:flex-end;justify-content:center}
  .boostStandardAudioRosie img{width:100%;height:100%;object-fit:cover;object-position:50% 17%;display:block}
@@ -36,7 +37,7 @@ function css(d){
  .boostAudioCompact{margin-top:9px;padding:10px 11px;border-radius:11px;background:#f7fbff;border:1px solid #cbd8e6}
  .boostAudioCompact .boostStandardAudioControls{gap:6px}
  .boostAudioCompact .boostStandardAudioBtn{padding:7px 10px;font-size:.76rem}
- @media(max-width:620px){.boostStandardAudio{padding:0 10px}#boostM1OpeningExperience>.boostStandardAudio,#boostM4OpeningExperience>.boostStandardAudio{padding:11px}.boostStandardAudioCard{grid-template-columns:74px minmax(0,1fr);gap:11px;padding:12px}.boostStandardAudioRosie{width:74px;height:82px}.boostStandardAudioBtn{width:100%;text-align:center}}
+ @media(max-width:620px){.boostStandardAudio{padding:0 10px}#boostM1OpeningExperience>.boostStandardAudio,#boostM4OpeningExperience>.boostStandardAudio{padding:11px}.openingCopy>.boostStandardAudio{padding:0}.boostStandardAudioCard{grid-template-columns:74px minmax(0,1fr);gap:11px;padding:12px}.boostStandardAudioRosie{width:74px;height:82px}.boostStandardAudioBtn{width:100%;text-align:center}}
  `;d.head.appendChild(s);
 }
 function button(d,text,primary=false){const b=d.createElement('button');b.type='button';b.className='boostStandardAudioBtn'+(primary?' primary':'');b.textContent=text;return b}
@@ -70,9 +71,16 @@ function hideLegacy(d,audio){
 function placement(d,audio){
  if(moduleId==='module1')return d.querySelector('#boostM1OpeningExperience .boostM1Media');
  if(moduleId==='module2')return d.querySelector('.opening')||audio.parentElement;
- if(moduleId==='module3')return d.querySelector('.openingExperience')||audio.parentElement;
+ if(moduleId==='module3')return d.getElementById('openingContinue')||d.querySelector('.openingCopy')||audio.parentElement;
  if(moduleId==='module4')return d.querySelector('#boostM4OpeningExperience .heroVisual')||d.querySelector('.heroVisual')||audio.parentElement;
  return audio.parentElement;
+}
+function placeShell(d,host,shell){
+ if(moduleId==='module3'&&host?.id==='openingContinue'){
+   if(shell.nextElementSibling!==host)host.insertAdjacentElement('beforebegin',shell);
+   return;
+ }
+ if(host.nextElementSibling!==shell)host.insertAdjacentElement('afterend',shell);
 }
 function installPrimary(){
  let d;try{d=frame.contentDocument}catch(_){return false}if(!d?.body||!d.head)return false;
@@ -80,15 +88,12 @@ function installPrimary(){
  css(d);hideLegacy(d,audio);
  const host=placement(d,audio);if(!host)return false;
  let shell=d.getElementById('boostStandardAudio');
- if(shell){
-   if(host.nextElementSibling!==shell)host.insertAdjacentElement('afterend',shell);
-   return true;
- }
+ if(shell){placeShell(d,host,shell);return true}
  shell=d.createElement('div');shell.id='boostStandardAudio';shell.className='boostStandardAudio';
  const card=d.createElement('div');card.className='boostStandardAudioCard';
  const portrait=d.createElement('div');portrait.className='boostStandardAudioRosie';portrait.innerHTML=`<img src="${ROSIE}" alt="Rosie, your BOOST guide">`;
  card.appendChild(portrait);wireControls(d,audio,card,cfg.title,false);shell.appendChild(card);
- host.insertAdjacentElement('afterend',shell);
+ placeShell(d,host,shell);
  return true;
 }
 function compactModule4Audio(){
