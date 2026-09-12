@@ -22,9 +22,6 @@ const descriptions={
  module5:'Decide whether a targeted skill investment is needed to close the gap.'
 };
 function findLegacyProgress(d){
- // Replace the module's existing below-header progress treatment in place.
- // These selectors are intentionally module-specific so content/navigation outside
- // the progress strip is never removed.
  if(moduleId==='module1'){
   const rail=d.querySelector('nav.rail');
   if(rail)return rail;
@@ -47,6 +44,32 @@ function buildBar(d){
  bar.innerHTML=`<div class="psjInner"><div class="psjLabel">Your BOOST Journey</div><div class="psjTrack" aria-label="BOOST journey progress">${stages}</div><div class="psjHere">You are here: ${descriptions[moduleId]||'Continue building your BOOST journey.'}</div></div>`;
  return bar;
 }
+function normalizeModule1Opening(d){
+ if(moduleId!=='module1'||d.getElementById('boostM1OpeningExperience'))return;
+ const hero=d.querySelector('header.hero'),grid=hero?.querySelector('.heroGrid'),img=grid?.querySelector(':scope > img'),button=d.getElementById('audioBtn'),audio=d.getElementById('introAudio'),bar=d.getElementById('pinalStandardJourney');
+ if(!hero||!grid||!img||!bar)return;
+ if(!d.getElementById('boostM1OpeningStyle')){
+  const style=d.createElement('style');style.id='boostM1OpeningStyle';style.textContent=`
+   header.hero .heroGrid{display:block!important;max-width:1120px!important}
+   #boostM1OpeningExperience{max-width:1160px;margin:22px auto 26px;background:#fff;border:1px solid #d9e3ec;border-radius:22px;overflow:hidden;box-shadow:0 12px 34px rgba(7,31,56,.09)}
+   #boostM1OpeningExperience .boostM1Media{background:#0e3049}
+   #boostM1OpeningExperience .boostM1Media img{width:100%;display:block;aspect-ratio:16/7;object-fit:cover}
+   #boostM1OpeningExperience .boostM1Audio{padding:14px 18px 16px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+   #boostM1OpeningExperience .boostM1Audio .audioBtn{margin:0;background:#0b3158!important;color:#fff!important;border:1px solid #0b3158!important;border-radius:999px;padding:10px 15px;font-weight:900;cursor:pointer}
+   #boostM1OpeningExperience .boostM1Audio audio{display:none}
+   #boostM1OpeningExperience .boostM1AudioNote{font-size:.78rem;color:#64748b;font-weight:700}
+   @media(max-width:700px){#boostM1OpeningExperience{margin:14px 12px 20px}#boostM1OpeningExperience .boostM1Media img{aspect-ratio:16/8}}
+  `;d.head.appendChild(style);
+ }
+ const opening=d.createElement('section');opening.id='boostM1OpeningExperience';
+ const media=d.createElement('div');media.className='boostM1Media';media.appendChild(img);
+ const controls=d.createElement('div');controls.className='boostM1Audio';
+ if(button)controls.appendChild(button);
+ if(audio)controls.appendChild(audio);
+ const note=d.createElement('span');note.className='boostM1AudioNote';note.textContent='Optional narration';controls.appendChild(note);
+ opening.appendChild(media);opening.appendChild(controls);
+ bar.insertAdjacentElement('afterend',opening);
+}
 function normalizeModule4Opening(d){
  if(moduleId!=='module4'||d.getElementById('boostM4OpeningExperience'))return;
  const hero=d.querySelector('header.hero'),visual=hero?.querySelector('.heroVisual'),audio=hero?.querySelector('.introAudio'),bar=d.getElementById('pinalStandardJourney');
@@ -67,9 +90,10 @@ function normalizeModule4Opening(d){
  if(audio)opening.appendChild(audio);
  bar.insertAdjacentElement('afterend',opening);
 }
+function normalizeOpenings(d){normalizeModule1Opening(d);normalizeModule4Opening(d)}
 function inject(){
  let d;try{d=frame.contentDocument}catch(_){return false}if(!d?.body||!d.head)return false;
- if(d.getElementById('pinalStandardJourney')){normalizeModule4Opening(d);return true}
+ if(d.getElementById('pinalStandardJourney')){normalizeOpenings(d);return true}
 
  // Module 3 is the visual gold master. Keep its native journey bar exactly where it is.
  if(moduleId==='module3'&&d.querySelector('.journeyWrap'))return true;
@@ -96,14 +120,13 @@ function inject(){
 
  const bar=buildBar(d);
  const legacy=findLegacyProgress(d);
- if(legacy){legacy.replaceWith(bar);normalizeModule4Opening(d);return true}
+ if(legacy){legacy.replaceWith(bar);normalizeOpenings(d);return true}
 
- // Conservative fallback: same structural position as Module 3, directly below hero/header.
  const hero=d.querySelector('.hero, header.hero, body > header');
- if(hero){hero.insertAdjacentElement('afterend',bar);normalizeModule4Opening(d);return true}
+ if(hero){hero.insertAdjacentElement('afterend',bar);normalizeOpenings(d);return true}
  const main=d.querySelector('main');
- if(main){main.insertAdjacentElement('beforebegin',bar);normalizeModule4Opening(d);return true}
- d.body.insertBefore(bar,d.body.firstChild);normalizeModule4Opening(d);
+ if(main){main.insertAdjacentElement('beforebegin',bar);normalizeOpenings(d);return true}
+ d.body.insertBefore(bar,d.body.firstChild);normalizeOpenings(d);
  return true;
 }
 function run(){let n=0;const t=setInterval(()=>{if(inject()||++n>=60)clearInterval(t)},200)}
