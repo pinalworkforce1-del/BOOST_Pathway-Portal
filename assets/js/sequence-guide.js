@@ -44,7 +44,7 @@ function injectStartHotspot(){
  if(!orientation||!interest||document.querySelector('[data-pinal-start]'))return;
  orientation.hidden=true;interest.hidden=true;
  const start=document.createElement('a');
- start.className='hotspot pulse';start.href=START_URL;start.target='_blank';start.rel='noopener';start.dataset.pinalStart='';
+ start.className='hotspot';start.href=START_URL;start.target='_blank';start.rel='noopener';start.dataset.pinalStart='';
  start.setAttribute('aria-label','Start Here — BOOST Priority of Service Application');
  Object.assign(start.style,{left:'21.8%',top:'7.0%',width:'21.9%',height:'17.5%'});
  start.innerHTML='<span class="hotspot-label">Start Here — Orientation + Interest Form</span>';
@@ -87,6 +87,7 @@ function decorateScenarioHandoff(){
 }
 function decorate(){document.querySelectorAll('.hotspot,[data-investment-card]').forEach(el=>{const key=keyFor(el);if(!key||!infoFor(key))return;el.classList.toggle('boostSeqLocked',!unlocked(key));if(!el.querySelector('.boostSeqInfo')){const b=document.createElement('span');b.className='boostSeqInfo';b.textContent='?';b.title='Tell me about this step';b.setAttribute('role','button');b.setAttribute('aria-label','Tell me about this step');b.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();openModal(key)},true);el.appendChild(b)}});decorateScenarioHandoff()}
 function gate(e){const el=e.target.closest('.hotspot,[data-investment-card]');if(!el)return;const key=keyFor(el);if(!key||e.target.closest('.boostSeqInfo'))return;if(!unlocked(key)){e.preventDefault();e.stopImmediatePropagation();openModal(key)}}
-function init(){injectStyles();ensureModal();injectStartHotspot();decorate();document.addEventListener('click',gate,true);window.addEventListener('storage',decorate);document.addEventListener('boostprogress',decorate);document.addEventListener('boostpathway',()=>setTimeout(decorate,0));setInterval(decorate,1200)}
+function removePersistentPulses(){document.querySelector('.hotspot[aria-label="Watch Orientation Video"]')?.classList.remove('pulse');document.querySelector('[data-module-id="module1"]')?.classList.remove('pulse');document.querySelector('[data-pinal-start]')?.classList.remove('pulse')}
+function init(){injectStyles();ensureModal();injectStartHotspot();removePersistentPulses();decorate();document.addEventListener('click',gate,true);window.addEventListener('storage',decorate);document.addEventListener('boostprogress',decorate);document.addEventListener('boostpathway',()=>setTimeout(decorate,0));setInterval(decorate,1200)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
