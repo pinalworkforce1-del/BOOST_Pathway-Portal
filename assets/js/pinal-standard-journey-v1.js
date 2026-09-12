@@ -132,3 +132,14 @@ function inject(){
 function run(){let n=0;const t=setInterval(()=>{if(inject()||++n>=60)clearInterval(t)},200)}
 frame.addEventListener('load',run);run();
 })();
+
+(()=>{
+'use strict';
+try{
+ const params=new URLSearchParams(location.search),m=params.get('m')||'';
+ if(!/activity\.html$/i.test(location.pathname)||!['module1','module2','module3','module4'].includes(m))return;
+ if(document.querySelector('script[data-pinal-audio-standard]'))return;
+ const s=document.createElement('script');s.src='assets/js/pinal-audio-standard-v1.js?v=20260911audio1';s.dataset.pinalAudioStandard='1';
+ s.onerror=()=>console.warn('Pinal BOOST standardized Rosie audio could not load.');document.head.appendChild(s);
+}catch(e){console.warn('Pinal BOOST standardized Rosie audio loader unavailable',e)}
+})();
