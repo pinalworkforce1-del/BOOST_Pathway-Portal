@@ -22,8 +22,19 @@ const descriptions={
  module5:'Decide whether a targeted skill investment is needed to close the gap.'
 };
 function findLegacyProgress(d){
- const journey=d.querySelector('.journeyWrap');
- if(journey)return journey;
+ // Replace the module's existing below-header progress treatment in place.
+ // These selectors are intentionally module-specific so content/navigation outside
+ // the progress strip is never removed.
+ if(moduleId==='module1'){
+  const rail=d.querySelector('nav.rail');
+  if(rail)return rail;
+ }
+ if(moduleId==='module2'){
+  const journey=d.querySelector('body > .journey, .journey');
+  if(journey)return journey;
+ }
+ const journeyWrap=d.querySelector('.journeyWrap');
+ if(journeyWrap)return journeyWrap;
  for(const sec of d.querySelectorAll('section')){
   const p=sec.querySelector(':scope > .progress');
   if(p&&/BOOST progression/i.test(sec.textContent||''))return sec;
@@ -40,7 +51,7 @@ function inject(){
  let d;try{d=frame.contentDocument}catch(_){return false}if(!d?.body||!d.head)return false;
  if(d.getElementById('pinalStandardJourney'))return true;
 
- // Module 3 is the visual gold master. Leave its native journey bar exactly where it is: directly below the hero/header.
+ // Module 3 is the visual gold master. Keep its native journey bar exactly where it is.
  if(moduleId==='module3'&&d.querySelector('.journeyWrap'))return true;
 
  if(!d.getElementById('pinalStandardJourneyStyle')){
@@ -65,16 +76,11 @@ function inject(){
 
  const bar=buildBar(d);
  const legacy=findLegacyProgress(d);
- if(legacy){
-  legacy.replaceWith(bar);
-  return true;
- }
+ if(legacy){legacy.replaceWith(bar);return true}
 
- // If a module did not already have a progress treatment, place the standard bar in the same structural location as Module 3: immediately below the hero/header area.
+ // Conservative fallback: same structural position as Module 3, directly below hero/header.
  const hero=d.querySelector('.hero, header.hero, body > header');
  if(hero){hero.insertAdjacentElement('afterend',bar);return true}
-
- // Conservative fallback only when no recognizable header exists.
  const main=d.querySelector('main');
  if(main){main.insertAdjacentElement('beforebegin',bar);return true}
  d.body.insertBefore(bar,d.body.firstChild);
