@@ -171,7 +171,7 @@
     if(!(/\/BOOST_Pathway-Portal\/$/.test(location.pathname)||/\/BOOST_Pathway-Portal\/index\.html$/i.test(location.pathname)||/\/BOOST_Pathway-Portal\/activity\.html$/i.test(location.pathname)))return;
     if(document.querySelector('script[data-pinal-ask-rosie]'))return;
     const context=document.createElement('script');
-    context.src='assets/js/pinal-ask-rosie-context-v12.js?v=20260912rosiectx2';
+    context.src='assets/js/pinal-ask-rosie-context-v12.js?v=20260913rosiectx3';
     context.dataset.pinalAskRosieContext='1';
     document.head.appendChild(context);
     const s=document.createElement('script');
