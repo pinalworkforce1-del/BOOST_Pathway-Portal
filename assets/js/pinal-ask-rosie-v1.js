@@ -2,7 +2,7 @@
 'use strict';
 if(window.__PINAL_ASK_ROSIE_V11__)return;window.__PINAL_ASK_ROSIE_V11__=true;
 
-const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-ask-rosie';
+const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-ask-rosie-v171';
 const DATA_FILES=[1,2,3,4,5,6].map(n=>`https://pinalworkforce1-del.github.io/BOOST/assets/data/career-data-v1-0${n}.js`);
 const ROSIE='assets/images/rosie-master.webp';
 const PAGE_LABEL=()=>{const q=new URLSearchParams(location.search),m=q.get('m');return m?`Pinal BOOST ${m}`:'Pinal BOOST Journey Map'};
