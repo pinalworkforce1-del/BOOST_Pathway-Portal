@@ -14,10 +14,10 @@ async function loadOccs(){try{window.BOOST_DATA_B64='';for(const f of DATA_FILES
 async function getClient(){try{const existing=window.PinalBOOSTCloud?.getClient?.();if(existing)return existing;const cfg=window.BOOST_CONFIG||{};if(cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase?.createClient)return window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return null}catch{return null}}
 function voiceScore(v){const n=String(v?.name||'').toLowerCase(),lang=String(v?.lang||'').toLowerCase();let score=0;if(lang==='en-us')score+=60;else if(lang.startsWith('en-'))score+=30;if(n.includes('google us english'))score+=140;if(n.includes('natural'))score+=70;if(/\b(ava|jenny|aria|samantha|zira|karen|susan|hazel|joanna|salli)\b/.test(n))score+=40;if(n.includes('microsoft'))score+=12;if(v?.default)score+=4;return score}
 function currentSpeechVoice(){return speechVoices.find(v=>v.voiceURI===selectedVoiceId)||speechVoices.find(v=>v.name===selectedVoiceId)||null}
-function speechText(text){let t=String(text||'').replace(/O\*NET/gi,'O Net').replace(/\bCDL\b/g,'C D L').replace(/\bLMI\b/g,'L M I').replace(/\bWIOA\b/g,'W I O A').replace(/\bSOC\b/g,'S O C').replace(/\s+/g,' ').trim();const parts=t.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[t];return parts.map((part,i)=>{let p=part.trim();if(i<parts.length-1&&p.endsWith('.')){const words=p.slice(0,-1).trim().split(/\s+/).filter(Boolean).length;if(words<=10)p=p.slice(0,-1)+','}return p}).join(' ').replace(/\s+/g,' ').trim()}
+function speechText(text){return String(text||'').replace(/O\*NET/gi,'O Net').replace(/\bCDL\b/g,'C D L').replace(/\bLMI\b/g,'L M I').replace(/\bWIOA\b/g,'W I O A').replace(/\bSOC\b/g,'S O C').replace(/\s+/g,' ').trim()}
 function makeUtterance(text){const u=new SpeechSynthesisUtterance(speechText(text));const v=currentSpeechVoice(),name=String(v?.name||'').toLowerCase(),googleUS=name.includes('google us english');if(v)u.voice=v;u.lang=v?.lang||'en-US';u.rate=googleUS?1.00:.92;u.pitch=googleUS?.96:.98;u.volume=1;return u}
 function speak(text){if(!voiceOn||!('speechSynthesis'in window)||!String(text||'').trim())return;try{speechSynthesis.cancel();speechSynthesis.speak(makeUtterance(text))}catch{}}
-function speakSequence(parts){if(!voiceOn||!('speechSynthesis'in window))return;const clean=(parts||[]).map(x=>String(x||'').trim()).filter(Boolean);if(!clean.length)return;try{speechSynthesis.cancel();speechSynthesis.speak(makeUtterance(clean.join(' ')))}catch{}}
+function speakSequence(parts){if(!voiceOn||!('speechSynthesis'in window))return;const clean=(parts||[]).map(x=>String(x||'').trim()).filter(Boolean);if(!clean.length)return;try{speechSynthesis.cancel();for(const part of clean)speechSynthesis.speak(makeUtterance(part))}catch{}}
 function populateVoicePicker(){const select=$('#voiceSelect'),preview=$('#previewVoice'),status=$('#voiceStatus');if(!select)return;if(!('speechSynthesis'in window)){select.innerHTML='<option>Speech unavailable in this browser</option>';select.disabled=true;if(preview)preview.disabled=true;if(status)status.textContent='This browser does not expose text-to-speech voices.';return}speechVoices=speechSynthesis.getVoices().filter(v=>String(v.lang||'').toLowerCase().startsWith('en')).sort((a,b)=>voiceScore(b)-voiceScore(a)||a.name.localeCompare(b.name));if(!speechVoices.length){select.innerHTML='<option>Loading voices…</option>';if(status)status.textContent='Loading voices from this device…';return}let saved='';try{saved=localStorage.getItem(VOICE_KEY)||''}catch{};let chosen=speechVoices.find(v=>v.voiceURI===saved||v.name===saved)||speechVoices[0];selectedVoiceId=chosen.voiceURI;select.innerHTML='';for(const v of speechVoices){const o=document.createElement('option');o.value=v.voiceURI;o.textContent=`${v.name} · ${v.lang}${v.localService?'':' · online'}`;select.appendChild(o)}select.value=selectedVoiceId;if(status)status.textContent=`Using ${chosen.name}. Your choice is saved on this device.`}
 function setupRosieVoice(){const select=$('#voiceSelect'),preview=$('#previewVoice');populateVoicePicker();if('speechSynthesis'in window){speechSynthesis.onvoiceschanged=populateVoicePicker;setTimeout(populateVoicePicker,250);setTimeout(populateVoicePicker,900)}if(select)select.onchange=()=>{selectedVoiceId=select.value;try{localStorage.setItem(VOICE_KEY,selectedVoiceId)}catch{};const v=currentSpeechVoice();if($('#voiceStatus'))$('#voiceStatus').textContent=v?`Using ${v.name}. Your choice is saved on this device.`:'Voice selected.';speak(VOICE_PREVIEW)};if(preview)preview.onclick=()=>speak(VOICE_PREVIEW)}
 function setThinking(on){$('#thinking')?.classList.toggle('show',!!on);if($('#submitAnswer'))$('#submitAnswer').disabled=!!on;if($('#startInterview')){$('#startInterview').disabled=!!on;$('#startInterview').textContent=on?'Rosie is preparing…':'Start My Interview'}}
@@ -36,45 +36,10 @@ function setupVoice(){
   if(!SR){$('#mic').disabled=true;$('#mic').textContent='🎙 Voice input unavailable';return}
   let rec=null,wantsListening=false,committed='',restartTimer=null;
   const setMicUi=(active)=>{const b=$('#mic');if(!b)return;b.classList.toggle('recording',active);b.textContent=active?'■ Stop recording':'🎙 Answer by voice'};
-  function stopCapture(forSubmit=false){
-    wantsListening=false;clearTimeout(restartTimer);restartTimer=null;
-    if(rec){try{rec.stop()}catch{}}
-    else setMicUi(false);
-    if(!forSubmit&&$('#micStatus'))$('#micStatus').textContent=$('#answer').value.trim()?'Transcript ready — review it or continue recording.':'';
-  }
+  function stopCapture(forSubmit=false){wantsListening=false;clearTimeout(restartTimer);restartTimer=null;if(rec){try{rec.stop()}catch{}}else setMicUi(false);if(!forSubmit&&$('#micStatus'))$('#micStatus').textContent=$('#answer').value.trim()?'Transcript ready — review it or continue recording.':''}
   stopVoiceCapture=stopCapture;
-  function beginSession(){
-    if(!wantsListening||rec)return;
-    const r=new SR();rec=r;r.lang='en-US';r.interimResults=true;r.continuous=true;
-    let sessionFinal='';
-    r.onstart=()=>{setMicUi(true);$('#micStatus').textContent='Listening — pause naturally. I’ll keep your answer together.'};
-    r.onresult=e=>{
-      let finalNow='',interim='';
-      for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalNow+=t+' ';else interim+=t+' '}
-      sessionFinal=finalNow.trim();
-      $('#answer').value=[committed,sessionFinal,interim.trim()].filter(Boolean).join(' ').replace(/\s+/g,' ').trim();
-    };
-    r.onerror=e=>{
-      if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){
-        wantsListening=false;$('#micStatus').textContent=`Voice input: ${e.error}. You can keep typing your answer.`;
-      }else if(e.error!=='no-speech'){$('#micStatus').textContent='Voice paused briefly — keeping your answer and reconnecting…'}
-    };
-    r.onend=()=>{
-      committed=$('#answer').value.trim();rec=null;
-      if(wantsListening){
-        $('#micStatus').textContent='Still listening — take your time.';
-        restartTimer=setTimeout(beginSession,180);
-      }else{
-        setMicUi(false);
-        $('#micStatus').textContent=committed?'Transcript ready — review it or continue recording.':'';
-      }
-    };
-    try{r.start()}catch(e){rec=null;if(wantsListening)restartTimer=setTimeout(beginSession,300)}
-  }
-  $('#mic').onclick=()=>{
-    if(wantsListening){stopCapture();return}
-    wantsListening=true;committed=$('#answer').value.trim();setMicUi(true);$('#micStatus').textContent='Starting microphone…';beginSession();
-  };
+  function beginSession(){if(!wantsListening||rec)return;const r=new SR();rec=r;r.lang='en-US';r.interimResults=true;r.continuous=true;let sessionFinal='';r.onstart=()=>{setMicUi(true);$('#micStatus').textContent='Listening — pause naturally. I’ll keep your answer together.'};r.onresult=e=>{let finalNow='',interim='';for(let i=0;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finalNow+=t+' ';else interim+=t+' '}sessionFinal=finalNow.trim();$('#answer').value=[committed,sessionFinal,interim.trim()].filter(Boolean).join(' ').replace(/\s+/g,' ').trim()};r.onerror=e=>{if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){wantsListening=false;$('#micStatus').textContent=`Voice input: ${e.error}. You can keep typing your answer.`}else if(e.error!=='no-speech'){$('#micStatus').textContent='Voice paused briefly — keeping your answer and reconnecting…'}};r.onend=()=>{committed=$('#answer').value.trim();rec=null;if(wantsListening){$('#micStatus').textContent='Still listening — take your time.';restartTimer=setTimeout(beginSession,180)}else{setMicUi(false);$('#micStatus').textContent=committed?'Transcript ready — review it or continue recording.':''}};try{r.start()}catch(e){rec=null;if(wantsListening)restartTimer=setTimeout(beginSession,300)}}
+  $('#mic').onclick=()=>{if(wantsListening){stopCapture();return}wantsListening=true;committed=$('#answer').value.trim();setMicUi(true);$('#micStatus').textContent='Starting microphone…';beginSession()}
 }
 function prefill(){const j=sanitizedJourney(),soc=j.modules?.module4?.selectedSoc,title=j.modules?.module4?.careerTitle;if(title)$('#targetRole').value=title;if(soc)$('#targetSoc').value=soc}
 function wireImmediate(){prefill();document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode||'coach'});$('#voiceToggle').onclick=()=>{voiceOn=!voiceOn;$('#voiceToggle').textContent=`${voiceOn?'🔊':'🔇'} Rosie voice: ${voiceOn?'On':'Off'}`;if(!voiceOn&&'speechSynthesis'in window)speechSynthesis.cancel()};$('#startInterview').onclick=start;$('#submitAnswer').onclick=submit;$('#nextQuestion').onclick=next;$('#clearAnswer').onclick=()=>{stopVoiceCapture();$('#answer').value='';$('#micStatus').textContent='';$('#answer').focus()};$('#restart').onclick=()=>location.reload();$('#copyReport').onclick=async()=>{const txt=$('#report').innerText;try{await navigator.clipboard.writeText(txt);$('#copyReport').textContent='Copied';setTimeout(()=>$('#copyReport').textContent='Copy Report',1200)}catch{}};setupRosieVoice();setupVoice();setStatus('Five adaptive questions · answer by typing or microphone where supported')}
