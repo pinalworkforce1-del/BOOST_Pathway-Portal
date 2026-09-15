@@ -42,13 +42,14 @@ function injectStartHotspot(){
  const orientation=document.querySelector('.hotspot[aria-label="Watch Orientation Video"]');
  const interest=document.querySelector('.hotspot[aria-label="Complete the Interest Form"]');
  if(!orientation||!interest||document.querySelector('[data-pinal-start]'))return;
- orientation.hidden=true;interest.hidden=true;
  const start=document.createElement('a');
  start.className='hotspot';start.href=START_URL;start.target='_blank';start.rel='noopener';start.dataset.pinalStart='';
  start.setAttribute('aria-label','Start Here — BOOST Priority of Service Application');
  Object.assign(start.style,{left:'21.8%',top:'7.0%',width:'21.9%',height:'17.5%'});
  start.innerHTML='<span class="hotspot-label">Start Here — Orientation + Interest Form</span>';
  orientation.parentNode.insertBefore(start,orientation);
+ orientation.remove();
+ interest.remove();
 }
 function module4Scenario(){
  const s=careerState(),m4=s.module4||{};
