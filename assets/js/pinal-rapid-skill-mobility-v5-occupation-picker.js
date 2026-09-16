@@ -51,15 +51,19 @@ function installPicker(){
  const results=document.createElement('div');
  results.id='occupationPickerResults';results.className='occupationPickerResults';results.hidden=true;
  input.insertAdjacentElement('afterend',results);
+ let selecting=false;
  function hide(){results.hidden=true;results.innerHTML=''}
  function select(o){
+  selecting=true;
   input.value=o.title;
-  hide();
   input.dispatchEvent(new Event('input',{bubbles:true}));
   input.dispatchEvent(new Event('change',{bubbles:true}));
-  input.focus();
+  hide();
+  try{input.focus({preventScroll:true})}catch{input.focus()}
+  setTimeout(()=>{selecting=false},0);
  }
  function render(){
+  if(selecting)return;
   const list=matches(input.value);
   if(!list.length){hide();return}
   results.innerHTML=list.map(o=>`<button type="button" class="occupationPickerOption" data-soc="${esc(o.soc)}"><span><b>${esc(o.title)}</b><small>${o.sector?esc(o.sector)+' • ':''}SOC ${esc(o.soc)}</small></span><span class="occupationPickerChoose">Choose</span></button>`).join('');
@@ -71,7 +75,7 @@ function installPicker(){
   });
  }
  input.addEventListener('input',render);
- input.addEventListener('focus',()=>{if(input.value.trim().length>=2)render()});
+ input.addEventListener('focus',()=>{if(!selecting&&input.value.trim().length>=2)render()});
  input.addEventListener('keydown',e=>{
   if(results.hidden)return;
   const opts=[...results.querySelectorAll('.occupationPickerOption')];
@@ -87,7 +91,7 @@ function installPicker(){
  });
  document.addEventListener('pointerdown',e=>{if(e.target!==input&&!results.contains(e.target))hide()});
 }
-function styles(){if($('#occupationPickerStyles'))return;const s=document.createElement('style');s.id='occupationPickerStyles';s.textContent=`#startPanel .grid3>label:first-child{position:relative}.occupationPickerResults{position:absolute;left:0;right:0;top:74px;z-index:60;max-height:310px;overflow:auto;padding:5px;border:1px solid #b9cbd7;border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(20,48,68,.22)}.occupationPickerResults[hidden]{display:none}.occupationPickerOption{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 11px;border:0;border-radius:9px;background:#fff;text-align:left;color:#173042;cursor:pointer}.occupationPickerOption:hover,.occupationPickerOption:focus{background:#edf5f8;outline:2px solid #7ca7bf;outline-offset:-2px}.occupationPickerOption b{display:block;font-size:.87rem}.occupationPickerOption small{display:block;margin-top:2px;color:#687c89;font-size:.72rem}.occupationPickerChoose{font-size:.7rem;font-weight:900;color:#2f7d4c;white-space:nowrap}@media(max-width:820px){.occupationPickerResults{top:74px}}`;document.head.appendChild(s)}
+function styles(){if($('#occupationPickerStyles'))return;const s=document.createElement('style');s.id='occupationPickerStyles';s.textContent=`#startPanel .grid3>label:first-child{position:relative}.occupationPickerResults{position:absolute;left:0;right:0;top:74px;z-index:60;max-height:310px;overflow:auto;padding:5px;border:1px solid #b9cbd7;border-radius:12px;background:#fff;box-shadow:0 14px 34px rgba(20,48,68,.22)}.occupationPickerResults[hidden]{display:none}.occupationPickerOption{width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 11px;border:0;border-radius:9px;background:#fff;text-align:left;color:#173042;cursor:pointer}.occupationPickerOption:hover,.occupationPickerOption:focus{background:#edf5f8;outline:2px solid #7ca7bf;outline-offset:-2px}.occupationPickerOption b{display:block;font-size:.87rem}.occupationPickerOption small{display:block;margin-top:2px;color:#687c89;font-size:.72rem}.occupationPickerChoose{font-size:.7rem;font-weight:900;color:#2f7d4c;white-space:nowrap;pointer-events:none}@media(max-width:820px){.occupationPickerResults{top:74px}}`;document.head.appendChild(s)}
 async function install(){styles();await loadOccupations();installPicker()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
