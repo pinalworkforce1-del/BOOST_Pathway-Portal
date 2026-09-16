@@ -1,0 +1,5 @@
+(()=>{'use strict';
+function apply(){const hero=document.querySelector('.heroNote');if(hero)hero.textContent='Pinal regional LMI • Employer evidence • Credential gap closure';const src=document.querySelector('#planPanel .source');if(src)src.textContent='This Rapid Employment experience reads your saved Module 1 career exploration and Pinal BOOST regional occupation data. It does not overwrite Career Development Modules 1–4. ETPL results are planning evidence only and do not represent eligibility or funding approval.';const status=document.getElementById('saveStatus');if(status&&/saved locally for this test/i.test(status.textContent||''))status.textContent='✓ Rapid Employment Mobility Plan generated and saved to your BOOST journey.'}
+function install(){apply();const status=document.getElementById('saveStatus');if(status)new MutationObserver(apply).observe(status,{childList:true,characterData:true,subtree:true});document.getElementById('saveBtn')?.addEventListener('click',()=>setTimeout(apply,220))}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
