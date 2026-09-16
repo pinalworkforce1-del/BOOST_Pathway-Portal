@@ -1,0 +1,11 @@
+(()=>{'use strict';
+function pending(root=document){return[...root.querySelectorAll('.v5EtplStatus')].some(el=>/checking the current approved etpl snapshot/i.test(el.textContent||''))}
+async function wait(maxMs=12000){const start=Date.now();while(pending()&&Date.now()-start<maxMs)await new Promise(r=>setTimeout(r,200));return !pending()}
+function cleanup(){document.getElementById('v5FrozenPrintSnapshot')?.remove()}
+function freeze(){cleanup();const live=document.getElementById('snapshot');if(!live)return null;const clone=live.cloneNode(true);clone.id='v5FrozenPrintSnapshot';clone.classList.add('v5FrozenPrintSnapshot');live.insertAdjacentElement('afterend',clone);return clone}
+function markTimeout(root){root?.querySelectorAll('.v5EtplStatus').forEach(el=>{if(/checking the current approved etpl snapshot/i.test(el.textContent||'')){el.className='notice warning v5EtplStatus';el.innerHTML='<b>ETPL lookup did not finish before print.</b> The verified gap remains valid; reopen the plan online to refresh the current approved training snapshot.'}})}
+function installStyle(){if(document.getElementById('v5PrintFreezeStyle'))return;const s=document.createElement('style');s.id='v5PrintFreezeStyle';s.textContent='.v5FrozenPrintSnapshot{display:none}@media print{#snapshot{display:none!important}.v5FrozenPrintSnapshot{display:grid!important;grid-template-columns:1fr;gap:14px}}';document.head.appendChild(s)}
+function replaceButton(){const old=document.getElementById('printBtn');if(!old||old.dataset.freezeHotfix)return;const btn=old.cloneNode(true);btn.removeAttribute('data-v5-print-guard');btn.dataset.freezeHotfix='1';old.replaceWith(btn);btn.addEventListener('click',async e=>{e.preventDefault();const prior=btn.textContent;btn.disabled=true;btn.textContent=pending()?'Preparing Plan…':'Preparing Print…';const settled=await wait();const frozen=freeze();if(!settled)markTimeout(frozen);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));btn.textContent=prior||'Print / Save Plan';btn.disabled=false;window.print()})}
+function install(){installStyle();replaceButton();window.addEventListener('afterprint',()=>setTimeout(cleanup,0))}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
