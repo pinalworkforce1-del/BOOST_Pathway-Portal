@@ -10,7 +10,7 @@
   const NONCE_PREFIX="boost_completion_nonce:";
   const RETURN_FLAG="boost_complete";
   const SYNC_FLAG="boost_progress_synced";
-  const RAPID_SKILL_MOBILITY_URL="rapid-skill-mobility-v5.html";
+  const RAPID_SKILL_MOBILITY_URL="rapid-employment.html";
   const CORE_WRAPPED=new Set(["module1","module2","module3","module4","module5"]);
   const CORE_PREVIOUS={module2:"module1",module3:"module2",module4:"module3"};
   let client=null;
