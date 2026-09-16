@@ -10,6 +10,7 @@
   const NONCE_PREFIX="boost_completion_nonce:";
   const RETURN_FLAG="boost_complete";
   const SYNC_FLAG="boost_progress_synced";
+  const RAPID_SKILL_MOBILITY_URL="rapid-skill-mobility-v5.html";
   const CORE_WRAPPED=new Set(["module1","module2","module3","module4","module5"]);
   const CORE_PREVIOUS={module2:"module1",module3:"module2",module4:"module3"};
   let client=null;
@@ -93,11 +94,22 @@
     return null;
   }
 
+  function wireRapidSkillMobility(){
+    const el=document.querySelector('[data-module-id="skillmobility"]');
+    if(!el)return;
+    el.setAttribute("href",RAPID_SKILL_MOBILITY_URL);
+    el.removeAttribute("target");
+    el.removeAttribute("rel");
+    el.setAttribute("aria-label","Open Rapid Employment Skill Mobility");
+    const label=el.querySelector('.hotspot-label');
+    if(label)label.textContent="Open Rapid Employment Skill Mobility";
+  }
+
   function launchModule(el,event){
-    const href=el.getAttribute("href");
-    if(!href||href==="#"||el.dataset.coming)return;
     const moduleId=moduleIdFor(el);
     if(!moduleId)return;
+    const href=moduleId==="skillmobility"?RAPID_SKILL_MOBILITY_URL:el.getAttribute("href");
+    if(!href||href==="#"||el.dataset.coming)return;
 
     event.preventDefault();
     event.stopImmediatePropagation();
@@ -269,6 +281,7 @@
 
   async function boot(){
     retireStandaloneCareerSkillMobility();
+    wireRapidSkillMobility();
     const c=getClient();if(!c)return;
     const {data}=await c.auth.getSession();const session=data.session;if(!session?.user)return;
     const recorded=await recordReturn(c,session);
