@@ -169,6 +169,27 @@
     const {error:upsertError}=await c.from("boost_module_progress").upsert({user_id:session.user.id,region:REGION,module_id:"module2",pathway:"career",status:"completed",evidence:{source:"saved_module2_evidence_repair",version:2,journey_payload_saved:true,recovered_from:recovery.source},completed_at:completedAt,updated_at:now},{onConflict:"user_id,region,module_id"});
     if(upsertError){console.warn("BOOST Module 2 validated progress repair failed:",upsertError.message);return false}try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after Module 2 repair did not finish",e)}console.info("BOOST restored Module 2 validated completion from saved Reality Check evidence.");return true;
   }
+  async function repairStandaloneValidatedProgress(c,session){
+    const repairs=[
+      {id:"jobsearch",pathway:"rapid"},
+      {id:"financial",pathway:selectedPath(parseMap())||null}
+    ];
+    let changed=false;
+    for(const item of repairs){
+      if(!repairStandaloneEvidence(item.id))continue;
+      const {data,error}=await c.from("boost_module_progress").select("module_id").eq("user_id",session.user.id).eq("region",REGION).eq("module_id",item.id).eq("status","completed").maybeSingle();
+      if(error){console.warn("BOOST "+item.id+" recovery check failed:",error.message);continue}
+      if(data?.module_id)continue;
+      const payload=journey().modules?.[item.id]||{},now=new Date().toISOString(),completedAt=payload.completedAt||payload.completed_at||now;
+      const pathway=item.id==="jobsearch"?"rapid":(item.pathway==="career"?"career":"rapid");
+      const {error:upsertError}=await c.from("boost_module_progress").upsert({user_id:session.user.id,region:REGION,module_id:item.id,pathway,status:"completed",evidence:{source:"saved_local_evidence_repair",version:2,journey_payload_saved:true,recovered_from:payload.source||"local_state"},completed_at:completedAt,updated_at:now},{onConflict:"user_id,region,module_id"});
+      if(upsertError){console.warn("BOOST "+item.id+" validated progress recovery failed:",upsertError.message);continue}
+      changed=true;
+    }
+    if(changed){try{await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn("BOOST journey save after standalone recovery did not finish",e)}}
+    return changed;
+  }
+
   async function syncValidatedProgress(c,session,forceReload){
     const {data,error}=await c.from("boost_module_progress").select("module_id").eq("user_id",session.user.id).eq("region",REGION).eq("status","completed");if(error){console.error("BOOST validated progress could not be loaded:",error.message);return}
     const map=parseMap(),next={};(data||[]).forEach(row=>{next[keyForModule(row.module_id)]=true});const changed=JSON.stringify(map.complete||{})!==JSON.stringify(next);map.complete=next;localStorage.setItem(MAP_KEY,JSON.stringify(map));
@@ -180,7 +201,7 @@
   async function boot(){
     retireStandaloneCareerSkillMobility();wireRapidSkillMobility();wireRapidJobSearch();
     const c=getClient();if(!c)return;const {data}=await c.auth.getSession();const session=data.session;if(!session?.user)return;
-    const recorded=await recordReturn(c,session),repaired=await repairValidatedModule2(c,session);await syncValidatedProgress(c,session,recorded||repaired);
+    const recorded=await recordReturn(c,session),repaired=await repairValidatedModule2(c,session),standaloneRepaired=await repairStandaloneValidatedProgress(c,session);await syncValidatedProgress(c,session,recorded||repaired||standaloneRepaired);
   }
 
   document.addEventListener("click",event=>{const el=event.target.closest("[data-module-id], [data-industry-id], [data-career-skillmobility], [data-investment-card]");if(el)launchModule(el,event)},true);
