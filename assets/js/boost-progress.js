@@ -12,6 +12,9 @@
   const SYNC_FLAG="boost_progress_synced";
   const RAPID_SKILL_MOBILITY_URL="rapid-employment.html";
   const RAPID_JOB_SEARCH_URL="https://pinalworkforce1-del.github.io/48_hour_job_search/boost.html";
+  const PORTAL_PATH_KEY="boostPortalPathway_v2";
+  const JOB_SEARCH_KEY="boost48JobSearchV11";
+  const FINANCIAL_KEY="pinal_boost_financial_v1";
   const CORE_WRAPPED=new Set(["module1","module2","module3","module4","module5"]);
   const CORE_PREVIOUS={module2:"module1",module3:"module2",module4:"module3"};
   let client=null;
@@ -31,6 +34,32 @@
   function journey(){try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}catch(_){return{}}}
   function sharedCareerState(){try{return JSON.parse(localStorage.getItem(SHARED_CAREER_KEY)||'{}')||{}}catch(_){return{}}}
   function hasPayload(moduleId){const m=journey().modules?.[moduleId];return !!(m&&typeof m==="object"&&Object.keys(m).length)}
+  function selectedPath(map=parseMap()){return localStorage.getItem(PORTAL_PATH_KEY)||map.pathway||null}
+  function writeJourney(j){j.updated_at=new Date().toISOString();localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));return j}
+  function repairStandaloneEvidence(moduleId){
+    if(hasPayload(moduleId))return true;
+    const j=journey();j.modules=j.modules||{};j.progress=j.progress||{};
+    if(moduleId==="jobsearch"){
+      let s=null;try{s=JSON.parse(localStorage.getItem(JOB_SEARCH_KEY)||"null")}catch(_){}
+      if(!s?.completed)return false;
+      const completedAt=s.completedAt||new Date().toISOString();
+      j.modules.jobsearch={module:"jobsearch",source:"recovered_48_hour_job_search_local_state",version:2,completedAt,values:s.values||{},lists:s.lists||{},checks:s.checks||{},phases:s.phases||{},activities:s.activities||{},mistakeDone:s.mistakeDone||[]};
+      j.progress.jobsearch="complete";writeJourney(j);return true;
+    }
+    if(moduleId==="financial"){
+      let s=null;try{s=JSON.parse(localStorage.getItem(FINANCIAL_KEY)||"null")}catch(_){}
+      if(!s?.completedAt||!s?.evidence)return false;
+      j.modules.financial=Object.assign({module:"financial",source:"recovered_financial_local_state",version:2,completedAt:s.completedAt},s.evidence);
+      j.progress.financial="complete";writeJourney(j);return true;
+    }
+    if(moduleId==="ai"){
+      const legacy=j.modules.module5;
+      if(!legacy||typeof legacy!=="object"||(!String(legacy.version||"").startsWith("ai-you-")&&!legacy.scenario))return false;
+      j.modules.ai=Object.assign({module:"ai",source:"recovered_ai_you_legacy_module5"},legacy);
+      j.progress.ai="complete";writeJourney(j);return true;
+    }
+    return false;
+  }
   function notify(message){if(window.BOOSTPortal?.toast)window.BOOSTPortal.toast(message);else alert(message)}
 
   function moduleIdFor(el){
@@ -39,20 +68,37 @@
   }
 
   function prerequisitesMet(moduleId){
-    const map=parseMap(),complete=map.complete||{},previous=CORE_PREVIOUS[moduleId];
-    if(previous&&!complete[keyForModule(previous)]){notify("Complete the previous BOOST module before continuing.");return false}
-    if(previous&&!hasPayload(previous)){notify("Your previous completion predates BOOST data sharing. Reopen and save the previous module once so its results can carry forward.");return false}
+    const map=parseMap(),complete=map.complete||{},path=selectedPath(map),previous=CORE_PREVIOUS[moduleId];
+    const requireStep=(id,missingMessage,evidenceMessage)=>{
+      if(!complete[keyForModule(id)]){notify(missingMessage);return false}
+      if(!hasPayload(id)&&!repairStandaloneEvidence(id)){notify(evidenceMessage);return false}
+      return true;
+    };
+    if(previous&&!requireStep(previous,"Complete the previous BOOST module before continuing.","Your previous completion predates BOOST data sharing. Reopen and save the previous module once so its results can carry forward."))return false;
+    if(moduleId==="skillmobility"&&!requireStep("module1","Complete Module 1 — Discover before starting Finding Yourself in Work.","Reopen and save Module 1 once so its results can carry into Finding Yourself in Work."))return false;
+    if(moduleId==="jobsearch"&&!requireStep("skillmobility","Complete Finding Yourself in Work before starting the 48-Hour Job Search.","Reopen and save Finding Yourself in Work once so its results can carry into the 48-Hour Job Search."))return false;
+    if(moduleId==="financial"){
+      if(path!=="rapid"&&path!=="career"){notify("Choose your BOOST pathway before starting Build Strong Financial Habits.");return false}
+      const prior=path==="career"?"module4":"jobsearch";
+      const label=path==="career"?"Module 4 — Decide":"the 48-Hour Job Search";
+      if(!requireStep(prior,"Complete "+label+" before starting Build Strong Financial Habits.","Reopen and save "+label+" once so its results can carry into Build Strong Financial Habits."))return false;
+    }
+    if(moduleId==="ai"&&!requireStep("financial","Complete Build Strong Financial Habits before starting AI & You.","Reopen and save Build Strong Financial Habits once so its results can carry into AI & You."))return false;
     if(moduleId.startsWith("industry-")){
-      if(!complete["m:module4"]){notify("Complete Module 4 — Decide before starting your Industry Experience.");return false}
-      if(!hasPayload("module4")){notify("Reopen and save Module 4 once so its decision evidence can carry into your Industry Experience.");return false}
+      if(path!=="career"){notify("Choose the Career Exploration & Development pathway before starting an Industry Experience.");return false}
+      if(!requireStep("module4","Complete Module 4 — Decide before starting your Industry Experience.","Reopen and save Module 4 once so its decision evidence can carry into your Industry Experience."))return false;
+      if(!requireStep("financial","Complete Build Strong Financial Habits before starting your Industry Experience.","Reopen and save Build Strong Financial Habits once so its results can carry into your Industry Experience."))return false;
+      if(!requireStep("ai","Complete AI & You before starting your Industry Experience.","Reopen and save AI & You once so its results can carry into your Industry Experience."))return false;
     }
     if(moduleId==="module5"){
-      if(!complete["m:module4"]){notify("Complete Module 4 — Decide before opening Skill Investment.");return false}
-      if(!hasPayload("module4")){notify("Reopen and save Module 4 once so its decision evidence can carry into Skill Investment.");return false}
+      if(path!=="career"){notify("Career Investment Explorer is part of the Career Exploration & Development pathway.");return false}
+      if(!requireStep("module4","Complete Module 4 — Decide before opening Career Investment Explorer.","Reopen and save Module 4 once so its decision evidence can carry into Career Investment Explorer."))return false;
+      if(!requireStep("financial","Complete Build Strong Financial Habits before opening Career Investment Explorer.","Reopen and save Build Strong Financial Habits once so its results can carry into Career Investment Explorer."))return false;
+      if(!requireStep("ai","Complete AI & You before opening Career Investment Explorer.","Reopen and save AI & You once so its results can carry into Career Investment Explorer."))return false;
       const industryEntry=Object.entries(complete).find(([k,v])=>k.startsWith("i:")&&v===true);
-      if(!industryEntry){notify("Complete your selected Industry Experience before opening Skill Investment.");return false}
+      if(!industryEntry){notify("Complete your selected Industry Experience before opening Career Investment Explorer.");return false}
       const industryId="industry-"+industryEntry[0].slice(2);
-      if(!hasPayload(industryId)){notify("Your Industry Experience completion predates data sharing. Reopen and save that experience once so its evidence can carry into Skill Investment.");return false}
+      if(!hasPayload(industryId)){notify("Your Industry Experience completion predates data sharing. Reopen and save that experience once so its evidence can carry into Career Investment Explorer.");return false}
     }
     return true;
   }
@@ -89,6 +135,7 @@
     const params=new URLSearchParams(location.search),moduleId=params.get(RETURN_FLAG),nonce=params.get("boost_nonce");if(!moduleId)return false;
     const expected=sessionStorage.getItem(NONCE_PREFIX+moduleId),clean=new URL(location.href);clean.searchParams.delete(RETURN_FLAG);clean.searchParams.delete("boost_nonce");
     if(!expected||!nonce||expected!==nonce){history.replaceState({},"",clean.toString());console.warn("BOOST completion return was not accepted because its session receipt did not match.");return false}
+    if(!hasPayload(moduleId))repairStandaloneEvidence(moduleId);
     if(!hasPayload(moduleId)){history.replaceState({},"",clean.toString());console.warn("BOOST completion return was not accepted because its journey evidence was not saved.");notify("Your module results were not saved, so BOOST did not mark this step complete. Please reopen the module and save again.");return false}
 
     const now=new Date().toISOString();
