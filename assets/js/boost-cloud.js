@@ -90,7 +90,7 @@
     const payload=snapshot(name,session.user.email||readJourney().participant?.email||"");
     originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(payload));
     const result=await c.rpc("boost_save_my_journey_for_region",{p_region:REGION,p_journey:payload});
-    if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);return false}
+    if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"save",message:result.error.message}}));return false}
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
   }
@@ -105,7 +105,7 @@
   async function loadMine(){
     const c=getClient();if(!c)return null;
     const result=await c.rpc("boost_load_my_journey_for_region",{p_region:REGION});
-    if(result.error){console.warn("Pinal BOOST cloud load failed",result.error.message);return null}
+    if(result.error){console.warn("Pinal BOOST cloud load failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"load",message:result.error.message}}));return null}
     return result.data||null;
   }
   Storage.prototype.setItem=function(key,value){
@@ -136,17 +136,17 @@
       const redirect=new URL(location.href);redirect.hash="";
       const result=await c.auth.signInWithOtp({email:em,options:{emailRedirectTo:redirect.toString(),data:{first_name:fn,last_name:ln,full_name:(fn+" "+ln).trim(),boost_region:REGION}}});
       send.disabled=false;
-      if(result.error){status.textContent="We could not send the sign-in email. "+result.error.message;return}
+      if(result.error){status.textContent="We could not send the sign-in email. "+result.error.message;window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_email_failed",message:result.error.message}}));return}
       originalSetItem.call(localStorage,"boost_pinal_pending_name",(fn+" "+ln).trim());
-      wrap.classList.add("show");status.textContent="Email sent. Check your inbox to continue.";
+      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_email_sent"}}));wrap.classList.add("show");status.textContent="Email sent. Check your inbox to continue.";
     };
     verify.onclick=async function(){
       const em=email.value.trim(),token=code.value.trim();
       if(!/^\d{6,8}$/.test(token)){status.textContent="Enter the full sign-in code from your email.";return}
       verify.disabled=true;status.textContent="Verifying…";
       const result=await c.auth.verifyOtp({email:em,token:token,type:"email"});verify.disabled=false;
-      if(result.error){status.textContent="That code could not be verified. "+result.error.message;return}
-      await saveNow();gate.remove();location.reload();
+      if(result.error){status.textContent="That code could not be verified. "+result.error.message;window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_failed",message:result.error.message}}));return}
+      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_verified"}}));await saveNow();gate.remove();location.reload();
     };
     gate.querySelector("#boostDevice").onclick=function(){sessionStorage.setItem(DEVICE_KEY,"1");gate.remove()};
   }
@@ -180,4 +180,46 @@
     s.onerror=()=>console.warn('Ask Rosie could not load.');
     document.head.appendChild(s);
   }catch(e){console.warn('Ask Rosie loader unavailable',e)}
+})();
+
+/* boost-telemetry-v1 */
+(function(){
+  "use strict";
+  const AREA="pinal";
+  const cfg=window.BOOST_CONFIG||{};
+  if(!cfg.supabaseUrl||!cfg.supabaseAnonKey)return;
+  const ENDPOINT=cfg.supabaseUrl+"/functions/v1/boost-telemetry";
+  const SESSION_KEY="boost_telemetry_session_v1";
+  let sid=sessionStorage.getItem(SESSION_KEY);
+  if(!sid){sid=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+"-"+Math.random().toString(16).slice(2));sessionStorage.setItem(SESSION_KEY,sid)}
+  function moduleFromPage(){
+    const f=decodeURIComponent((location.pathname.split("/").pop()||"").toLowerCase());
+    if(/module1/.test(f))return"module1";if(/module2/.test(f))return"module2";if(/module3/.test(f))return"module3";if(/module4/.test(f))return"module4";
+    if(/skilled.*trade/.test(f))return"skilled_trades";if(/advanced.*manufact/.test(f))return"advanced_manufacturing";if(/healthcare/.test(f))return"healthcare";if(/customer.*service/.test(f))return"customer_service";if(/cdl/.test(f))return"cdl";if(/it[_-]|information/.test(f))return"it";
+    return null;
+  }
+  function journeyId(){
+    return localStorage.getItem(AREA==="pinal"?"boost_pinal_cloud_journey_id":"boost_naz_cloud_journey_id")||null;
+  }
+  async function send(type,detail,moduleId,keepalive){
+    try{
+      const cloud=AREA==="pinal"?window.PinalBOOSTCloud:window.BOOSTCloud;
+      const client=cloud&&cloud.getClient?cloud.getClient():null;
+      let token="";
+      if(client){try{token=(await client.auth.getSession()).data.session?.access_token||""}catch(_){ }}
+      const headers={"Content-Type":"application/json","apikey":cfg.supabaseAnonKey,"Authorization":token?"Bearer "+token:"Bearer "+cfg.supabaseAnonKey};
+      await fetch(ENDPOINT,{method:"POST",headers,keepalive:!!keepalive,body:JSON.stringify({area:AREA,event_type:type,module_id:moduleId||moduleFromPage(),journey_id:journeyId(),session_id:sid,page:location.pathname,detail:detail||{}})});
+    }catch(_){}
+  }
+  window.BOOSTTelemetry={track:send};
+  send("portal_loaded",{online:navigator.onLine},moduleFromPage());
+  const cloud=AREA==="pinal"?window.PinalBOOSTCloud:window.BOOSTCloud;
+  if(cloud&&cloud.getClient){cloud.getClient().auth.getSession().then(r=>{if(r.data.session?.user)send("auth_session_detected",{},moduleFromPage())}).catch(()=>{})}
+  window.addEventListener("boost-cloud-status",()=>send("save_success",{},moduleFromPage()));
+  window.addEventListener("boost-cloud-error",e=>send(e.detail?.kind==="load"?"load_failed":"save_failed",{message:e.detail?.message||""},moduleFromPage()));
+  window.addEventListener("boost-auth-event",e=>send(e.detail?.type||"auth_redirect_failed",{message:e.detail?.message||""},moduleFromPage()));
+  window.addEventListener("offline",()=>send("offline_started",{},moduleFromPage()));
+  window.addEventListener("online",()=>send("online_restored",{},moduleFromPage()));
+  document.addEventListener("click",e=>{const el=e.target.closest&&e.target.closest("[data-module-id],[data-industry-id]");if(!el)return;const id=el.dataset.moduleId||("industry-"+(el.dataset.industryId||""));send("module_opened",{href:el.getAttribute("href")||""},id)});
+  window.addEventListener("pagehide",()=>send("module_exit",{},moduleFromPage(),true));
 })();
