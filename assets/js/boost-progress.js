@@ -56,6 +56,9 @@
       const legacy=j.modules.module5;
       if(!legacy||typeof legacy!=="object"||(!String(legacy.version||"").startsWith("ai-you-")&&!legacy.scenario))return false;
       j.modules.ai=Object.assign({module:"ai",source:"recovered_ai_you_legacy_module5"},legacy);
+      if(String(legacy.version||"").startsWith("ai-you-"))delete j.modules.module5;
+      if(j.modules.module5_checkpoint&&!j.modules.ai_checkpoint)j.modules.ai_checkpoint=j.modules.module5_checkpoint;
+      if(j.modules.module5_checkpoint)delete j.modules.module5_checkpoint;
       j.progress.ai="complete";writeJourney(j);return true;
     }
     return false;
