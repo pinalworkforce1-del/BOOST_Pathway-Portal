@@ -86,7 +86,10 @@
       const label=path==="career"?"Career Investment Explorer":"the 48-Hour Job Search";
       if(!requireStep(prior,"Complete "+label+" before starting Build Strong Financial Habits.","Reopen and save "+label+" once so its results can carry into Build Strong Financial Habits."))return false;
     }
-    if(moduleId==="ai"&&!requireStep("financial","Complete Build Strong Financial Habits before starting AI & You.","Reopen and save Build Strong Financial Habits once so its results can carry into AI & You."))return false;
+    if(moduleId==="ai"){
+      if(path==="career"&&!requireStep("module5","Complete Career Investment Explorer before starting AI & You.","Reopen and save Career Investment Explorer once so its results can carry into AI & You."))return false;
+      if(!requireStep("financial","Complete Build Strong Financial Habits before starting AI & You.","Reopen and save Build Strong Financial Habits once so its results can carry into AI & You."))return false;
+    }
     if(moduleId.startsWith("industry-")){
       if(path!=="career"){notify("Choose the Career Exploration & Development pathway before starting an Industry Experience.");return false}
       if(!requireStep("module4","Complete Module 4 — Decide before starting your Industry Experience.","Reopen and save Module 4 once so its decision evidence can carry into your Industry Experience."))return false;
