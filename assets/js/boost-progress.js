@@ -79,22 +79,18 @@
     if(moduleId==="jobsearch"&&!requireStep("skillmobility","Complete Finding Yourself in Work before starting the 48-Hour Job Search.","Reopen and save Finding Yourself in Work once so its results can carry into the 48-Hour Job Search."))return false;
     if(moduleId==="financial"){
       if(path!=="rapid"&&path!=="career"){notify("Choose your BOOST pathway before starting Build Strong Financial Habits.");return false}
-      const prior=path==="career"?"module4":"jobsearch";
-      const label=path==="career"?"Module 4 — Decide":"the 48-Hour Job Search";
+      const prior=path==="career"?"module5":"jobsearch";
+      const label=path==="career"?"Career Investment Explorer":"the 48-Hour Job Search";
       if(!requireStep(prior,"Complete "+label+" before starting Build Strong Financial Habits.","Reopen and save "+label+" once so its results can carry into Build Strong Financial Habits."))return false;
     }
     if(moduleId==="ai"&&!requireStep("financial","Complete Build Strong Financial Habits before starting AI & You.","Reopen and save Build Strong Financial Habits once so its results can carry into AI & You."))return false;
     if(moduleId.startsWith("industry-")){
       if(path!=="career"){notify("Choose the Career Exploration & Development pathway before starting an Industry Experience.");return false}
       if(!requireStep("module4","Complete Module 4 — Decide before starting your Industry Experience.","Reopen and save Module 4 once so its decision evidence can carry into your Industry Experience."))return false;
-      if(!requireStep("financial","Complete Build Strong Financial Habits before starting your Industry Experience.","Reopen and save Build Strong Financial Habits once so its results can carry into your Industry Experience."))return false;
-      if(!requireStep("ai","Complete AI & You before starting your Industry Experience.","Reopen and save AI & You once so its results can carry into your Industry Experience."))return false;
     }
     if(moduleId==="module5"){
       if(path!=="career"){notify("Career Investment Explorer is part of the Career Exploration & Development pathway.");return false}
       if(!requireStep("module4","Complete Module 4 — Decide before opening Career Investment Explorer.","Reopen and save Module 4 once so its decision evidence can carry into Career Investment Explorer."))return false;
-      if(!requireStep("financial","Complete Build Strong Financial Habits before opening Career Investment Explorer.","Reopen and save Build Strong Financial Habits once so its results can carry into Career Investment Explorer."))return false;
-      if(!requireStep("ai","Complete AI & You before opening Career Investment Explorer.","Reopen and save AI & You once so its results can carry into Career Investment Explorer."))return false;
       const industryEntry=Object.entries(complete).find(([k,v])=>k.startsWith("i:")&&v===true);
       if(!industryEntry){notify("Complete your selected Industry Experience before opening Career Investment Explorer.");return false}
       const industryId="industry-"+industryEntry[0].slice(2);
