@@ -86,6 +86,43 @@ function pdfEvidenceLines(value,depth=0,out=[]){
   }
   out.push(indent+cleanPdfText(value));return out;
 }
+const ROUTE_NAMES={READY:'WORK NOW',BRIDGE:'EARN WHILE YOU LEARN',BUILD:'TRAINING INVESTMENT CONVERSATION',RECONSIDER:'EXPLORE BEFORE COMMITTING'};
+function coachBriefModel(d,r){
+  const j=d.journey||{},m=j.modules||{},m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},skill=m.skillmobility||{};
+  const title=m4.careerTitle||m4.careerTarget?.title||m4.career?.title||r.primary_career_title||'';
+  const soc=String(m4.selectedSoc||m4.careerTarget?.soc||m4.career?.soc||'');
+  const route=m4.route||m4.participantDirection||m4.boostSignal?.route||m4.decision?.code||'';
+  const top=(m1.topInterests||[]).slice(0,3).map(x=>typeof x==='string'?x:(x.label||x.code)).filter(Boolean);
+  const strengths=[];
+  for(const x of (m3.selfAssessment||[]))if(/Used Regularly|Used Sometimes/i.test(String(x?.use||'')))strengths.push(x.skill||x.name||x.activity);
+  for(const x of (skill.confirmedSkills||[]))strengths.push(typeof x==='string'?x:(x.label||x.skill||x.name));
+  const uniq=[...new Set(strengths.filter(Boolean))].slice(0,8);
+  const v=(m2.validationBySoc&&Object.entries(m2.validationBySoc).find(([k])=>String(k).replace(/\D/g,'').slice(0,6)===soc.replace(/\D/g,'').slice(0,6))?.[1])||{};
+  const prep=m4.preparationIntel||v.preparationIntel||{},base=prep.baseline||{};
+  const why={READY:'The combined evidence supports competing for this role now.',BRIDGE:'A preparation gap remains, but a verified employer-supported route may help close it while the participant earns.',BUILD:'The career remains worth considering, but an occupation-specific preparation, credential, or license gap should be addressed before treating it as ready-now work.',RECONSIDER:'Some part of the wage, life fit, preparation, confidence, or employer evidence suggests more exploration before committing.'}[route]||'';
+  return{m1,m2,m3,m4,skill,title,soc,route,why,top,strengths:uniq,v,prepLabel:v.prep||prep.label||'Preparation reviewed',education:prep.education||base.education||m4.boostSignal?.typicalEntryEducation||'',life:v.life||m4.boostSignal?.lifeInterpretation||'',wages:v.wages||m4.boostSignal?.wagesInterpretation||'',employer:v.employerSupport||(m4.employerBridgeEvidence?'Verified employer-supported route':'')};
+}
+function coachQuestions(x){
+  if(x.route==='READY')return['Which employers and openings should we target first?','What resume evidence best demonstrates the strengths BOOST identified?','What wage and schedule boundaries should guide the job search?'];
+  if(x.route==='BRIDGE')return['What verified employer-supported route is available, and what are its exact entry requirements?','Can OJT, apprenticeship, employer-paid credentialing, or another earn-while-you-learn option close the gap?','What is the backup plan if that route does not materialize?'];
+  if(x.route==='BUILD')return['What is the smallest credible preparation investment needed for entry?','What training options, costs, duration, and funding rules should we compare?','Does the likely wage gain justify the training investment and time away from work?','Is there a lower-barrier related occupation that could be pursued while building toward this target?'];
+  if(x.route==='RECONSIDER')return['Which part of the evidence is creating the most hesitation: wage, life fit, preparation, or confidence?','Should we revisit a paused career or explore a different occupation?','What additional employer research would make the decision clearer?'];
+  return['What stood out most to you in BOOST?','Which career direction feels most worth acting on next?','What should happen before the next coach meeting?'];
+}
+function moduleTakeaways(d,mid,r,x){
+  const ev=evidence(d,mid)||{},out=[];
+  if(mid==='module1'){if(x.top.length)out.push('Top interest themes: '+x.top.join(', '));const cs=(ev.careers||ev.selected||[]).map(z=>z?.title).filter(Boolean);if(cs.length)out.push('Careers explored: '+cs.slice(0,4).join(', '));}
+  else if(mid==='skillmobility'){if(x.strengths.length)out.push('Confirmed transferable strengths: '+x.strengths.slice(0,6).join(', '));if(ev.currentWage||ev.minimumWage)out.push('Wage context: '+(ev.currentWage?'current $'+Number(ev.currentWage).toFixed(2)+'/hr ':'')+(ev.minimumWage?'minimum target $'+Number(ev.minimumWage).toFixed(2)+'/hr':''));}
+  else if(mid==='module2'){for(const z of (ev.careers||[]).slice(0,3)){const b=[z.wagesInterpretation&&'wage '+z.wagesInterpretation,z.lifeInterpretation&&'life '+z.lifeInterpretation,z.preparationReadiness&&'prep '+z.preparationReadiness].filter(Boolean);out.push((z.title||'Career')+(b.length?' - '+b.join(' | '):''));}}
+  else if(mid==='module3'){if(ev.startingPoint?.title)out.push('Starting point: '+ev.startingPoint.title);for(const z of (ev.careers||[]).slice(0,4)){const dec=ev.careerDecisionsBySoc?.[z.soc]||z.decision;if(dec)out.push((z.title||z.soc)+' - '+label(dec));}}
+  else if(mid==='module4'){if(x.title)out.push('Career: '+x.title);if(x.route)out.push('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route));if(x.why)out.push(x.why);}
+  else if(mid==='industry'){out.push(r.selected_industry?'Applied career experience: '+label(r.selected_industry):'Applied career experience completed.');}
+  else if(mid==='module5'){if(ev.investmentOutlook||ev.outlook)out.push('Investment outlook: '+(ev.investmentOutlook||ev.outlook));if(ev.roiRatio!=null)out.push('Estimated ROI ratio: '+Number(ev.roiRatio).toFixed(2));}
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
 async function downloadSummary(id){
   const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
   const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');
