@@ -31,6 +31,7 @@
 </main>
 <div class="drawerBack" id="drawerBack"><section class="drawer"><div class="drawerHead"><div><small>BOOST • COACH DETAIL</small><h2 id="drawerTitle">Participant detail</h2><div class="detailMeta" id="drawerMeta"></div></div><button class="btn alt" id="closeDrawer">Close</button></div><div id="drawerBody"></div></section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script src="assets/js/pinal-cloud-config.js"></script>
 <script>
 (()=>{'use strict';
@@ -52,13 +53,96 @@ async function load(){const data=await api('coach_board');records=data.records||
 function populateAssignments(){const f=$('assignmentFilter'),keep=f.value;f.querySelectorAll('option[data-staff]').forEach(x=>x.remove());for(const s of staffList){const o=document.createElement('option');o.dataset.staff='1';o.value=s.email;o.textContent=s.display_name||s.email;f.appendChild(o)}f.value=keep}
 function assignmentOptions(current){return '<option value="">Unassigned</option>'+staffList.map(s=>'<option value="'+esc(s.email)+'" '+(String(current||'').toLowerCase()===String(s.email).toLowerCase()?'selected':'')+'>'+esc(s.display_name||s.email)+'</option>').join('')}
 function passesAssignment(r){const v=$('assignmentFilter').value;if(!v)return true;const a=assignments.get(String(r.journey_id)),assigned=String(a?.primary_staff_email||'').toLowerCase();if(v==='mine')return assigned===me;if(v==='unassigned')return !assigned;return assigned===String(v).toLowerCase()}
-function render(){const q=$('search').value.trim().toLowerCase(),pf=$('pathFilter').value,sf=$('statusFilter').value,df=$('daysFilter').value,hf=$('h3Filter')?.value||'';const list=records.filter(r=>{const hay=[r.participant_name,r.participant_email,r.primary_career_title,r.selected_industry,r.current_step,r.h3_status].join(' ').toLowerCase(),h=String(r.h3_status||'').toLowerCase();return(!q||hay.includes(q))&&(!pf||r.selected_pathway===pf)&&(!sf||r.participant_status===sf)&&(!df||Number(r.days_active)>=Number(df))&&(!hf||(hf==='h3'?h.includes('h3'):!h.includes('h3')))&&passesAssignment(r)});$('sPeople').textContent=records.length;$('sActive').textContent=records.filter(r=>r.boost_started_at&&!r.boost_completed_at).length;$('sFollow').textContent=records.filter(r=>r.participant_status==='needs_follow_up').length;$('sDone').textContent=records.filter(r=>r.participant_status==='completed').length;$('grid').innerHTML=list.length?list.map(r=>{const s=seq(r),done=s.filter(id=>validated(r,id)).length,a=assignments.get(String(r.journey_id));return '<article class="person"><div class="personTop"><div><h3>'+esc(r.participant_name||'Participant')+'</h3><div class="meta">'+esc(r.participant_email||'No email')+' • Last activity '+fmt(r.updated_at)+'</div><div class="tags"><span class="tag '+esc(r.selected_pathway||'')+'">'+esc(pathLabel(r.selected_pathway))+'</span><span class="tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.h3_status?'<span class="tag">'+esc(r.h3_status)+'</span>':'')+'</div></div><div class="right"><div class="series">'+done+' / '+s.length+' pathway steps complete</div><button class="btn alt" type="button" data-download="'+esc(r.journey_id)+'" style="margin-top:8px">Download Summary</button><div class="assign"><select data-assign="'+esc(r.journey_id)+'">'+assignmentOptions(a?.primary_staff_email||'')+'</select></div></div></div><div class="progress">'+s.map(id=>{const d=validated(r,id),m=meta(r,id);return '<button type="button" class="module '+(d?'done':'')+'" '+(d||m?'data-person="'+esc(r.journey_id)+'" data-module="'+esc(id)+'"':'disabled')+'><b>'+esc(names[id]||label(id))+(d?' ✓':'')+'</b><span>'+(d?'Complete':'Not recorded')+'</span><em>'+(m?fmt(m.completed_at||m.updated_at):'')+'</em></button>'}).join('')+'</div></article>'}).join(''):'<section class="empty"><h2>No participants match this search.</h2></section>';document.querySelectorAll('[data-person][data-module]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person,b.dataset.module));document.querySelectorAll('[data-download]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadSummary(b.dataset.download)});document.querySelectorAll('[data-assign]').forEach(sel=>sel.onchange=async()=>{sel.disabled=true;try{await api('assign_participant',{journey_id:sel.dataset.assign,staff_email:sel.value||null});await load()}catch(e){alert(e.message)}finally{sel.disabled=false}})}
+function render(){const q=$('search').value.trim().toLowerCase(),pf=$('pathFilter').value,sf=$('statusFilter').value,df=$('daysFilter').value,hf=$('h3Filter')?.value||'';const list=records.filter(r=>{const hay=[r.participant_name,r.participant_email,r.primary_career_title,r.selected_industry,r.current_step,r.h3_status].join(' ').toLowerCase(),h=String(r.h3_status||'').toLowerCase();return(!q||hay.includes(q))&&(!pf||r.selected_pathway===pf)&&(!sf||r.participant_status===sf)&&(!df||Number(r.days_active)>=Number(df))&&(!hf||(hf==='h3'?h.includes('h3'):!h.includes('h3')))&&passesAssignment(r)});$('sPeople').textContent=records.length;$('sActive').textContent=records.filter(r=>r.boost_started_at&&!r.boost_completed_at).length;$('sFollow').textContent=records.filter(r=>r.participant_status==='needs_follow_up').length;$('sDone').textContent=records.filter(r=>r.participant_status==='completed').length;$('grid').innerHTML=list.length?list.map(r=>{const s=seq(r),done=s.filter(id=>validated(r,id)).length,a=assignments.get(String(r.journey_id));return '<article class="person"><div class="personTop"><div><h3>'+esc(r.participant_name||'Participant')+'</h3><div class="meta">'+esc(r.participant_email||'No email')+' • Last activity '+fmt(r.updated_at)+'</div><div class="tags"><span class="tag '+esc(r.selected_pathway||'')+'">'+esc(pathLabel(r.selected_pathway))+'</span><span class="tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.h3_status?'<span class="tag">'+esc(r.h3_status)+'</span>':'')+'</div></div><div class="right"><div class="series">'+done+' / '+s.length+' pathway steps complete</div><button class="btn alt" type="button" data-download="'+esc(r.journey_id)+'" style="margin-top:8px">Download PDF</button><div class="assign"><select data-assign="'+esc(r.journey_id)+'">'+assignmentOptions(a?.primary_staff_email||'')+'</select></div></div></div><div class="progress">'+s.map(id=>{const d=validated(r,id),m=meta(r,id);return '<button type="button" class="module '+(d?'done':'')+'" '+(d||m?'data-person="'+esc(r.journey_id)+'" data-module="'+esc(id)+'"':'disabled')+'><b>'+esc(names[id]||label(id))+(d?' ✓':'')+'</b><span>'+(d?'Complete':'Not recorded')+'</span><em>'+(m?fmt(m.completed_at||m.updated_at):'')+'</em></button>'}).join('')+'</div></article>'}).join(''):'<section class="empty"><h2>No participants match this search.</h2></section>';document.querySelectorAll('[data-person][data-module]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person,b.dataset.module));document.querySelectorAll('[data-download]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadSummary(b.dataset.download)});document.querySelectorAll('[data-assign]').forEach(sel=>sel.onchange=async()=>{sel.disabled=true;try{await api('assign_participant',{journey_id:sel.dataset.assign,staff_email:sel.value||null});await load()}catch(e){alert(e.message)}finally{sel.disabled=false}})}
 function renderNotices(){const unread=notices.filter(n=>!n.read_at).length;$('coachBadge').dataset.notices=String(unread);$('noticeList').innerHTML=notices.length?notices.map(n=>'<div class="notif '+(n.read_at?'':'unread')+'" data-notice="'+esc(n.id)+'" data-journey="'+esc(n.journey_id)+'"><strong>'+esc(n.title)+'</strong><div>'+esc(n.body)+'</div><small>'+fmt(n.created_at)+(n.email_status&&n.email_status!=='disabled'?' • '+esc(n.email_status):'')+'</small></div>').join(''):'<div class="notice">No staff notifications yet.</div>'}
 function detailRows(obj){if(obj===null||obj===undefined||obj==='')return '<div class="notice">No coaching-relevant detail recorded.</div>';if(Array.isArray(obj))return '<ul>'+obj.map(x=>'<li>'+esc(typeof x==='object'?JSON.stringify(x):x)+'</li>').join('')+'</ul>';if(typeof obj==='object')return Object.entries(obj).map(([k,v])=>'<div class="detailRow"><b>'+esc(label(k))+'</b>'+(typeof v==='object'?detailRows(v):'<span>'+esc(v)+'</span>')+'</div>').join('');return '<span>'+esc(obj)+'</span>'}
 function evidence(report,id){const j=report.journey||{},mods=j.modules||{};if(id==='industry'){const out={};for(const [k,v] of Object.entries(mods))if(k.startsWith('industry-'))out[k]=v;return out}if(id==='ai')return mods.ai||mods.careerAi||j.ai||j.careerAi||null;return mods[id]||j[id]||null}
 async function report(id){const d=await api('coach_report',{journey_id:id});return d.report||{}}
 async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+detailRows(rows)+'</section><section class="detailSection"><h3>Participant Journey Evidence</h3>'+detailRows(evidence(d,moduleId))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
-async function downloadSummary(id){const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building…'}try{const d=await report(id),sections=seq(r).map(mid=>'<section><h2>'+esc(names[mid]||label(mid))+'</h2><p><b>Status:</b> '+(validated(r,mid)?'Complete':'Not recorded')+'</p>'+detailRows(evidence(d,mid))+'</section>').join(''),doc='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(r.participant_name||'Participant')+' • BOOST Coach Summary</title><style>body{font-family:Arial,sans-serif;color:#21313e;max-width:900px;margin:36px auto;padding:0 22px;line-height:1.45}h1,h2{color:#102d49}header{border-bottom:3px solid #2d7180;padding-bottom:14px;margin-bottom:20px}section{border-top:1px solid #ccd8df;padding-top:14px;margin-top:16px}.detailRow{margin:8px 0;padding:8px 10px;background:#f7fafb;border-left:4px solid #65558f}.detailRow b{display:block;margin-bottom:3px}.notice{color:#667985}</style></head><body><header><small>BOOST • COACH SUMMARY</small><h1>'+esc(r.participant_name||'Participant')+'</h1><div>'+esc(r.participant_email||'')+' • '+esc(pathLabel(r.selected_pathway))+'</div></header>'+sections+'</body></html>',blob=new Blob([doc],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-')+'-boost-coach-summary.html';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){alert('Could not build participant summary: '+e.message)}finally{if(btn){btn.disabled=false;btn.textContent='Download Summary'}}}
+const PDF_SKIP_KEYS=new Set(['browserState','fields','source','capturedAt','interactionCount']);
+function cleanPdfText(v){return String(v??'').replace(/[–—]/g,'-').replace(/→/g,'->').replace(/•/g,'-').replace(/✓/g,'Complete').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\xA0-\xFF]/g,'').replace(/\s+/g,' ').trim()}
+function pdfEvidenceLines(value,depth=0,out=[]){
+  if(value===null||value===undefined||value===''||depth>5)return out;
+  const indent='  '.repeat(depth);
+  if(Array.isArray(value)){
+    for(const item of value){
+      if(item&&typeof item==='object'){out.push(indent+'-');pdfEvidenceLines(item,depth+1,out)}
+      else if(item!==null&&item!==undefined&&item!=='')out.push(indent+'- '+cleanPdfText(item));
+    }
+    return out;
+  }
+  if(typeof value==='object'){
+    for(const [k,v] of Object.entries(value)){
+      if(PDF_SKIP_KEYS.has(k)||k.startsWith('__')||v===null||v===undefined||v==='')continue;
+      const key=cleanPdfText(label(k));
+      if(Array.isArray(v)){
+        const primitive=v.every(x=>x===null||['string','number','boolean'].includes(typeof x));
+        if(primitive){if(v.length)out.push(indent+key+': '+v.map(cleanPdfText).filter(Boolean).join(', '))}
+        else{out.push(indent+key+':');pdfEvidenceLines(v,depth+1,out)}
+      }else if(typeof v==='object'){out.push(indent+key+':');pdfEvidenceLines(v,depth+1,out)}
+      else out.push(indent+key+': '+cleanPdfText(v));
+    }
+    return out;
+  }
+  out.push(indent+cleanPdfText(value));return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');
+  if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),journey=d.journey||{},jprog=journey.progress||{},stale=journey.staleModules||{};
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    doc.setProperties({title:cleanPdfText((r.participant_name||'Participant')+' - BOOST Coach Summary'),subject:'BOOST Coach Summary',creator:'BOOST Coach View'});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=16,maxW=pw-left-right;
+    let y=17;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=17}}
+    function write(text,{size=9,bold=false,indent=0,after=1.5}={}){
+      const t=cleanPdfText(text);if(!t)return;
+      doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(33,49,62);
+      const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);
+      ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after;
+    }
+    function rule(){ensure(5);doc.setDrawColor(190,204,213);doc.line(left,y,pw-right,y);y+=4}
+    function sectionTitle(t){ensure(12);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function statusFor(mid){if(jprog[mid]==='stale'||stale[mid])return'Review Needed';return validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH SUMMARY',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});
+    write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '),{size:9});
+    if(r.primary_career_title)write('Career target: '+r.primary_career_title,{size:9});
+    if(r.selected_industry)write('Applied career experience: '+label(r.selected_industry),{size:9});
+    write('Current step: '+(r.current_step||'Not recorded'),{size:9});
+    write('Participant status: '+label(r.participant_status||'not started'),{size:9});
+    write('Last saved activity: '+fmt(r.updated_at),{size:9});
+    write('Generated: '+new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date()),{size:8});
+    const staleIds=Object.keys(stale);
+    if(staleIds.length)write('Review Needed: '+staleIds.map(x=>names[x]||label(x)).join(', ')+'. Earlier evidence changed after this step was completed.',{size:9,bold:true});
+    rule();
+
+    for(const mid of seq(r)){
+      sectionTitle(names[mid]||label(mid));
+      write('Status: '+statusFor(mid),{size:9,bold:true});
+      const m=meta(r,mid);if(m)write('Validated activity: '+fmt(m.completed_at||m.updated_at),{size:8});
+      const ev=evidence(d,mid),lines=pdfEvidenceLines(ev);
+      if(!lines.length)write('No coaching-relevant detail recorded.',{size:8});
+      else for(const ln of lines)write(ln,{size:8,indent:Math.min(18,(ln.match(/^\s*/)?.[0].length||0)*1.4),after:.8});
+      rule();
+    }
+
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);
+      doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);
+      doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'});
+    }
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Summary.pdf';
+    doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
 $('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
 })();
 </script>
