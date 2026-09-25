@@ -125,58 +125,57 @@ function moduleTakeaways(d,mid,r,x){
 }
 async function downloadSummary(id){
   const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
-  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');
-  if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
   try{
     if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
-    const d=await report(id),journey=d.journey||{},jprog=journey.progress||{},stale=journey.staleModules||{};
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
     const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
-    doc.setProperties({title:cleanPdfText((r.participant_name||'Participant')+' - BOOST Coach Summary'),subject:'BOOST Coach Summary',creator:'BOOST Coach View'});
-    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=16,maxW=pw-left-right;
-    let y=17;
-    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=17}}
-    function write(text,{size=9,bold=false,indent=0,after=1.5}={}){
-      const t=cleanPdfText(text);if(!t)return;
-      doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(33,49,62);
-      const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);
-      ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after;
-    }
-    function rule(){ensure(5);doc.setDrawColor(190,204,213);doc.line(left,y,pw-right,y);y+=4}
-    function sectionTitle(t){ensure(12);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
-    function statusFor(mid){if(jprog[mid]==='stale'||stale[mid])return'Review Needed';return validated(r,mid)?'Complete':'Not recorded'}
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
 
-    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH SUMMARY',left,y);y+=7;
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
     doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
-    write('Pinal BOOST',{size:10,bold:true});
-    write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '),{size:9});
-    if(r.primary_career_title)write('Career target: '+r.primary_career_title,{size:9});
-    if(r.selected_industry)write('Applied career experience: '+label(r.selected_industry),{size:9});
-    write('Current step: '+(r.current_step||'Not recorded'),{size:9});
-    write('Participant status: '+label(r.participant_status||'not started'),{size:9});
-    write('Last saved activity: '+fmt(r.updated_at),{size:9});
-    write('Generated: '+new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date()),{size:8});
-    const staleIds=Object.keys(stale);
-    if(staleIds.length)write('Review Needed: '+staleIds.map(x=>names[x]||label(x)).join(', ')+'. Earlier evidence changed after this step was completed.',{size:9,bold:true});
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
     rule();
 
-    for(const mid of seq(r)){
-      sectionTitle(names[mid]||label(mid));
-      write('Status: '+statusFor(mid),{size:9,bold:true});
-      const m=meta(r,mid);if(m)write('Validated activity: '+fmt(m.completed_at||m.updated_at),{size:8});
-      const ev=evidence(d,mid),lines=pdfEvidenceLines(ev);
-      if(!lines.length)write('No coaching-relevant detail recorded.',{size:8});
-      else for(const ln of lines)write(ln,{size:8,indent:Math.min(18,(ln.match(/^\s*/)?.[0].length||0)*1.4),after:.8});
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
       rule();
     }
 
-    const pages=doc.getNumberOfPages();
-    for(let p=1;p<=pages;p++){
-      doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);
-      doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);
-      doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'});
-    }
-    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Summary.pdf';
-    doc.save(filename);
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
   }catch(err){alert('Could not build participant PDF: '+err.message)}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
 }
