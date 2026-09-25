@@ -23,18 +23,35 @@
   function markComplete(id){const s=getCompleted();s.add(id);if(industryLabels[id]){localStorage.setItem(INDUSTRY_KEY,id);s.add('industry');localStorage.setItem(PATHWAY_KEY,'career')}saveCompleted(s);mirrorToMap(id);syncCloudState(id);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress',{detail:{id}}))}
   function reset(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(PATHWAY_KEY);localStorage.removeItem(INDUSTRY_KEY);localStorage.removeItem(MAP_STATE_KEY);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress'))}
   function routeIsComplete(done,id){return id==='industry'?done.has('industry'):done.has(id)}
+  function reviewState(){
+    let j={};try{j=window.PinalBOOST?.get?.()||JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')}catch(_){}
+    const progress=j?.progress||{},stale=j?.staleModules||{},ids=new Set();
+    Object.entries(progress).forEach(([id,v])=>{if(v==='stale')ids.add(id)});
+    Object.keys(stale).forEach(id=>ids.add(id));
+    const order=['module2','module3','module4','module5'];
+    const first=order.find(id=>ids.has(id))||'';
+    return{ids,first,reason:id=>stale?.[id]?.reason||''}
+  }
+  function installReviewStyles(){
+    if(document.getElementById('boostReviewNeededStyles'))return;
+    const s=document.createElement('style');s.id='boostReviewNeededStyles';
+    s.textContent='.hotspot.is-review-needed,.investment-card.is-review-needed{outline:3px solid #e4a72b!important;box-shadow:0 0 0 5px rgba(228,167,43,.22),0 10px 24px rgba(0,0,0,.2)!important}.hotspot.is-review-needed .complete-badge{display:flex!important;background:#e4a72b!important;color:#17324d!important}.hotspot.is-review-needed .complete-badge::before{content:"↻";font-size:14px}.hotspot.is-review-needed .complete-badge{font-size:0}.hotspot.is-waiting-review,.investment-card.is-waiting-review{filter:saturate(.72);opacity:.78;outline:2px dashed #c39a3c!important}.hotspot.is-waiting-review .complete-badge{display:flex!important;background:#7b8790!important;font-size:0}.hotspot.is-waiting-review .complete-badge::before{content:"↻";font-size:14px}.investment-card.is-review-needed [data-investment-status]::before{content:"↻ Review Needed • "}.investment-card.is-waiting-review [data-investment-status]::before{content:"Waiting on earlier review • "}.boost-review-note{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:80;max-width:min(680px,92vw);padding:11px 14px;border-radius:12px;background:#fff5d7;border:2px solid #e4a72b;color:#17324d;font:800 13px/1.4 Inter,Arial,sans-serif;box-shadow:0 12px 30px #0004}';
+    document.head.appendChild(s)
+  }
   function updateProgress(){
-    const pathway=getPathway(),route=routes[pathway]||routes.career,done=getCompleted();
+    installReviewStyles();
+    const pathway=getPathway(),route=routes[pathway]||routes.career,done=getCompleted(),review=reviewState();
+    review.ids.forEach(id=>done.delete(id));
     const n=route.filter(id=>routeIsComplete(done,id)).length,pct=route.length?Math.round((n/route.length)*100):0;
     document.querySelectorAll('[data-progress-fill]').forEach(el=>el.style.width=pct+'%');
     document.querySelectorAll('[data-progress-count]').forEach(el=>el.textContent=`${n} of ${route.length} complete`);
     document.querySelectorAll('[data-pathway-label]').forEach(el=>el.textContent=labels[pathway]||'BOOST Pathway');
-    document.querySelectorAll('[data-module-id]').forEach(el=>{const id=el.dataset.moduleId;el.classList.toggle('is-complete',done.has(id));el.classList.remove('is-next')});
+    document.querySelectorAll('[data-module-id]').forEach(el=>{const id=el.dataset.moduleId,isReview=review.ids.has(id),isFirst=review.first===id;el.classList.toggle('is-complete',done.has(id));el.classList.toggle('is-review-needed',isReview&&isFirst);el.classList.toggle('is-waiting-review',isReview&&!isFirst);el.classList.remove('is-next');const label=el.querySelector('.hotspot-label');if(label){if(!label.dataset.baseLabel)label.dataset.baseLabel=label.textContent;label.textContent=isReview?(isFirst?'↻ Review Needed • ':'Waiting on Review • ')+label.dataset.baseLabel:label.dataset.baseLabel}if(isReview)el.setAttribute('aria-label',(isFirst?'Review needed. ':'Waiting for an earlier review. ')+(review.reason(id)||'Earlier career information changed.'))});
     const selectedIndustry=getIndustry();
     document.querySelectorAll('[data-industry-id]').forEach(el=>{const id=el.dataset.industryId;el.classList.toggle('is-complete',done.has('industry')&&selectedIndustry===id);el.classList.remove('is-next')});
     const next=route.find(id=>!routeIsComplete(done,id));
     if(next==='industry'){document.querySelectorAll('[data-industry-id],[data-industry-choice]').forEach(el=>el.classList.add('is-next'))}else if(next==='module5'){document.querySelectorAll('[data-investment-card]').forEach(el=>el.classList.add('is-next'))}else if(next){document.querySelectorAll(`[data-module-id="${next}"]`).forEach(el=>el.classList.add('is-next'))}
-    document.querySelectorAll('[data-investment-card]').forEach(el=>{const ready=done.has('industry');el.classList.toggle('is-ready',ready);el.classList.toggle('is-complete',done.has('module5'));const status=el.querySelector('[data-investment-status]');if(status)status.textContent=done.has('module5')?'Completed':ready?'Ready after your industry experience':'Complete an industry experience first'});
+    document.querySelectorAll('[data-investment-card]').forEach(el=>{const ready=done.has('industry'),isReview=review.ids.has('module5'),isFirst=review.first==='module5';el.classList.toggle('is-ready',ready&&!isReview);el.classList.toggle('is-complete',done.has('module5'));el.classList.toggle('is-review-needed',isReview&&isFirst);el.classList.toggle('is-waiting-review',isReview&&!isFirst);const status=el.querySelector('[data-investment-status]');if(status)status.textContent=isReview?(isFirst?'Review your Career Investment results':'Complete the earlier review first'):done.has('module5')?'Completed':ready?'Ready after your industry experience':'Complete an industry experience first'});
   }
   function toast(msg){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('show');clearTimeout(window.__boostToast);window.__boostToast=setTimeout(()=>t.classList.remove('show'),3400)}
   function openPathwayDialog(){const d=document.getElementById('pathwayDialog');if(d&&typeof d.showModal==='function')d.showModal()}
