@@ -88,7 +88,7 @@ function pdfEvidenceLines(value,depth=0,out=[]){
 }
 const ROUTE_NAMES={READY:'WORK NOW',BRIDGE:'EARN WHILE YOU LEARN',BUILD:'TRAINING INVESTMENT CONVERSATION',RECONSIDER:'EXPLORE BEFORE COMMITTING'};
 function coachBriefModel(d,r){
-  const j=d.journey||{},m=j.modules||{},m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},skill=m.skillmobility||{};
+  const j=d.journey||{},m=j.modules||j,m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},skill=m.skillmobility||{};
   const title=m4.careerTitle||m4.careerTarget?.title||m4.career?.title||r.primary_career_title||'';
   const soc=String(m4.selectedSoc||m4.careerTarget?.soc||m4.career?.soc||'');
   const route=m4.route||m4.participantDirection||m4.boostSignal?.route||m4.decision?.code||'';
