@@ -34,6 +34,28 @@
   function journey(){try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}catch(_){return{}}}
   function sharedCareerState(){try{return JSON.parse(localStorage.getItem(SHARED_CAREER_KEY)||'{}')||{}}catch(_){return{}}}
   function hasPayload(moduleId){const m=journey().modules?.[moduleId];return !!(m&&typeof m==="object"&&Object.keys(m).length)}
+  function isComplete(moduleId){
+    const j=journey(),m=j.modules?.[moduleId],status=j.progress?.[moduleId];
+    if(status==="complete"&&m&&typeof m==="object"&&Object.keys(m).length)return true;
+    const map=parseMap(),validated=!!map.complete?.[keyForModule(moduleId)];
+    return validated&&!!(m&&typeof m==="object"&&Object.keys(m).length);
+  }
+  function industryFor(soc,title){
+    const p=String(soc||"").slice(0,2),t=String(title||"").toLowerCase();
+    if(p==="15"||/computer|software|cyber|network|information technology|user support|help desk/.test(t))return{id:"it",label:"Information Technology Workplace Skills Challenge"};
+    if(["29","31"].includes(p)||/nurs|medical|health|clinical|patient|pharmacy|dental/.test(t))return{id:"healthcare",label:"Healthcare Workplace Skills Challenge"};
+    if(p==="51"||/manufactur|production|cnc|machinist|fabricat/.test(t))return{id:"manufacturing",label:"Advanced Manufacturing Workplace Skills Challenge"};
+    if(["47","49"].includes(p)||/electric|plumb|hvac|weld|construction|carpent|maintenance|repair|solar/.test(t))return{id:"trades",label:"Skilled Trades Workplace Skills Challenge"};
+    if(p==="53"||/truck|cdl|transport|logistic|warehouse/.test(t))return{id:"cdl",label:"Transportation & Logistics Workplace Skills Challenge"};
+    return null;
+  }
+  function resolvePostModule4(){
+    const j=journey(),s=sharedCareerState(),m4=j.modules?.module4||s.module4||{};
+    const soc=String(m4.selectedSoc||m4.career?.soc||m4.careerTarget?.soc||"");
+    const title=String(m4.careerTitle||m4.career?.title||m4.careerTarget?.title||"");
+    const match=industryFor(soc,title);
+    return{career:{soc,title},industryRequired:!!match,industry:match,bypassReason:match?"":"No BOOST industry experience maps cleanly to the selected occupation."};
+  }
   function selectedPath(map=parseMap()){return localStorage.getItem(PORTAL_PATH_KEY)||map.pathway||null}
   function writeJourney(j){j.updated_at=new Date().toISOString();localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));return j}
   function repairStandaloneEvidence(moduleId){
@@ -73,8 +95,8 @@
   function prerequisitesMet(moduleId){
     const map=parseMap(),complete=map.complete||{},path=selectedPath(map),previous=CORE_PREVIOUS[moduleId];
     const requireStep=(id,missingMessage,evidenceMessage)=>{
-      if(!complete[keyForModule(id)]){notify(missingMessage);return false}
-      if(!hasPayload(id)&&!repairStandaloneEvidence(id)){notify(evidenceMessage);return false}
+      if(!isComplete(id)&&!repairStandaloneEvidence(id)){notify(missingMessage);return false}
+      if(!hasPayload(id)){notify(evidenceMessage);return false}
       return true;
     };
     if(previous&&!requireStep(previous,"Complete the previous BOOST module before continuing.","Your previous completion predates BOOST data sharing. Reopen and save the previous module once so its results can carry forward."))return false;
@@ -97,10 +119,11 @@
     if(moduleId==="module5"){
       if(path!=="career"){notify("Career Investment Explorer is part of the Career Exploration & Development pathway.");return false}
       if(!requireStep("module4","Complete Module 4 — Decide before opening Career Investment Explorer.","Reopen and save Module 4 once so its decision evidence can carry into Career Investment Explorer."))return false;
-      const industryEntry=Object.entries(complete).find(([k,v])=>k.startsWith("i:")&&v===true);
-      if(!industryEntry){notify("Complete your selected Industry Experience before opening Career Investment Explorer.");return false}
-      const industryId="industry-"+industryEntry[0].slice(2);
-      if(!hasPayload(industryId)){notify("Your Industry Experience completion predates data sharing. Reopen and save that experience once so its evidence can carry into Career Investment Explorer.");return false}
+      const post=resolvePostModule4();
+      if(post.industryRequired){
+        const industryId="industry-"+post.industry.id;
+        if(!isComplete(industryId)){notify("Complete the "+post.industry.label+" connected to your selected career before opening Career Investment Explorer.");return false}
+      }
     }
     return true;
   }
@@ -208,5 +231,5 @@
 
   document.addEventListener("click",event=>{const el=event.target.closest("[data-module-id], [data-industry-id], [data-career-skillmobility], [data-investment-card]");if(el)launchModule(el,event)},true);
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
-  window.BOOSTValidatedProgress={refresh:boot};
+  window.BOOSTValidatedProgress={refresh:boot,isComplete,resolvePostModule4,industryFor};
 })();
