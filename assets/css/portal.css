@@ -33,9 +33,12 @@ a{color:inherit}
 .tipbar{width:min(100%,1672px);margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;gap:14px;color:#d8e7f2;font-size:.9rem}.tipbar strong{color:#fff}.tipbar button{border:0;background:transparent;color:#a9c6da;text-decoration:underline;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(18px);z-index:200;max-width:min(620px,calc(100vw - 32px));padding:14px 18px;border-radius:12px;background:#f4eddc;color:#182536;box-shadow:0 12px 36px rgba(0,0,0,.4);font-weight:700;opacity:0;pointer-events:none;transition:.2s ease}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .finish-btn{border:0;background:linear-gradient(135deg,#2e8c4b,#1c6d38);color:#fff;cursor:pointer;box-shadow:0 6px 18px rgba(19,88,44,.35)}.finish-btn:hover{filter:brightness(1.08)}
-.activity-frame{width:100%;height:calc(100vh - 65px);border:0;background:#fff;display:block}.activity-shell{height:100vh;overflow:hidden}
+/* Activity pages are a viewport-sized shell. Flex sizing keeps the embedded module fully reachable even when a dependency-review banner or a taller responsive header is inserted above it. */
+.activity-shell{height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.activity-shell>.boost-nav,.activity-shell>.pinalReviewBanner{flex:0 0 auto}
+.activity-frame{width:100%;height:auto;min-height:0;flex:1 1 auto;border:0;background:#fff;display:block}
 .mini-note{font-size:.73rem;color:#b8ccdc;white-space:nowrap}
-@media(max-width:850px){.boost-nav{grid-template-columns:1fr;gap:7px;padding:9px 12px}.nav-left,.nav-right{justify-content:center}.nav-center{order:3}.progress-count{min-width:74px}.stage-wrap{padding:10px 6px 24px}.tipbar{padding:0 8px;flex-direction:column;align-items:flex-start}.activity-frame{height:calc(100vh - 145px)}}
+@media(max-width:850px){.boost-nav{grid-template-columns:1fr;gap:7px;padding:9px 12px}.nav-left,.nav-right{justify-content:center}.nav-center{order:3}.progress-count{min-width:74px}.stage-wrap{padding:10px 6px 24px}.tipbar{padding:0 8px;flex-direction:column;align-items:flex-start}.activity-frame{height:auto;min-height:0;flex:1 1 auto}}
 @media (hover:none){.hotspot{border-color:rgba(255,255,255,.16)}.hotspot.is-next{border-color:rgba(255,220,123,.72)}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
