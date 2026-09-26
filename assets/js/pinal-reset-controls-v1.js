@@ -1,0 +1,78 @@
+(()=>{
+'use strict';
+if(window.__PinalResetControlsV1)return;window.__PinalResetControlsV1=true;
+const REGION='Pinal County';
+const J='pinal_boost_journey_v1',C='pinal_boost_career_exploration_v1',M='boostPathwaysV29',MO='boostPathwaysV28',DONE='boostPortalCompleted_v2',PATH='boostPortalPathway_v2',D='pinal_boost_dependency_freshness_v1';
+const CORE=['module1','module2','module3','module4'];
+const FULL_EXTRA=['boost48JobSearchV11','pinal_boost_financial_v1'];
+const parse=(k,f={})=>{try{return JSON.parse(localStorage.getItem(k)||'')||f}catch(_){return f}};
+const now=()=>new Date().toISOString();
+const mapKey=id=>'m:'+id;
+const hasOwn=(o,k)=>Object.prototype.hasOwnProperty.call(o||{},k);
+function moduleId(){const q=new URLSearchParams(location.search);let id=q.get('boost_module')||q.get('m')||'';if(id==='investment')id='module5';return CORE.includes(id)?id:null}
+function isMap(){return /\/BOOST_Pathway-Portal\/?(?:index\.html)?$/i.test(location.pathname)}
+function snapshot(keys){const out={};keys.forEach(k=>out[k]=localStorage.getItem(k));return out}
+function restoreSnapshot(s){Object.entries(s).forEach(([k,v])=>v===null?localStorage.removeItem(k):localStorage.setItem(k,v))}
+function write(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function downstream(id){const i=CORE.indexOf(id);return i<0?[]:CORE.slice(i+1)}
+function hasWork(id,j,c,map){return !!(j?.modules?.[id]||j?.progress?.[id]||c?.[id]||map?.complete?.[mapKey(id)])}
+function clearCompletionRefs(j,map,ids){
+ const set=new Set(ids);map.complete=map.complete||{};ids.forEach(id=>delete map.complete[mapKey(id)]);
+ const done=parse(DONE,[]).filter(id=>!set.has(id));write(DONE,done);
+ j.portal=j.portal||{};if(Array.isArray(j.portal.completed))j.portal.completed=j.portal.completed.filter(id=>!set.has(id));
+ j.portal.map=j.portal.map&&typeof j.portal.map==='object'?j.portal.map:{};j.portal.map.complete=j.portal.map.complete||{};ids.forEach(id=>delete j.portal.map.complete[mapKey(id)]);
+}
+function markReview(id,j,c,map){
+ const d=parse(D,{review:{}});d.review=d.review||{};const stamp=now();
+ const later=downstream(id).filter(x=>hasWork(x,j,c,map));
+ if(id!=='module1')d.review[id]={since:stamp,reason:`You restarted ${label(id)}. Complete it again so BOOST can refresh the evidence that follows.`};
+ later.forEach(x=>d.review[x]={since:stamp,reason:`An earlier BOOST step was restarted. Your saved work remains available, but this step needs review after the earlier evidence is refreshed.`});
+ write(D,d);return later;
+}
+function label(id){return({module1:'Discover',module2:'Reality Check',module3:'Career Mobility',module4:'Decide'})[id]||id}
+function buildModuleReset(id){
+ const j=parse(J,{}),c=parse(C,{}),map=parse(M,parse(MO,{pathway:null,complete:{}}));
+ j.modules=j.modules||{};j.progress=j.progress||{};j.staleModules=j.staleModules||{};
+ const later=markReview(id,j,c,map);
+ delete j.modules[id];delete j.progress[id];delete j.staleModules[id];delete c[id];
+ later.forEach(x=>{if(j.progress[x]==='complete')j.progress[x]='stale';j.staleModules[x]={reason:`${label(id)} was restarted and needs to be refreshed before this step is finalized again.`,markedAt:now()}});
+ const affected=[id,...later];clearCompletionRefs(j,map,affected);
+ j.updated_at=now();c.updatedAt=now();write(J,j);write(C,c);write(M,map);localStorage.removeItem(MO);
+ return {journey:j,affected};
+}
+function buildFullReset(){
+ const oldJ=parse(J,{}),oldC=parse(C,{}),participantJ=oldJ.participant||{},participantC=oldC.participant||{};
+ const keep={schema_version:oldJ.schema_version||2,region:REGION,participant:participantJ,portal:{map:{pathway:null,complete:{}},completed:[],pathway:''},progress:{},modules:{},staleModules:{},resetAt:now(),updated_at:now()};
+ ['coach','coachAssignment','staffAssignment','assignment'].forEach(k=>{if(hasOwn(oldJ,k))keep[k]=oldJ[k]});
+ const core={version:oldC.version||1,participant:participantC,updatedAt:now()};
+ write(J,keep);write(C,core);write(M,{pathway:null,complete:{}});localStorage.removeItem(MO);write(DONE,[]);localStorage.removeItem(PATH);localStorage.removeItem(D);FULL_EXTRA.forEach(k=>localStorage.removeItem(k));
+ return {journey:keep,affected:CORE,full:true};
+}
+async function cloudSync(result){
+ const client=window.PinalBOOSTCloud?.getClient?.();if(!client)return {signedIn:false};
+ const session=(await client.auth.getSession()).data.session;if(!session?.user)return {signedIn:false};
+ let q=client.from('boost_module_progress').select('module_id').eq('user_id',session.user.id).eq('region',REGION).eq('status','completed');
+ if(!result.full)q=q.in('module_id',result.affected);
+ const prior=await q;if(prior.error)throw prior.error;const completed=(prior.data||[]).map(r=>r.module_id);
+ if(completed.length){const u=await client.from('boost_module_progress').update({status:'in_progress',updated_at:now(),evidence:{source:'participant_restart',version:1,scope:result.full?'journey':'module',restarted_module:result.full?'all':result.affected[0]}}).eq('user_id',session.user.id).eq('region',REGION).in('module_id',completed);if(u.error)throw u.error}
+ const saved=await client.rpc('boost_save_my_journey_for_region',{p_region:REGION,p_journey:result.journey});
+ if(saved.error){if(completed.length)await client.from('boost_module_progress').update({status:'completed',updated_at:now()}).eq('user_id',session.user.id).eq('region',REGION).in('module_id',completed);throw saved.error}
+ return {signedIn:true};
+}
+function styles(){if(document.getElementById('pinalResetCss'))return;const s=document.createElement('style');s.id='pinalResetCss';s.textContent=`.boostRestartBtn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.08);color:#fff;font:800 .86rem/1 system-ui;cursor:pointer}.boostRestartBtn:hover,.boostRestartBtn:focus-visible{background:rgba(255,255,255,.17);outline:2px solid #f0c864;outline-offset:2px}.boostResetModal{position:fixed;inset:0;z-index:2147483646;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(3,16,27,.82);backdrop-filter:blur(5px)}.boostResetModal.show{display:flex}.boostResetCard{width:min(590px,96vw);overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 28px 80px rgba(0,0,0,.5);font-family:system-ui,-apple-system,Segoe UI,sans-serif}.boostResetHead{padding:18px 20px;background:linear-gradient(90deg,#102d49,#1f587f);color:#fff;border-bottom:3px solid #e4a72b}.boostResetHead h2{margin:0;font-size:1.35rem}.boostResetBody{padding:20px;color:#2f4656;line-height:1.5}.boostResetBody p{margin:.2rem 0 1rem}.boostResetNote{padding:11px 12px;border-radius:11px;background:#fff7dc;border-left:5px solid #d69a18;color:#594615;font-size:.9rem}.boostResetActions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:18px}.boostResetAction{border:0;border-radius:999px;padding:10px 15px;font-weight:900;cursor:pointer}.boostResetCancel{background:#edf2f5;color:#29495c}.boostResetConfirm{background:#9a3e2f;color:#fff}.boostResetConfirm:disabled,.boostResetCancel:disabled{opacity:.55;cursor:wait}.boostResetStatus{min-height:20px;margin-top:12px;font-size:.86rem;font-weight:800;color:#496675}`;document.head.appendChild(s)}
+let modal=null,scope=null;
+function ensureModal(){if(modal)return modal;modal=document.createElement('div');modal.className='boostResetModal';modal.innerHTML='<div class="boostResetCard" role="dialog" aria-modal="true" aria-labelledby="boostResetTitle"><div class="boostResetHead"><h2 id="boostResetTitle"></h2></div><div class="boostResetBody"><div id="boostResetCopy"></div><div class="boostResetStatus" id="boostResetStatus"></div><div class="boostResetActions"><button class="boostResetAction boostResetCancel" type="button">Cancel</button><button class="boostResetAction boostResetConfirm" type="button"></button></div></div></div>';document.body.appendChild(modal);modal.querySelector('.boostResetCancel').onclick=()=>modal.classList.remove('show');modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show')});modal.querySelector('.boostResetConfirm').onclick=runReset;return modal}
+function openReset(kind){scope=kind;const m=ensureModal(),id=moduleId(),title=m.querySelector('#boostResetTitle'),copy=m.querySelector('#boostResetCopy'),confirm=m.querySelector('.boostResetConfirm'),status=m.querySelector('#boostResetStatus');status.textContent='';
+ if(kind==='all'){title.textContent='Start BOOST Over?';copy.innerHTML='<p>This clears your BOOST journey so you can begin again from Discover.</p><div class="boostResetNote"><b>Your BOOST account and coach connection stay in place.</b><br>Module answers, career selections, completion status, pathway progress, and generated journey results will be cleared. This reset will sync to your BOOST record.</div>';confirm.textContent='Start BOOST Over'}
+ else{title.textContent=`Restart ${label(id)}?`;copy.innerHTML=`<p>Your answers in <b>${label(id)}</b> will be cleared so you can complete this module again.</p><div class="boostResetNote"><b>Your work in other modules will remain saved.</b><br>If later steps were already completed, BOOST will flag them for review and keep them waiting until the refreshed evidence reaches them.</div>`;confirm.textContent='Restart This Module'}
+ m.classList.add('show');confirm.focus();
+}
+async function runReset(){const m=ensureModal(),confirm=m.querySelector('.boostResetConfirm'),cancel=m.querySelector('.boostResetCancel'),status=m.querySelector('#boostResetStatus'),id=moduleId();if(scope!=='all'&&!id)return;const keys=[J,C,M,MO,DONE,PATH,D,...FULL_EXTRA],before=snapshot(keys);confirm.disabled=cancel.disabled=true;status.textContent='Saving your reset…';
+ try{const result=scope==='all'?buildFullReset():buildModuleReset(id);await cloudSync(result);status.textContent='Reset saved.';setTimeout(()=>{if(scope==='all')location.assign('https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/?boost_reset_done=all');else{const u=new URL(location.href);u.searchParams.set('boost_reset_done',id);location.assign(u.toString())}},220)}catch(err){restoreSnapshot(before);console.error('BOOST reset failed',err);status.textContent='BOOST could not safely sync the reset. Nothing was cleared. Please try again.';confirm.disabled=cancel.disabled=false}}
+function install(){styles();
+ const old=document.querySelector('[data-reset-progress]');if(old){old.textContent='Start BOOST Over';old.setAttribute('title','Clear this BOOST journey and begin again');old.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();openReset('all')},true)}
+ const id=moduleId();if(id){const actions=document.querySelector('.activity-actions,.nav-right');if(actions&&!document.getElementById('boostRestartModule')){const b=document.createElement('button');b.id='boostRestartModule';b.type='button';b.className='boostRestartBtn';b.textContent='↻ Restart This Module';b.title='Clear this module and complete it again';b.onclick=()=>openReset('module');actions.insertBefore(b,actions.firstChild)}}
+ const q=new URLSearchParams(location.search),done=q.get('boost_reset_done');if(done){q.delete('boost_reset_done');history.replaceState({},'',location.pathname+(q.toString()?'?'+q.toString():'')+location.hash);setTimeout(()=>{const msg=done==='all'?'BOOST is ready for a fresh start.':`${label(done)} was restarted. Your other saved work is still available and later steps will be reviewed as needed.`;if(window.BOOSTPortal?.toast)window.BOOSTPortal.toast(msg);else{const n=document.createElement('div');n.style.cssText='position:fixed;left:50%;bottom:22px;z-index:2147483645;transform:translateX(-50%);max-width:min(620px,92vw);padding:12px 16px;border-radius:12px;background:#0d2741;color:#fff;font:800 14px/1.4 system-ui;box-shadow:0 10px 28px #0005';n.textContent=msg;document.body.appendChild(n);setTimeout(()=>n.remove(),4200)}},350)}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+window.PinalBOOSTReset={restartModule:id=>{scope='module';return buildModuleReset(id)},startOver:buildFullReset};
+})();
