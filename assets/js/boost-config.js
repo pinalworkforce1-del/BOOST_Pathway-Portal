@@ -8,7 +8,8 @@ window.BOOST_CONFIG = {
 (function loadPinal20260926Enhancements(){
   const scripts=[
     ['assets/js/pinal-dependency-freshness-v1.js?v=20260926c','Pinal revisit indicators'],
-    ['assets/js/pinal-rosie-discover-context-v1.js?v=20260926b','Rosie Discover context']
+    ['assets/js/pinal-rosie-discover-context-v1.js?v=20260926b','Rosie Discover context'],
+    ['assets/js/pinal-reset-controls-v1.js?v=20260926a','BOOST restart controls']
   ];
   scripts.forEach(([src,label])=>{
     if(document.querySelector(`script[src^="${src.split('?')[0]}"]`))return;
