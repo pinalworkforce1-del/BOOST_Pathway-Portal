@@ -7,7 +7,18 @@
   function creds(){let id=localStorage.getItem(ID),t=localStorage.getItem(TOK);if(!id){id=crypto.randomUUID();localStorage.setItem(ID,id)}if(!t){t=randomToken();localStorage.setItem(TOK,t)}return{id,token:t}}
   function get(){try{return JSON.parse(localStorage.getItem(J)||'{}')}catch(e){return{}}}
   const downstream={module1:['module2','module3','module4','module5'],module2:['module3','module4','module5'],module3:['module4','module5'],module4:['module5']};
-  function moduleTime(mod){const v=mod?.completedAt||mod?.finalizedAt||mod?.evaluatedAt||'';const t=Date.parse(v);return Number.isFinite(t)?t:0}
+  function stable(v){if(Array.isArray(v))return v.map(stable);if(v&&typeof v==='object'){const o={};Object.keys(v).sort().forEach(k=>{if(!['completedAt','capturedAt','updatedAt','finalizedAt','evaluatedAt','resultGeneratedAt','browserState','source'].includes(k))o[k]=stable(v[k])});return o}return v}
+  function careers(mod){const list=Array.isArray(mod?.selected)&&mod.selected.length?mod.selected:(Array.isArray(mod?.careers)?mod.careers:[]);return list.map(x=>typeof x==='string'?{title:x,soc:''}:{title:x?.title||x?.careerTitle||x?.occupation||'',soc:String(x?.soc||x?.socCode||'')}).filter(x=>x.title||x.soc).sort((a,b)=>(a.soc+'|'+a.title).localeCompare(b.soc+'|'+b.title))}
+  function dependencySignature(moduleId,mod){
+    if(!mod||typeof mod!=='object'||!Object.keys(mod).length)return'';
+    let payload;
+    if(moduleId==='module1')payload={interestScores:mod.interestScores||mod.scores||{},careers:careers(mod),validatedWorkDrivers:mod?.alignmentProfile?.validatedWorkDrivers||[]};
+    else if(moduleId==='module2')payload={careers:careers(mod),fields:mod.fields||{},validationBySoc:mod.validationBySoc||{}};
+    else if(moduleId==='module3')payload={careers:careers(mod),fields:mod.fields||{},startingPoint:mod.startingPoint||{},mobilityPath:mod.mobilityPath||'',reportCreated:!!mod.reportCreated};
+    else if(moduleId==='module4')payload={career:mod.career||mod.selectedCareer||null,careerTitle:mod.careerTitle||'',selectedSoc:mod.selectedSoc||'',route:mod.route||mod.participantDirection||mod?.decision?.code||'',answers:mod.answers||{},decision:mod.decision||{}};
+    else payload=stable(mod);
+    try{return JSON.stringify(stable(payload))}catch(_){return''}
+  }
   function clearCompletionRefs(j,ids){
     const stale=new Set(ids||[]);
     if(Array.isArray(j?.portal?.completed))j.portal.completed=j.portal.completed.filter(id=>!stale.has(id));
@@ -24,16 +35,11 @@
   }
   function invalidateDownstream(j,moduleId){
     const ids=downstream[moduleId]||[];if(!ids.length)return j;
-    return markStale(j,ids,moduleId+' was updated after downstream work')
+    return markStale(j,ids,moduleId+' changed after downstream work')
   }
   function reconcileFreshness(j){
-    j=j||{};const m=j.modules||{};
-    const checks=[['module1','module2'],['module2','module3'],['module3','module4'],['module4','module5']];
-    for(const [up,down] of checks){
-      const ut=moduleTime(m[up]),dt=moduleTime(m[down]);
-      if(ut&&dt&&ut>dt)markStale(j,[down,...(downstream[down]||[])],up+' is newer than '+down);
-    }
-    return j
+    /* Freshness is now created only by a meaningful saved evidence change. Timestamp order alone is not proof that participant evidence changed. */
+    return j||{}
   }
   function put(j){j=reconcileFreshness(j||{});j.region=REGION;j.updated_at=new Date().toISOString();localStorage.setItem(J,JSON.stringify(j));schedule(j);return j}
   function patch(obj){const j=get();Object.assign(j,obj||{});return put(j)}
@@ -67,6 +73,14 @@
   async function signIn(email,name,redirectTo){const cl=c();if(!cl)throw new Error('Cloud unavailable');const parts=(name||'').trim().split(/\s+/);const first=parts.shift()||'',last=parts.join(' ');localStorage.setItem('pinal_boost_pending_name',name||'');localStorage.setItem('pinal_boost_pending_email',email||'');return cl.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo||cfg.authRedirect,data:{first_name:first,last_name:last,full_name:name,boost_region:REGION}}})}
   async function verify(email,code){return c().auth.verifyOtp({email,token:code,type:'email'})}
   async function finishAuth(){const cl=c();if(!cl)return null;const {data:{session}}=await cl.auth.getSession();if(!session?.user)return null;let j=await loadMine()||get();j.participant=j.participant||{};j.participant.name=localStorage.getItem('pinal_boost_pending_name')||session.user.user_metadata?.full_name||j.participant.name||'';j.participant.email=session.user.email||localStorage.getItem('pinal_boost_pending_email')||j.participant.email||'';put(j);localStorage.removeItem('pinal_boost_pending_name');localStorage.removeItem('pinal_boost_pending_email');await save(j);return session}
-  function captureModule(moduleId,extra){const j=get();j.progress=j.progress||{};j.modules=j.modules||{};invalidateDownstream(j,moduleId);j.progress[moduleId]='complete';if(j.staleModules)delete j.staleModules[moduleId];j.modules[moduleId]=Object.assign({},j.modules[moduleId]||{},extra||{},{completedAt:new Date().toISOString(),browserState:snapshotStorage()});if(extra?.primaryCareer)j.primaryCareerTitle=extra.primaryCareer;if(extra?.h3Status)j.h3Status=extra.h3Status;return put(j)}
-  window.PinalBOOST={get,put,patch,save,loadMine,signIn,verify,finishAuth,client:c,journeyKey:J,captureModule,snapshotStorage,restoreBrowserState};
+  function captureModule(moduleId,extra){
+    const j=get();j.progress=j.progress||{};j.modules=j.modules||{};
+    const previous=j.modules[moduleId]||{},oldSig=dependencySignature(moduleId,previous);
+    const next=Object.assign({},previous,extra||{},{completedAt:new Date().toISOString(),browserState:snapshotStorage()});
+    const newSig=dependencySignature(moduleId,next),meaningfullyChanged=!!oldSig&&!!newSig&&oldSig!==newSig;
+    if(meaningfullyChanged)invalidateDownstream(j,moduleId);
+    j.progress[moduleId]='complete';if(j.staleModules)delete j.staleModules[moduleId];j.modules[moduleId]=next;
+    if(extra?.primaryCareer)j.primaryCareerTitle=extra.primaryCareer;if(extra?.h3Status)j.h3Status=extra.h3Status;return put(j)
+  }
+  window.PinalBOOST={get,put,patch,save,loadMine,signIn,verify,finishAuth,client:c,journeyKey:J,captureModule,snapshotStorage,restoreBrowserState,dependencySignature};
 })();
