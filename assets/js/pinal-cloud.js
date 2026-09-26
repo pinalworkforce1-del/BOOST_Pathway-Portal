@@ -2,6 +2,13 @@
   'use strict';
   const J='pinal_boost_journey_v1',ID='pinal_boost_cloud_journey_id',TOK='pinal_boost_cloud_access_token',REGION='Pinal County';
   const cfg=window.PINAL_BOOST_CONFIG||{}; let client=null,timer=null;
+  function installMapReviewStyle(){
+    if(document.getElementById('pinalReviewMapPolish'))return;
+    const s=document.createElement('style');s.id='pinalReviewMapPolish';
+    s.textContent='.hotspot.is-review-needed,.hotspot.is-waiting-review{outline:none!important;box-shadow:none!important;filter:none!important;opacity:1!important}.hotspot.is-review-needed .complete-badge,.hotspot.is-waiting-review .complete-badge{box-shadow:0 2px 8px rgba(0,0,0,.32)!important}.hotspot.is-review-needed .complete-badge{background:#d99a16!important;color:#fff!important}.hotspot.is-waiting-review .complete-badge{background:#68757f!important;color:#fff!important}';
+    document.head.appendChild(s)
+  }
+  installMapReviewStyle();
   function c(){if(!client&&window.supabase&&cfg.url&&cfg.key)client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});return client}
   function randomToken(){const b=new Uint8Array(32);crypto.getRandomValues(b);return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('')}
   function creds(){let id=localStorage.getItem(ID),t=localStorage.getItem(TOK);if(!id){id=crypto.randomUUID();localStorage.setItem(ID,id)}if(!t){t=randomToken();localStorage.setItem(TOK,t)}return{id,token:t}}
