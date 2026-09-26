@@ -551,8 +551,6 @@
   }
 
   document.querySelectorAll('[data-module-id], [data-industry-id]').forEach(el => el.addEventListener('click', () => {
-    const id = el.dataset.moduleId ? `m:${el.dataset.moduleId}` : `i:${el.dataset.industryId}`;
-    state.complete[id] = true;
     if (el.dataset.setPathway) state.pathway = el.dataset.setPathway;
     save(); setPathway(state.pathway); updateProgress();
   }));
@@ -563,7 +561,6 @@
     });
   });
   document.querySelectorAll('[data-career-skillmobility]').forEach(el => el.addEventListener('click', () => {
-    state.complete['i:skillmobility'] = true;
     save(); updateProgress();
   }));
 
@@ -631,7 +628,7 @@
   if (localStorage.getItem(ROSIE_INTRO_KEY)) rosieIntroReplay.textContent = 'Replay Rosie'; else showRosieIntroWelcome();
 })();
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n<script src="assets/js/boost-config.js?v=20260908d"></script>\n<script src="assets/js/boost-cloud.js?v=20260908d"></script>\n<script src="assets/js/boost-progress.js?v=20260924-career-catchup1"></script>\n<script src="assets/js/sequence-guide.js?v=20260924-career-catchup1"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>\n<script src="assets/js/boost-config.js?v=20260908d"></script>\n<script src="assets/js/boost-cloud.js?v=20260908d"></script>\n<script src="assets/js/boost-progress.js?v=20260926-progression2"></script>\n<script src="assets/js/sequence-guide.js?v=20260926-progression2"></script>
 <script src="assets/js/boost-certificate.js?v=20260924-cert1"></script>
 </body>
 </html>
