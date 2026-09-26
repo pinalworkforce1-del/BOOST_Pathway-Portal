@@ -4,7 +4,9 @@
   const INDUSTRY_KEY='boostPortalIndustry_v2';
   const MAP_STATE_KEY='boostPathwaysV29';
   const MAP_LEGACY_KEY='boostPathwaysV28';
-  const routes={shared:['module1'],career:['module1','module2','module3','module4','financial','ai','industry','module5'],rapid:['module1','skillmobility','jobsearch','financial','ai']};
+  const routes={shared:['module1'],rapid:['module1','skillmobility','jobsearch','financial','ai']};
+  function careerRoute(){const post=window.BOOSTValidatedProgress?.resolvePostModule4?.();return ['module1','module2','module3','module4',...(post?.industryRequired?['industry']:[]),'module5','financial','ai']}
+  function routeFor(pathway){return pathway==='career'?careerRoute():(routes[pathway]||routes.shared)}
   const labels={shared:'Shared BOOST Start',career:'Career Exploration & Development',rapid:'Rapid Employment'};
   const industryLabels={healthcare:'Healthcare Pathways',trades:'Skilled Trades Pathways',manufacturing:'Advanced Manufacturing Pathways',it:'Information Technology',cdl:'Transportation & Logistics'};
 
@@ -12,13 +14,19 @@
   function saveMapState(s){s=s||{};s.complete=s.complete||{};localStorage.setItem(MAP_STATE_KEY,JSON.stringify(s))}
   function mapId(id){return industryLabels[id]?`i:${id}`:`m:${id}`}
   function mirrorToMap(completedId){const ms=mapState();ms.complete=ms.complete||{};if(completedId)ms.complete[mapId(completedId)]=true;ms.pathway=getPathway()==='shared'?null:getPathway();const ind=getIndustry();if(ind)ms.selectedIndustry=ind;saveMapState(ms)}
-  function importFromMap(){const ms=mapState(),done=getCompleted();Object.entries(ms.complete||{}).forEach(([k,v])=>{if(!v)return;if(k.startsWith('m:'))done.add(k.slice(2));if(k.startsWith('i:')){const id=k.slice(2);done.add(id);done.add('industry');if(industryLabels[id])localStorage.setItem(INDUSTRY_KEY,id)}});saveCompleted(done);if(ms.pathway&&routes[ms.pathway])localStorage.setItem(PATHWAY_KEY,ms.pathway)}
+  function importFromMap(){const ms=mapState(),done=getCompleted();Object.entries(ms.complete||{}).forEach(([k,v])=>{if(!v)return;if(k.startsWith('m:'))done.add(k.slice(2));if(k.startsWith('i:')){const id=k.slice(2);done.add(id);done.add('industry');if(industryLabels[id])localStorage.setItem(INDUSTRY_KEY,id)}});saveCompleted(done);if(ms.pathway&&['shared','career','rapid'].includes(ms.pathway))localStorage.setItem(PATHWAY_KEY,ms.pathway)}
 
   function getPathway(){return localStorage.getItem(PATHWAY_KEY)||'shared'}
-  function setPathway(id){if(!routes[id])return;localStorage.setItem(PATHWAY_KEY,id);mirrorToMap();syncCloudState();updateProgress();document.dispatchEvent(new CustomEvent('boostpathway',{detail:{pathway:id}}))}
+  function setPathway(id){if(!['shared','career','rapid'].includes(id))return;localStorage.setItem(PATHWAY_KEY,id);mirrorToMap();syncCloudState();updateProgress();document.dispatchEvent(new CustomEvent('boostpathway',{detail:{pathway:id}}))}
   function getIndustry(){return localStorage.getItem(INDUSTRY_KEY)||''}
   function setIndustry(id){if(!industryLabels[id])return;localStorage.setItem(INDUSTRY_KEY,id);localStorage.setItem(PATHWAY_KEY,'career');const ms=mapState();ms.pathway='career';ms.selectedIndustry=id;saveMapState(ms);syncCloudState();updateProgress()}
-  function getCompleted(){try{return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'))}catch{return new Set()}}
+  function getCompleted(){
+    const out=new Set(),j=(()=>{try{return window.PinalBOOST?.get?.()||JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{}}catch(_){return{}}})();
+    Object.entries(j.progress||{}).forEach(([id,v])=>{if(v==='complete'&&j.modules?.[id]&&Object.keys(j.modules[id]||{}).length)out.add(id)});
+    const ms=mapState();Object.entries(ms.complete||{}).forEach(([k,v])=>{if(!v)return;const id=k.startsWith('i:')?'industry-'+k.slice(2):k.startsWith('m:')?k.slice(2):'';if(id&&j.modules?.[id]&&Object.keys(j.modules[id]||{}).length)out.add(id)});
+    [...out].filter(id=>id.startsWith('industry-')).forEach(id=>out.add('industry'));
+    return out;
+  }
   function saveCompleted(set){localStorage.setItem(STORAGE_KEY,JSON.stringify([...set]))}
   function markComplete(id){const s=getCompleted();s.add(id);if(industryLabels[id]){localStorage.setItem(INDUSTRY_KEY,id);s.add('industry');localStorage.setItem(PATHWAY_KEY,'career')}saveCompleted(s);mirrorToMap(id);syncCloudState(id);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress',{detail:{id}}))}
   function reset(){localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(PATHWAY_KEY);localStorage.removeItem(INDUSTRY_KEY);localStorage.removeItem(MAP_STATE_KEY);updateProgress();document.dispatchEvent(new CustomEvent('boostprogress'))}
@@ -40,7 +48,7 @@
   }
   function updateProgress(){
     installReviewStyles();
-    const pathway=getPathway(),route=routes[pathway]||routes.career,done=getCompleted(),review=reviewState();
+    const pathway=getPathway(),route=routeFor(pathway),done=getCompleted(),review=reviewState();
     review.ids.forEach(id=>done.delete(id));
     const n=route.filter(id=>routeIsComplete(done,id)).length,pct=route.length?Math.round((n/route.length)*100):0;
     document.querySelectorAll('[data-progress-fill]').forEach(el=>el.style.width=pct+'%');
@@ -51,7 +59,7 @@
     document.querySelectorAll('[data-industry-id]').forEach(el=>{const id=el.dataset.industryId;el.classList.toggle('is-complete',done.has('industry')&&selectedIndustry===id);el.classList.remove('is-next')});
     const next=route.find(id=>!routeIsComplete(done,id));
     if(next==='industry'){document.querySelectorAll('[data-industry-id],[data-industry-choice]').forEach(el=>el.classList.add('is-next'))}else if(next==='module5'){document.querySelectorAll('[data-investment-card]').forEach(el=>el.classList.add('is-next'))}else if(next){document.querySelectorAll(`[data-module-id="${next}"]`).forEach(el=>el.classList.add('is-next'))}
-    document.querySelectorAll('[data-investment-card]').forEach(el=>{const ready=done.has('industry'),isReview=review.ids.has('module5'),isFirst=review.first==='module5';el.classList.toggle('is-ready',ready&&!isReview);el.classList.toggle('is-complete',done.has('module5'));el.classList.toggle('is-review-needed',isReview&&isFirst);el.classList.toggle('is-waiting-review',isReview&&!isFirst);const status=el.querySelector('[data-investment-status]');if(status)status.textContent=isReview?(isFirst?'Review your Career Investment results':'Complete the earlier review first'):done.has('module5')?'Completed':ready?'Ready after your industry experience':'Complete an industry experience first'});
+    document.querySelectorAll('[data-investment-card]').forEach(el=>{const post=window.BOOSTValidatedProgress?.resolvePostModule4?.(),ready=done.has('module4')&&(!post?.industryRequired||done.has('industry-'+post.industry.id)),isReview=review.ids.has('module5'),isFirst=review.first==='module5';el.classList.toggle('is-ready',ready&&!isReview);el.classList.toggle('is-complete',done.has('module5'));el.classList.toggle('is-review-needed',isReview&&isFirst);el.classList.toggle('is-waiting-review',isReview&&!isFirst);const status=el.querySelector('[data-investment-status]');if(status)status.textContent=isReview?(isFirst?'Review your Career Investment results':'Complete the earlier review first'):done.has('module5')?'Completed':ready?(post?.industryRequired?'Ready after your matched industry experience':'Ready — no industry experience is required for this career'):(post?.industryRequired?'Complete the matched industry experience first':'Complete Module 4 — Decide first')});
   }
   function toast(msg){let t=document.querySelector('.toast');if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t)}t.textContent=msg;t.classList.add('show');clearTimeout(window.__boostToast);window.__boostToast=setTimeout(()=>t.classList.remove('show'),3400)}
   function openPathwayDialog(){const d=document.getElementById('pathwayDialog');if(d&&typeof d.showModal==='function')d.showModal()}
@@ -59,7 +67,7 @@
   function loadScript(src){return new Promise((resolve,reject)=>{if(document.querySelector(`script[src="${src}"]`))return resolve();const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=reject;document.head.appendChild(s)})}
   async function ensureCloud(){try{await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');await loadScript(new URL('assets/js/pinal-cloud-config.js',location.href.includes('/topic/')?new URL('../',location.href):location.href).toString());await loadScript(new URL('assets/js/pinal-cloud.js?v=20260908f',location.href.includes('/topic/')?new URL('../',location.href):location.href).toString());return window.PinalBOOST||null}catch(e){console.warn('Pinal BOOST cloud unavailable',e);return null}}
   function syncCloudState(completedId){if(!window.PinalBOOST)return;const j=window.PinalBOOST.get();j.selectedPathway=getPathway();j.selectedIndustry=getIndustry();j.portal=j.portal||{};j.portal.completed=[...getCompleted()];j.portal.mapState=mapState();j.progress=j.progress||{};if(completedId)j.progress[completedId]='complete';window.PinalBOOST.put(j)}
-  async function restoreCloudState(){const cloud=await ensureCloud();if(!cloud)return;await cloud.finishAuth();const j=cloud.get();if(j.selectedPathway&&routes[j.selectedPathway])localStorage.setItem(PATHWAY_KEY,j.selectedPathway);if(j.selectedIndustry&&industryLabels[j.selectedIndustry])localStorage.setItem(INDUSTRY_KEY,j.selectedIndustry);if(j.portal?.mapState)saveMapState(j.portal.mapState);const fromCloud=new Set(j.portal?.completed||Object.entries(j.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k));if(fromCloud.size){const merged=getCompleted();fromCloud.forEach(x=>merged.add(x));saveCompleted(merged)}importFromMap();mirrorToMap();updateProgress()}
+  async function restoreCloudState(){const cloud=await ensureCloud();if(!cloud)return;await cloud.finishAuth();const j=cloud.get();if(j.selectedPathway&&['shared','career','rapid'].includes(j.selectedPathway))localStorage.setItem(PATHWAY_KEY,j.selectedPathway);if(j.selectedIndustry&&industryLabels[j.selectedIndustry])localStorage.setItem(INDUSTRY_KEY,j.selectedIndustry);if(j.portal?.mapState)saveMapState(j.portal.mapState);const fromCloud=new Set(j.portal?.completed||Object.entries(j.progress||{}).filter(([,v])=>v==='complete').map(([k])=>k));if(fromCloud.size){const merged=getCompleted();fromCloud.forEach(x=>merged.add(x));saveCompleted(merged)}importFromMap();mirrorToMap();updateProgress()}
 
   function isModule1Activity(){return /activity\.html$/i.test(location.pathname)&&new URLSearchParams(location.search).get('m')==='module1'}
   async function requireModule1SignIn(){if(!isModule1Activity())return;const cloud=await ensureCloud();if(!cloud)return;const cl=cloud.client();const {data:{session}}=await cl.auth.getSession();if(session?.user)return;
@@ -112,12 +120,12 @@
     const resetBtn=e.target.closest('[data-reset-progress]');if(resetBtn){e.preventDefault();if(confirm('Reset BOOST prototype progress and pathway selection on this device?'))reset()}
     const choose=e.target.closest('[data-choose-pathway]');if(choose){e.preventDefault();openPathwayDialog()}
     const setBtn=e.target.closest('[data-pathway-choice]');if(setBtn){e.preventDefault();setPathway(setBtn.dataset.pathwayChoice);const d=document.getElementById('pathwayDialog');if(d?.open)d.close();toast(`${labels[setBtn.dataset.pathwayChoice]} pathway selected.`)}
-    const industryChoice=e.target.closest('[data-industry-choice]');if(industryChoice){e.preventDefault();setPathway('career');toast('Choose the industry experience that best matches the occupation you are exploring. If none fits, Skill Mobility will serve as the fallback.')}
+    const industryChoice=e.target.closest('[data-industry-choice]');if(industryChoice){e.preventDefault();setPathway('career');const post=window.BOOSTValidatedProgress?.resolvePostModule4?.();toast(post?.industryRequired?'Your selected career connects to '+post.industry.label+'. You may also explore the other industry experiences.':'Your selected career does not require one of the five BOOST industry experiences. You can continue to Career Investment Explorer.')}
     const industry=e.target.closest('[data-industry-id]');if(industry)setIndustry(industry.dataset.industryId);
-    const investment=e.target.closest('[data-investment-card]');if(investment&&!getCompleted().has('industry')){e.preventDefault();toast('Complete your selected industry workplace skills experience first. Skill Investment follows that step.')}
+    const investment=e.target.closest('[data-investment-card]');if(investment){const post=window.BOOSTValidatedProgress?.resolvePostModule4?.(),done=getCompleted();if(!done.has('module4')||(post?.industryRequired&&!done.has('industry-'+post.industry.id))){e.preventDefault();toast(!done.has('module4')?'Complete Module 4 — Decide first.':'Complete the matched '+post.industry.label+' first.')}}
     const pageComplete=e.target.closest('[data-page-complete]');if(pageComplete){e.preventDefault();const id=pageComplete.dataset.pageComplete;if(id){markComplete(id);toast('Marked complete. Your BOOST map has been updated.')}}
   });
 
-  window.BOOSTPortal={getCompleted,markComplete,reset,getPathway,setPathway,getIndustry,setIndustry,routes,labels,industryLabels,toast,updateProgress,syncCloudState};
+  window.BOOSTPortal={getCompleted,markComplete,reset,getPathway,setPathway,getIndustry,setIndustry,routes,careerRoute,routeFor,labels,industryLabels,toast,updateProgress,syncCloudState};
   document.addEventListener('DOMContentLoaded',async()=>{installActivityHubGuard();importFromMap();updateProgress();await restoreCloudState();await requireModule1SignIn()});
 })();
