@@ -7,7 +7,7 @@ window.BOOST_CONFIG = {
 
 (function loadPinal20260926Enhancements(){
   const scripts=[
-    ['assets/js/pinal-dependency-freshness-v1.js?v=20260926b','Pinal revisit indicators'],
+    ['assets/js/pinal-dependency-freshness-v1.js?v=20260926c','Pinal revisit indicators'],
     ['assets/js/pinal-rosie-discover-context-v1.js?v=20260926b','Rosie Discover context']
   ];
   scripts.forEach(([src,label])=>{
