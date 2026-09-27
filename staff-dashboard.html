@@ -40,7 +40,7 @@ let records=[],notices=[],assignments=new Map(),staffList=[],me='';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=d=>{if(!d)return'—';try{return new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',year:'numeric'}).format(new Date(d))}catch{return'—'}},label=k=>String(k||'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
 const names={module1:'Module 1 — Discover',module2:'Module 2 — Reality Check',module3:'Module 3 — Career Mobility',module4:'Module 4 — Decide',skillmobility:'Finding Yourself in Work',jobsearch:'48-Hour Job Search',financial:'Build Strong Financial Habits',ai:'AI & You',industry:'Applied Career Experience',module5:'Career Investment Explorer'};
 function pathLabel(v){return v==='rapid'?'Rapid Employment':v==='career'?'Career Development':'Pathway not selected'}
-function seq(r){if(r.selected_pathway==='rapid')return['module1','skillmobility','jobsearch','financial','ai'];if(r.selected_pathway==='career')return AREA==='pinal'?['module1','module2','module3','module4','industry','module5','financial','ai']:['module1','module2','module3','module4','industry','financial','ai'];return['module1']}
+function seq(r){if(r.selected_pathway==='rapid')return['module1','skillmobility','jobsearch','financial','ai'];if(r.selected_pathway==='career'){const hasIndustry=!!r.selected_industry||(r.validated_progress||[]).some(x=>String(x.module_id||'').startsWith('industry-')&&x.status==='completed')||Object.entries(r.progress||{}).some(([k,val])=>k.startsWith('industry-')&&val==='complete');return AREA==='pinal'?['module1','module2','module3','module4',...(hasIndustry?['industry']:[]),'module5','financial','ai']:['module1','module2','module3','module4',...(hasIndustry?['industry']:[]),'financial','ai']}return['module1']}
 function validated(r,id){const v=r.validated_progress||[];if(id==='industry')return v.some(x=>String(x.module_id||'').startsWith('industry-')&&x.status==='completed')||Object.entries(r.progress||{}).some(([k,val])=>k.startsWith('industry-')&&val==='complete');if(v.some(x=>x.module_id===id&&x.status==='completed'))return true;if(id==='ai')return (r.progress||{}).ai==='complete'||(r.progress||{}).careerAi==='complete';return (r.progress||{})[id]==='complete'}
 function meta(r,id){const a=(r.validated_progress||[]).filter(x=>id==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===id).sort((a,b)=>new Date(b.completed_at||b.updated_at)-new Date(a.completed_at||a.updated_at));return a[0]||null}
 async function api(action,body={},token=localStorage.getItem(TOKEN_KEY)||''){const res=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON,'X-BOOST-Staff-Token':token},body:JSON.stringify({action,area:AREA,...body})});const data=await res.json();if(!res.ok)throw new Error(data?.error||'BOOST staff access unavailable.');return data}
@@ -88,7 +88,7 @@ function pdfEvidenceLines(value,depth=0,out=[]){
 }
 const ROUTE_NAMES={READY:'WORK NOW',BRIDGE:'EARN WHILE YOU LEARN',BUILD:'TRAINING INVESTMENT CONVERSATION',RECONSIDER:'EXPLORE BEFORE COMMITTING'};
 function coachBriefModel(d,r){
-  const j=d.journey||{},m=j.modules||j,m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},skill=m.skillmobility||{};
+  const j=d.journey||{},m=j.modules||j,m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},m5=m.module5||{},skill=m.skillmobility||{};
   const title=m4.careerTitle||m4.careerTarget?.title||m4.career?.title||r.primary_career_title||'';
   const soc=String(m4.selectedSoc||m4.careerTarget?.soc||m4.career?.soc||'');
   const route=m4.route||m4.participantDirection||m4.boostSignal?.route||m4.decision?.code||'';
@@ -100,7 +100,8 @@ function coachBriefModel(d,r){
   const v=(m2.validationBySoc&&Object.entries(m2.validationBySoc).find(([k])=>String(k).replace(/\D/g,'').slice(0,6)===soc.replace(/\D/g,'').slice(0,6))?.[1])||{};
   const prep=m4.preparationIntel||v.preparationIntel||{},base=prep.baseline||{};
   const why={READY:'The combined evidence supports competing for this role now.',BRIDGE:'A preparation gap remains, but a verified employer-supported route may help close it while the participant earns.',BUILD:'The career remains worth considering, but an occupation-specific preparation, credential, or license gap should be addressed before treating it as ready-now work.',RECONSIDER:'Some part of the wage, life fit, preparation, confidence, or employer evidence suggests more exploration before committing.'}[route]||'';
-  return{m1,m2,m3,m4,skill,title,soc,route,why,top,strengths:uniq,v,prepLabel:v.prep||prep.label||'Preparation reviewed',education:prep.education||base.education||m4.boostSignal?.typicalEntryEducation||'',life:v.life||m4.boostSignal?.lifeInterpretation||'',wages:v.wages||m4.boostSignal?.wagesInterpretation||'',employer:v.employerSupport||(m4.employerBridgeEvidence?'Verified employer-supported route':'')};
+  const investment=m5?.evaluatedAt?{gap:m5.specificGap||'',provider:m5.provider||'',program:m5.programName||'',pathway:m5.trainingPathway||'',credentials:m5.credentials||'',listedCost:m5.listedCost,potentialInvestment:m5.potentialCareerInvestment,remainingCost:m5.potentialRemainingCost,currentWage:m5.currentHourlyWage,targetWage:m5.targetHourlyReference,roiRatio:m5.roiRatio,benchmarkMet:m5.roiBenchmarkMet}:null;
+  return{m1,m2,m3,m4,m5,skill,title,soc,route,why,top,strengths:uniq,v,prepLabel:v.prep||prep.label||'Preparation reviewed',education:prep.education||base.education||m4.boostSignal?.typicalEntryEducation||'',life:v.life||m4.boostSignal?.lifeInterpretation||'',wages:v.wages||m4.boostSignal?.wagesInterpretation||'',employer:v.employerSupport||(m4.employerBridgeEvidence?'Verified employer-supported route':''),investment};
 }
 function coachQuestions(x){
   if(x.route==='READY')return['Which employers and openings should we target first?','What resume evidence best demonstrates the strengths BOOST identified?','What wage and schedule boundaries should guide the job search?'];
@@ -117,7 +118,883 @@ function moduleTakeaways(d,mid,r,x){
   else if(mid==='module3'){if(ev.startingPoint?.title)out.push('Starting point: '+ev.startingPoint.title);for(const z of (ev.careers||[]).slice(0,4)){const dec=ev.careerDecisionsBySoc?.[z.soc]||z.decision;if(dec)out.push((z.title||z.soc)+' - '+label(dec));}}
   else if(mid==='module4'){if(x.title)out.push('Career: '+x.title);if(x.route)out.push('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route));if(x.why)out.push(x.why);}
   else if(mid==='industry'){out.push(r.selected_industry?'Applied career experience: '+label(r.selected_industry):'Applied career experience completed.');}
-  else if(mid==='module5'){if(ev.investmentOutlook||ev.outlook)out.push('Investment outlook: '+(ev.investmentOutlook||ev.outlook));if(ev.roiRatio!=null)out.push('Estimated ROI ratio: '+Number(ev.roiRatio).toFixed(2));}
+  else if(mid==='module5'){
+    if(ev.specificGap)out.push('Gap being researched: '+ev.specificGap);
+    if(ev.provider||ev.programName)out.push('Selected training: '+[ev.provider,ev.programName].filter(Boolean).join(' - '));
+    if(ev.trainingPathway)out.push('Training pathway: '+label(ev.trainingPathway));
+    if(ev.listedCost!=null||ev.potentialCareerInvestment!=null||ev.potentialRemainingCost!=null){const money=n=>n==null?'--':'
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    if(x.investment){
+      title('Career Investment Results');
+      if(x.investment.gap)write('Specific gap researched: '+x.investment.gap,{bold:true});
+      if(x.investment.provider||x.investment.program)write('Selected training: '+[x.investment.provider,x.investment.program].filter(Boolean).join(' - '),{size:10,bold:true});
+      if(x.investment.pathway)write('Training pathway: '+label(x.investment.pathway));
+      if(x.investment.credentials)write('Credential / outcome: '+x.investment.credentials);
+      const money=n=>n==null?'--':'
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');const qs=coachQuestions(x);if(x.investment){qs.unshift('Does '+(x.investment.program||'the selected program')+' directly close the verified preparation gap?');if(x.investment.benchmarkMet===false)qs.unshift('The selected target is below BOOST\'s 115% wage benchmark. What non-wage value or longer-term progression would justify this investment, if any?')}bullets(qs);
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});out.push('Investment: listed '+money(ev.listedCost)+' | potential Pinal '+money(ev.potentialCareerInvestment)+' | remaining '+money(ev.potentialRemainingCost));}
+    if(ev.currentHourlyWage!=null&&ev.targetHourlyReference!=null)out.push('Wage evidence: current/recent 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.currentHourlyWage).toFixed(2)+'/hr -> target reference 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.targetHourlyReference).toFixed(2)+'/hr');
+    if(ev.roiBenchmarkMet!=null)out.push('115% wage benchmark: '+(ev.roiBenchmarkMet?'met':'not met'));
+  }
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});
+      if(x.investment.listedCost!=null)write('ETPL listed cost: '+money(x.investment.listedCost));
+      if(x.investment.potentialInvestment!=null)write('Potential Pinal career investment: '+money(x.investment.potentialInvestment));
+      if(x.investment.remainingCost!=null)write('Potential remaining cost: '+money(x.investment.remainingCost));
+      if(x.investment.currentWage!=null||x.investment.targetWage!=null)write('Wage comparison: '+(x.investment.currentWage!=null?'
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});out.push('Investment: listed '+money(ev.listedCost)+' | potential Pinal '+money(ev.potentialCareerInvestment)+' | remaining '+money(ev.potentialRemainingCost));}
+    if(ev.currentHourlyWage!=null&&ev.targetHourlyReference!=null)out.push('Wage evidence: current/recent 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.currentHourlyWage).toFixed(2)+'/hr -> target reference 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.targetHourlyReference).toFixed(2)+'/hr');
+    if(ev.roiBenchmarkMet!=null)out.push('115% wage benchmark: '+(ev.roiBenchmarkMet?'met':'not met'));
+  }
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(x.investment.currentWage).toFixed(2)+'/hr current/recent':'--')+' -> '+(x.investment.targetWage!=null?'
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});out.push('Investment: listed '+money(ev.listedCost)+' | potential Pinal '+money(ev.potentialCareerInvestment)+' | remaining '+money(ev.potentialRemainingCost));}
+    if(ev.currentHourlyWage!=null&&ev.targetHourlyReference!=null)out.push('Wage evidence: current/recent 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.currentHourlyWage).toFixed(2)+'/hr -> target reference 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.targetHourlyReference).toFixed(2)+'/hr');
+    if(ev.roiBenchmarkMet!=null)out.push('115% wage benchmark: '+(ev.roiBenchmarkMet?'met':'not met'));
+  }
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(x.investment.targetWage).toFixed(2)+'/hr target labor-market reference':'--'));
+      if(x.investment.benchmarkMet!=null)write('BOOST 115% training-investment benchmark: '+(x.investment.benchmarkMet?'MET':'NOT MET'),{bold:true,color:x.investment.benchmarkMet?[37,116,83]:[145,83,37]});
+      if(x.investment.roiRatio!=null)write('Target/current wage ratio: '+Number(x.investment.roiRatio).toFixed(2)+'x');
+      write('Coach focus: verify the employer requirement and skill-gap alignment, confirm the selected program is the smallest effective investment, review funding separately from provider availability, and discuss the wage return in context.',{size:8.5,color:[75,95,108]});
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(n).toLocaleString('en-US',{maximumFractionDigits:0});out.push('Investment: listed '+money(ev.listedCost)+' | potential Pinal '+money(ev.potentialCareerInvestment)+' | remaining '+money(ev.potentialRemainingCost));}
+    if(ev.currentHourlyWage!=null&&ev.targetHourlyReference!=null)out.push('Wage evidence: current/recent 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.currentHourlyWage).toFixed(2)+'/hr -> target reference 
+  else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
+  else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
+  return out;
+}
+async function downloadSummary(id){
+  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
+  const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load. Refresh the Coach View and try again.');
+    const d=await report(id),j=d.journey||{},prog=j.progress||{},stale=j.staleModules||{},x=coachBriefModel(d,r);
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'portrait',unit:'mm',format:'letter',compress:true});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight(),left=15,right=15,bottom=15,maxW=pw-left-right;let y=16;
+    function ensure(h=8){if(y+h>ph-bottom){doc.addPage();y=16}}
+    function write(t,{size=9,bold=false,indent=0,after=1.4,color=[33,49,62]}={}){t=cleanPdfText(t);if(!t)return;doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);doc.setTextColor(...color);const lines=doc.splitTextToSize(t,Math.max(30,maxW-indent)),lh=Math.max(3.8,size*.43);ensure(lines.length*lh+after);doc.text(lines,left+indent,y);y+=lines.length*lh+after}
+    function title(t){ensure(10);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(16,45,73);doc.text(cleanPdfText(t),left,y);y+=5}
+    function bullets(a){for(const z of a||[])write('- '+z,{size:8.5,indent:3,after:.8})}
+    function rule(){ensure(4);doc.setDrawColor(196,210,218);doc.line(left,y,pw-right,y);y+=4}
+    function status(mid){return prog[mid]==='stale'||stale[mid]?'Review Needed':validated(r,mid)?'Complete':'Not recorded'}
+
+    doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(45,113,128);doc.text('BOOST - COACH CONVERSATION BRIEF',left,y);y+=7;
+    doc.setFontSize(19);doc.setTextColor(16,45,73);doc.text(cleanPdfText(r.participant_name||'Participant'),left,y);y+=8;
+    write('Pinal BOOST',{size:10,bold:true});write([r.participant_email,pathLabel(r.selected_pathway)].filter(Boolean).join(' | '));write('Current step: '+(r.current_step||'Not recorded')+' | Status: '+label(r.participant_status||'not started'));
+    rule();
+
+    title('Start the conversation here');
+    if(x.title)write('Career focus: '+x.title+(x.soc?' (SOC '+x.soc+')':''),{size:10,bold:true});
+    if(x.route){write('BOOST direction: '+(ROUTE_NAMES[x.route]||x.route),{size:11,bold:true,color:[79,61,122]});if(x.why)write(x.why)}
+    else if(r.primary_career_title)write('Current career focus: '+r.primary_career_title,{size:10,bold:true});
+    write(x.route?'Ask what feels right about this direction, what still feels uncertain, and what evidence the participant wants to act on next.':'Use this brief to connect the participant\'s interests, strengths, career direction, and immediate next action.');
+    rule();
+
+    if(x.route){
+      title("Participant's Module 4 Career Decision Summary");
+      if(x.top.length)write('Strongest interest themes: '+x.top.join(', '));
+      if(x.strengths.length)write('Transferable strengths: '+x.strengths.join(', '));
+      if(x.prepLabel)write('Preparation: '+x.prepLabel+(x.education?' | Typical entry education: '+x.education:''));
+      if(x.wages)write('Wage fit: '+x.wages);
+      if(x.life)write('Life fit: '+x.life);
+      if(x.employer)write('Employer-supported / WBL evidence: '+x.employer);
+      rule();
+    }
+
+    title('What supports this direction');
+    const supports=[];if(x.wages&&!/no|does not|not work/i.test(x.wages))supports.push('Wage fit: '+x.wages);if(x.life&&!/no|does not/i.test(x.life))supports.push('Life fit: '+x.life);x.strengths.slice(0,3).forEach(s=>supports.push('Transferable strength: '+s));bullets(supports.length?supports:['Use the completed BOOST evidence and employer research to confirm the strongest next step.']);
+    title('What needs attention or verification');
+    const attention=[];if(x.route==='BUILD')attention.push('Preparation gap: '+x.prepLabel);if(x.route==='BRIDGE')attention.push('Confirm the exact employer-supported route, eligibility, timing, and commitments.');if(!x.m4?.employerBridgeEvidence&&x.route&&x.route!=='READY')attention.push('No verified employer-supported / WBL route is attached to this decision.');if(x.wages&&/maybe|tight|no|higher/i.test(x.wages))attention.push('Wage consideration: '+x.wages);if(x.life&&/maybe|no|adjust/i.test(x.life))attention.push('Life-fit consideration: '+x.life);bullets(attention.length?attention:['Continue validating employer-specific requirements, schedule, commute, and advancement expectations.']);
+    title('Suggested coaching questions');bullets(coachQuestions(x));
+    title('Likely next actions');
+    const actions=x.route==='READY'?['Identify 3-5 target employers or openings.','Tailor resume evidence to BOOST strengths.','Confirm wage, schedule, commute, and application strategy.']:x.route==='BRIDGE'?['Verify the employer-supported route and entry requirements.','Confirm WBL / apprenticeship / OJT eligibility and timing.','Keep a backup employment or training option available.']:x.route==='BUILD'?['Define the exact credential, license, or preparation gap.','Compare the smallest effective training options, cost, duration, and likely wage return.','Confirm funding eligibility separately from provider/program availability.']:x.route==='RECONSIDER'?['Identify which evidence needs more research.','Revisit paused careers or add another occupation if needed.','Set one concrete employer-research task before the next conversation.']:['Confirm the immediate next step.','Set one action and a follow-up date.'];bullets(actions);
+    rule();
+
+    title('Journey at a glance');
+    for(const mid of seq(r)){write((names[mid]||label(mid))+' - '+status(mid),{size:9,bold:true,after:.6});const take=moduleTakeaways(d,mid,r,x);if(take.length)bullets(take.slice(0,4));else if(status(mid)==='Complete')write('Completed. Use the live Coach View for full response-level detail.',{size:8,indent:3,color:[95,116,128]});y+=1}
+
+    rule();write('This PDF is intentionally summarized for coaching conversations. Use the live Coach View when you need the underlying response-level evidence.',{size:8,color:[95,116,128]});write('BOOST directions support planning; training, WBL, eligibility, and funding remain separate determinations.',{size:8,bold:true,color:[95,116,128]});
+    const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(100,120,132);doc.text('Generated from the participant\'s latest saved BOOST evidence. No PDF copy is retained by BOOST.',left,ph-8);doc.text('Page '+p+' of '+pages,pw-right,ph-8,{align:'right'})}
+    const filename=String(r.participant_name||'participant').replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Coach-Conversation-Brief.pdf';doc.save(filename);
+  }catch(err){alert('Could not build participant PDF: '+err.message)}
+  finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
+}
+$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume();
+})();
+</script>
+</body></html>+Number(ev.targetHourlyReference).toFixed(2)+'/hr');
+    if(ev.roiBenchmarkMet!=null)out.push('115% wage benchmark: '+(ev.roiBenchmarkMet?'met':'not met'));
+  }
   else if(mid==='ai'){if(Array.isArray(ev.badges)&&ev.badges.length)out.push('Demonstrated skills: '+ev.badges.join(', '));if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
   else if(mid==='financial'){if(ev.priority||ev.topPriority)out.push('Priority: '+(ev.priority||ev.topPriority));if(ev.supportNeed||ev.supportNeeded)out.push('Support need: '+(ev.supportNeed||ev.supportNeeded));}
   else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
