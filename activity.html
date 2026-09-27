@@ -192,14 +192,31 @@ function extractSafeEvidence(){
       evidence.employerBridgeEvidence=savedM4?.employerBridgeEvidence??dec.employerBridgeEvidence??false;
       evidence.resultGeneratedAt=savedM4?.completedAt||null;
     }else if(m==='module5'){
-      const j=readJourney(),careerState=readCareerExplorationState()||{},m4=careerState.module4||j.modules?.module4||{},m5=careerState.module5||null;
+      const j=readJourney(),careerState=readCareerExplorationState()||{},m4=careerState.module4||j.modules?.module4||{},m5=careerState.module5||j.modules?.module5||null;
       evidence.primaryCareer=m4.careerTitle||titleOf(previousCareers(j)[0]||'');
       evidence.selectedSoc=m4.selectedSoc||socOf(previousCareers(j)[0]||{});
-      evidence.route=m4.route||m4.participantDirection||m4.decision?.code||j.modules?.module4?.route||j.modules?.module4?.participantDirection||'';
-      evidence.investmentEvaluatedAt=m5?.evaluatedAt||null;
-      evidence.investmentOutlook=m5?.outlook||null;
+      evidence.careerTitle=m5?.careerTitle||evidence.primaryCareer||'';
+      evidence.route=m4.route||m4.participantDirection||m4.decision?.code||j.modules?.module4?.route||j.modules?.module4?.participantDirection||m5?.route||'';
+      evidence.gapMode=m5?.gapMode||'';
+      evidence.specificGap=m5?.specificGap||'';
+      evidence.provider=m5?.provider||'';
+      evidence.programName=m5?.programName||'';
+      evidence.programId=m5?.programId||'';
+      evidence.trainingPathway=m5?.trainingPathway||'';
+      evidence.credentials=m5?.credentials||'';
+      evidence.listedCost=m5?.listedCost??null;
+      evidence.potentialCareerInvestment=m5?.potentialCareerInvestment??null;
+      evidence.potentialRemainingCost=m5?.potentialRemainingCost??null;
+      evidence.currentHourlyWage=m5?.currentHourlyWage??null;
+      evidence.targetHourlyReference=m5?.targetHourlyReference??null;
       evidence.roiRatio=Number.isFinite(Number(m5?.roiRatio))?Number(m5.roiRatio):null;
-      evidence.completionBasis=evidence.route==='BUILD'?'investment_outlook':'module4_route';
+      evidence.roiBenchmarkMet=m5?.roiBenchmarkMet??null;
+      evidence.comparedProgramIds=Array.isArray(m5?.comparedProgramIds)?m5.comparedProgramIds:[];
+      evidence.investmentEvaluatedAt=m5?.evaluatedAt||null;
+      evidence.evaluatedAt=m5?.evaluatedAt||null;
+      evidence.completedAt=m5?.completedAt||null;
+      evidence.investmentOutlook=m5?.outlook||null;
+      evidence.completionBasis=evidence.route==='BUILD'?'career_investment_results':'module4_route';
     }else{
       evidence.fields=genericFields(d);evidence.appliedExperience=true;evidence.interactionCount=interactionCount;
     }
@@ -240,6 +257,17 @@ async function finish(){
 }
 
 frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
+let module5AutoFinishing=false;
+window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.type!=='boost-module5-saved'||m!=='module5'||module5AutoFinishing)return;
+  module5AutoFinishing=true;
+  finish().catch(err=>{
+    module5AutoFinishing=false;
+    finishBtn.disabled=false;
+    finishBtn.textContent='✓ Save Results & Return to BOOST';
+    console.warn('BOOST Module 5 completion handoff failed',err);
+  });
+});
 finishBtn.addEventListener('click',finish);
 if(backTopic)backTopic.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();location.assign('index.html')},true);
 frame.src=m==='module4'?(c.src+(c.src.includes('?')?'&':'?')+'shell=20260910ghost4'):c.src;
