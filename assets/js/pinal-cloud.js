@@ -68,13 +68,37 @@
   function schedule(j){clearTimeout(timer);timer=setTimeout(()=>save(j),350)}
   function isSafeStorageKey(k){return !!k && k!==J && k!==ID && k!==TOK && !k.startsWith('sb-') && !/access[_-]?token|refresh[_-]?token/i.test(k)}
   function snapshotStorage(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!isSafeStorageKey(k))continue;const v=localStorage.getItem(k);if(v!=null&&v.length<=250000)out[k]=v}return out}
-  function restoreBrowserState(j){const modules=j?.modules||{},progress=j?.progress||{};const ordered=Object.entries(modules).filter(([id,x])=>x&&x.browserState&&progress[id]!=='stale').map(([,x])=>x).sort((a,b)=>String(a.completedAt||'').localeCompare(String(b.completedAt||'')));for(const mod of ordered){for(const [k,v] of Object.entries(mod.browserState||{})){if(isSafeStorageKey(k)&&typeof v==='string')localStorage.setItem(k,v)}}clearCompletionRefs(j,Object.entries(progress).filter(([,v])=>v==='stale').map(([id])=>id))}
+  function storagePayloadTime(raw){
+    try{const x=JSON.parse(raw||'{}')||{};const vals=[x.updatedAt,x.updated_at,x.completedAt,x.capturedAt,x.finalizedAt,x.evaluatedAt].map(v=>Date.parse(v||'')).filter(Number.isFinite);return vals.length?Math.max(...vals):0}catch(_){return 0}
+  }
+  function shouldRestoreKey(k,remoteValue){
+    if(!isSafeStorageKey(k)||typeof remoteValue!=='string')return false;
+    const localValue=localStorage.getItem(k);
+    if(localValue==null)return true;
+    if(k==='pinal_boost_career_exploration_v1'){
+      const localTime=storagePayloadTime(localValue),remoteTime=storagePayloadTime(remoteValue);
+      if(localTime&&remoteTime)return remoteTime>localTime;
+      if(localTime&&!remoteTime)return false;
+    }
+    return false;
+  }
+  function restoreBrowserState(j){
+    const modules=j?.modules||{},progress=j?.progress||{};
+    const ordered=Object.entries(modules).filter(([id,x])=>x&&x.browserState&&progress[id]!=='stale').map(([,x])=>x).sort((a,b)=>String(a.completedAt||'').localeCompare(String(b.completedAt||'')));
+    for(const mod of ordered){for(const [k,v] of Object.entries(mod.browserState||{})){if(shouldRestoreKey(k,v))localStorage.setItem(k,v)}}
+    clearCompletionRefs(j,Object.entries(progress).filter(([,v])=>v==='stale').map(([id])=>id))
+  }
   async function loadMine(){
     const cl=c();if(!cl)return null;
     const {data:{session}}=await cl.auth.getSession();if(!session?.user)return null;
     const {data,error}=await cl.rpc('boost_load_my_journey_for_region',{p_region:REGION});
     if(error){console.warn('Pinal BOOST load failed',error.message);return null}
-    if(data){const clean=reconcileFreshness(data);localStorage.setItem(J,JSON.stringify(clean));restoreBrowserState(clean);return clean}
+    if(data){
+      const remote=reconcileFreshness(data),local=get();
+      const localTime=Date.parse(local?.updated_at||local?.updatedAt||'')||0,remoteTime=Date.parse(remote?.updated_at||remote?.updatedAt||'')||0;
+      const clean=localTime>remoteTime?Object.assign({},remote,local,{participant:Object.assign({},remote.participant||{},local.participant||{}),portal:Object.assign({},remote.portal||{},local.portal||{}),progress:Object.assign({},remote.progress||{},local.progress||{}),modules:Object.assign({},remote.modules||{},local.modules||{})}):remote;
+      localStorage.setItem(J,JSON.stringify(clean));restoreBrowserState(clean);return clean
+    }
     return null;
   }
   async function signIn(email,name,redirectTo){const cl=c();if(!cl)throw new Error('Cloud unavailable');const parts=(name||'').trim().split(/\s+/);const first=parts.shift()||'',last=parts.join(' ');localStorage.setItem('pinal_boost_pending_name',name||'');localStorage.setItem('pinal_boost_pending_email',email||'');return cl.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo||cfg.authRedirect,data:{first_name:first,last_name:last,full_name:name,boost_region:REGION}}})}
