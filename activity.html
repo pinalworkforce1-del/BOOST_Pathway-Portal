@@ -226,7 +226,15 @@ function extractSafeEvidence(){
 function completionOkay(evidence){
   try{
     const d=frame.contentDocument,w=frame.contentWindow;
-    if(m==='module1')return Object.keys(evidence.interestScores||{}).length===6&&(evidence.careers||[]).length>0;
+    if(m==='module1'){
+      const liveReady=Object.keys(evidence.interestScores||{}).length===6&&(evidence.careers||[]).length>0;
+      if(liveReady)return true;
+      const saved=readCareerExplorationState()||{},m1=saved.module1||saved;
+      const savedScores=m1.interestScores||m1.scores||m1.riasecScores||{};
+      const savedCareers=Array.isArray(m1.selected)&&m1.selected.length?m1.selected:(Array.isArray(m1.careers)?m1.careers:[]);
+      const savedComplete=!!(m1.completedAt||m1.savedAt||m1.finalizedAt||saved.module1CompletedAt);
+      return savedComplete&&Object.keys(savedScores||{}).length===6&&savedCareers.length>0;
+    }
     if(m==='module2'&&typeof w.isModule2Complete==='function')return !!w.isModule2Complete();
     if(m==='module2')return (evidence.careers||[]).filter(x=>x?.tested!==false).length>=2||Object.keys(evidence.fields||{}).length>=8;
     if(m==='module3'){const report=d.getElementById('reportSection');return !!evidence.reportCreated||!!(report&&!report.classList.contains('hidden'));}
