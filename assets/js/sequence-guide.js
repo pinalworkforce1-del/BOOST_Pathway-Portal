@@ -31,7 +31,9 @@ function portalDone(){try{return new Set(JSON.parse(localStorage.getItem(COMPLET
 function mapState(){try{return JSON.parse(localStorage.getItem(MAP)||localStorage.getItem(MAP_OLD)||'{}')}catch{return{}}}
 function careerState(){try{return JSON.parse(localStorage.getItem(CAREER_STATE)||'{}')||{}}catch{return{}}}
 function selectedPath(){const direct=localStorage.getItem(PATH);if(direct)return direct;return mapState().pathway||'shared'}
-function complete(k){const d=portalDone(),m=mapState(),mc=m.complete||{};if(k==='careerai')return d.has('ai')||!!mc['m:ai'];if(k==='industry')return d.has('industry')||Object.keys(mc).some(x=>x.startsWith('i:')&&mc[x]);if(k==='investment')return d.has('module5')||!!mc['m:module5'];return d.has(k)||!!mc['m:'+k]}
+function journey(){try{return JSON.parse(localStorage.getItem(JOURNEY)||'{}')||{}}catch{return{}}}
+function stale(id){const j=journey();return j?.progress?.[id]==='stale'||!!j?.staleModules?.[id]}
+function complete(k){const d=portalDone(),m=mapState(),mc=m.complete||{},j=journey(),progress=j.progress||{};if(k==='careerai')return !stale('ai')&&(progress.ai==='complete'||d.has('ai')||!!mc['m:ai']);if(k==='industry'){const post=window.BOOSTValidatedProgress?.resolvePostModule4?.();if(post?.industryRequired)return progress['industry-'+post.industry.id]==='complete'||!!mc['i:'+post.industry.id];return true}if(k==='investment')return !stale('module5')&&(progress.module5==='complete'||d.has('module5')||!!mc['m:module5']);if(['module2','module3','module4','financial'].includes(k))return !stale(k)&&(progress[k]==='complete'||d.has(k)||!!mc['m:'+k]);return d.has(k)||!!mc['m:'+k]}
 function unlocked(key){if(key==='module1')return true;if(key==='coach'||key==='choose')return complete('module1');const path=selectedPath(),order=path==='rapid'?rapidOrder:path==='career'?careerOrder():[];if(order.includes(key)){const i=order.indexOf(key);return complete('module1')&&order.slice(0,i).every(step=>complete(step))}if(rapidOrder.includes(key)||careerOrder().includes(key))return false;if(key.startsWith('industry:'))return path==='career'&&complete('module4');return true}
 function keyFor(el){if(el.dataset.moduleId){if(el.dataset.moduleId==='ai'&&selectedPath()==='career')return'careerai';return el.dataset.moduleId}if(el.hasAttribute('data-industry-choice'))return'industry';if(el.dataset.industryId)return'industry:'+el.dataset.industryId;if(el.hasAttribute('data-career-skillmobility'))return'industry:skillmobility';if(el.hasAttribute('data-investment-card'))return'investment';if(el.hasAttribute('data-choose-pathway'))return'choose';if(el.dataset.coming?.toLowerCase().includes('career coach'))return'coach';return null}
 function infoFor(key){if(key?.startsWith('industry:'))return steps.industry;return steps[key]||null}
@@ -67,6 +69,18 @@ function decorateCrossSectorHandoff(){
  const label=document.createElement('div');label.className='boostCrossSectorJunction';label.textContent='Continue Your Career Path';stage.appendChild(label);
  const next=document.createElement('div');next.className='boostCrossSectorNext';next.textContent='YOUR NEXT STEP';stage.appendChild(next);
 }
+function decoratePostIndustryInvestmentHandoff(){
+ const stage=document.querySelector('.stage'),investment=document.querySelector('[data-investment-card]');
+ if(!stage||!investment)return;
+ stage.querySelector('.boostPostIndustryInvestmentBadge')?.remove();
+ investment.classList.remove('boostCrossSectorTarget');
+ const post=window.BOOSTValidatedProgress?.resolvePostModule4?.(),j=journey(),needsReview=stale('module5')||j?.progress?.module5!=='complete';
+ const show=selectedPath()==='career'&&post?.industryRequired&&complete('industry')&&needsReview;
+ if(!show)return;
+ investment.classList.add('boostCrossSectorTarget');
+ const badge=document.createElement('div');badge.className='boostCrossSectorNext boostPostIndustryInvestmentBadge';badge.style.left='76.5%';badge.style.top='71.2%';badge.textContent=stale('module5')?'REVIEW YOUR NEXT STEP':'YOUR NEXT STEP';stage.appendChild(badge);
+ investment.setAttribute('aria-label',stale('module5')?'Review Career Investment Explorer for your updated career direction':'Your next BOOST step: Career Investment Explorer');
+}
 function decoratePostInvestmentHandoff(){
  const stage=document.querySelector('.stage'),investment=document.querySelector('[data-investment-card]'),financial=document.querySelector('[data-module-id="financial"]');
  if(!stage||!investment||!financial)return;
@@ -85,7 +99,7 @@ function decoratePostInvestmentHandoff(){
  financial.setAttribute('aria-label','Your next BOOST step: Build Strong Financial Habits');
 }
 
-function decorate(){wireAI();document.querySelectorAll('.hotspot,[data-investment-card]').forEach(el=>{const key=keyFor(el);if(!key||!infoFor(key))return;el.classList.toggle('boostSeqLocked',!unlocked(key));if(!el.querySelector('.boostSeqInfo')){const b=document.createElement('span');b.className='boostSeqInfo';b.textContent='?';b.title='Tell me about this step';b.setAttribute('role','button');b.setAttribute('aria-label','Tell me about this step');b.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();openModal(key)},true);el.appendChild(b)}});decorateScenarioHandoff();decorateCrossSectorHandoff();decoratePostInvestmentHandoff()}
+function decorate(){wireAI();document.querySelectorAll('.hotspot,[data-investment-card]').forEach(el=>{const key=keyFor(el);if(!key||!infoFor(key))return;el.classList.toggle('boostSeqLocked',!unlocked(key));if(!el.querySelector('.boostSeqInfo')){const b=document.createElement('span');b.className='boostSeqInfo';b.textContent='?';b.title='Tell me about this step';b.setAttribute('role','button');b.setAttribute('aria-label','Tell me about this step');b.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();openModal(key)},true);el.appendChild(b)}});decorateScenarioHandoff();decorateCrossSectorHandoff();decoratePostIndustryInvestmentHandoff();decoratePostInvestmentHandoff()}
 function gate(e){const el=e.target.closest('.hotspot,[data-investment-card]');if(!el)return;const key=keyFor(el);if(!key||e.target.closest('.boostSeqInfo'))return;if(!unlocked(key)){e.preventDefault();e.stopImmediatePropagation();openModal(key)}}
 function removePersistentPulses(){document.querySelector('.hotspot[aria-label="Watch Orientation Video"]')?.classList.remove('pulse');document.querySelector('[data-module-id="module1"]')?.classList.remove('pulse');document.querySelector('[data-pinal-start]')?.classList.remove('pulse')}
 function offerLegacyCatchup(){if(selectedPath()!=='career')return;const order=careerOrder(),i=order.findIndex(step=>!complete(step));if(i<0||!order.slice(i+1).some(step=>complete(step)))return;const key=order[i],marker='boostCatchupPrompt:'+key;if(sessionStorage.getItem(marker))return;sessionStorage.setItem(marker,'1');setTimeout(()=>openModal(key),500)}
