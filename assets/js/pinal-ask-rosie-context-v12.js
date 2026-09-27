@@ -20,11 +20,20 @@ function coachingState(body){
  const decisions=m3.careerDecisionsBySoc||{},careerStatuses=[],seen=new Set(),candidates=[...(Array.isArray(shared?.module1?.selected)?shared.module1.selected:[]),...(Array.isArray(m3.careers)?m3.careers:[]),...occs];
  for(const c of candidates){const soc=String(c?.soc||'');if(!soc||seen.has(soc))continue;seen.add(soc);let status=decisionValue(c?.decision||decisions?.[soc]);if(soc===selectedSoc)status='selected';careerStatuses.push({soc,title:c?.title||occs.find(o=>String(o?.soc||'')===soc)?.title||soc,status})}
  if(selectedSoc&&!seen.has(selectedSoc))careerStatuses.unshift({soc:selectedSoc,title:currentDirection?.title||selectedSoc,status:'selected'});
- const map=rawJourney?.portal?.map||read('boostPathwaysV29')||{},complete=map?.complete||{},nextSteps=[];
- if(currentDirection){const ind=industryFor(currentDirection.soc,currentDirection.title);if(ind&&!complete[`i:${ind.id}`])nextSteps.push({id:'industry',label:ind.label,status:'open',reason:'This BOOST industry experience maps to the selected occupation and can add applied workplace evidence after Decide.'});else if(!ind&&!complete['m:module5'])nextSteps.push({id:'module5',label:'Career Investment Explorer',status:'open',reason:'The selected occupation does not map cleanly to one of the five BOOST industry experiences, so no industry experience is required before continuing.'})}
- if(!complete['m:financial'])nextSteps.push({id:'financial',label:'Build Strong Financial Habits',status:'open',reason:'Connect the career direction to real-life financial needs and stability.'});
- if(!complete['m:ai'])nextSteps.push({id:'ai',label:'AI & You',status:'open',reason:'Build practical AI literacy for work and career development.'});
- return{currentDirection,careerStatuses,nextSteps,portalPathway:map?.pathway||rawJourney?.portal?.pathway||j?.selectedPathway||'',completionSource:'BOOST map completion state; treat missing completion as not currently marked complete, not proof the participant never did the activity.'};
+ const authoritative=(rawJourney&&Object.keys(rawJourney).length?rawJourney:j)||{},progress=authoritative.progress||{},stale=authoritative.staleModules||{},map=authoritative?.portal?.map||read('boostPathwaysV29')||{},complete=map?.complete||{},nextSteps=[];
+ const staleOrIncomplete=id=>progress[id]==='stale'||!!stale[id]||progress[id]!=='complete';
+ const industryComplete=id=>progress['industry-'+id]==='complete'||!!complete[`i:${id}`];
+ if(currentDirection){
+   const ind=industryFor(currentDirection.soc,currentDirection.title);
+   if(ind&&!industryComplete(ind.id)){
+     nextSteps.push({id:'industry',label:ind.label,status:'open',reason:'This BOOST industry experience maps to the selected occupation and should be completed before refreshing the career investment decision.'});
+   }else if(staleOrIncomplete('module5')){
+     nextSteps.push({id:'module5',label:'Career Investment Explorer',status:progress.module5==='stale'||!!stale.module5?'review':'open',reason:(progress.module5==='stale'||!!stale.module5)?'Your career direction changed, so the earlier Career Investment result must be reviewed against the current occupation.':'Review the preparation or training investment connected to your current career direction.'});
+   }
+ }
+ if(staleOrIncomplete('financial'))nextSteps.push({id:'financial',label:'Build Strong Financial Habits',status:progress.financial==='stale'||!!stale.financial?'review':'open',reason:'Connect the career direction to real-life financial needs and stability.'});
+ if(staleOrIncomplete('ai'))nextSteps.push({id:'ai',label:'AI & You',status:progress.ai==='stale'||!!stale.ai?'review':'open',reason:'Build practical AI literacy for work and career development.'});
+ return{currentDirection,careerStatuses,nextSteps,staleModules:stale,progress,portalPathway:map?.pathway||authoritative?.portal?.pathway||j?.selectedPathway||'',completionSource:'BOOST authoritative journey progress and stale-module state; stale work must be reviewed before the pathway is complete.'};
 }
 window.fetch=async function(input,init){
  try{
