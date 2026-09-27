@@ -58,7 +58,7 @@ function renderNotices(){const unread=notices.filter(n=>!n.read_at).length;$('co
 function detailRows(obj){if(obj===null||obj===undefined||obj==='')return '<div class="notice">No coaching-relevant detail recorded.</div>';if(Array.isArray(obj))return '<ul>'+obj.map(x=>'<li>'+esc(typeof x==='object'?JSON.stringify(x):x)+'</li>').join('')+'</ul>';if(typeof obj==='object')return Object.entries(obj).map(([k,v])=>'<div class="detailRow"><b>'+esc(label(k))+'</b>'+(typeof v==='object'?detailRows(v):'<span>'+esc(v)+'</span>')+'</div>').join('');return '<span>'+esc(obj)+'</span>'}
 function evidence(report,id){const j=report.journey||{},mods=j.modules||{};if(id==='industry'){const out={};for(const [k,v] of Object.entries(mods))if(k.startsWith('industry-'))out[k]=v;return out}if(id==='ai')return mods.ai||mods.careerAi||j.ai||j.careerAi||null;return mods[id]||j[id]||null}
 async function report(id){const d=await api('coach_report',{journey_id:id});return d.report||{}}
-async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+detailRows(rows)+'</section><section class="detailSection"><h3>Participant Journey Evidence</h3>'+detailRows(evidence(d,moduleId))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
+async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);let cert='';if(moduleId==='ai'&&ev?.certificate){cert='<section class="detailSection"><h3>Certificate</h3><div class="detailRow"><b>AI & You Certificate of Completion</b><span>'+esc(ev.certificate.participant_name||r?.participant_name||'Participant')+' • '+fmt(ev.certificate.completed_at||ev.completed_at)+'</span><div style="margin-top:9px"><button type="button" class="btn" data-ai-cert="'+esc(id)+'">Download Certificate PDF</button></div></div></section>'}$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+detailRows(rows)+'</section>'+cert+'<section class="detailSection"><h3>Participant Journey Evidence</h3>'+detailRows(ev)+'</section>';document.querySelector('[data-ai-cert="'+CSS.escape(String(id))+'"]')?.addEventListener('click',()=>downloadAICertificate(id))}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 const PDF_SKIP_KEYS=new Set(['browserState','fields','source','capturedAt','interactionCount']);
 function cleanPdfText(v){return String(v??'').replace(/[–—]/g,'-').replace(/→/g,'->').replace(/•/g,'-').replace(/✓/g,'Complete').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7E\xA0-\xFF]/g,'').replace(/\s+/g,' ').trim()}
 function pdfEvidenceLines(value,depth=0,out=[]){
@@ -131,7 +131,27 @@ function moduleTakeaways(d,mid,r,x){
   else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
   return out;
 }
-async function downloadSummary(id){
+async async function downloadAICertificate(id){
+  try{
+    if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load.');
+    const r=records.find(x=>String(x.journey_id)===String(id)),d=await report(id),ev=evidence(d,'ai')||{},cert=ev.certificate||{},name=cert.participant_name||r?.participant_name||'BOOST Participant',date=cert.completed_at||ev.completed_at||ev.completed_at||new Date().toISOString();
+    const {jsPDF}=window.jspdf,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'letter'});
+    const pw=doc.internal.pageSize.getWidth(),ph=doc.internal.pageSize.getHeight();
+    doc.setDrawColor(214,165,45);doc.setLineWidth(1.4);doc.rect(10,10,pw-20,ph-20);doc.setLineWidth(.5);doc.rect(14,14,pw-28,ph-28);
+    doc.setFont('helvetica','bold');doc.setTextColor(124,99,32);doc.setFontSize(11);doc.text('BOOST • CERTIFICATE OF COMPLETION',pw/2,35,{align:'center'});
+    doc.setTextColor(16,45,73);doc.setFontSize(30);doc.text('AI & You',pw/2,55,{align:'center'});
+    doc.setFontSize(12);doc.setFont('helvetica','normal');doc.text('This certifies that',pw/2,72,{align:'center'});
+    doc.setFont('helvetica','bold');doc.setTextColor(13,116,111);doc.setFontSize(24);doc.text(cleanPdfText(name),pw/2,89,{align:'center'});
+    doc.setDrawColor(185,203,211);doc.line(55,94,pw-55,94);
+    doc.setTextColor(52,70,82);doc.setFont('helvetica','normal');doc.setFontSize(11);
+    const body='has completed the BOOST AI & You learning experience and practiced responsible workplace use of artificial intelligence through clear direction, information protection, output review, and human judgment.';
+    doc.text(doc.splitTextToSize(body,pw-90),pw/2,108,{align:'center'});
+    doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('Completed '+fmt(date),pw/2,137,{align:'center'});
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(95,116,128);doc.text('Certificate of completion • This is not an industry certification or professional credential.',pw/2,151,{align:'center'});
+    const filename=String(name).replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-AI-and-You-Certificate.pdf';doc.save(filename);
+  }catch(e){alert('Could not build AI & You certificate: '+e.message)}
+}
+function downloadSummary(id){
   const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
   const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
   try{
