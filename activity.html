@@ -117,6 +117,29 @@ function applyCarryForward(){
     }
   }catch(e){console.warn('BOOST carry-forward prefill unavailable',e)}
 }
+function injectModule3BottomSave(){
+  if(m!=='module3')return;
+  try{
+    const d=frame.contentDocument;if(!d?.body)return;
+    const ensure=()=>{
+      const panel=d.getElementById('boostM3FinalStory');
+      if(!panel||d.getElementById('boostM3BottomSave'))return;
+      if(!d.getElementById('boostM3BottomSaveStyle')){
+        const st=d.createElement('style');st.id='boostM3BottomSaveStyle';st.textContent='.boostM3BottomSaveWrap{margin-top:18px;padding-top:16px;border-top:1px solid #d9e4e9;text-align:center}.boostM3BottomSave{border:0;border-radius:12px;padding:14px 22px;background:#238a43;color:#fff;font-weight:950;font-size:1rem;cursor:pointer;box-shadow:0 8px 18px #1d6f3630}.boostM3BottomSave:hover,.boostM3BottomSave:focus{background:#1d7538;outline:3px solid #238a4330}.boostM3BottomSaveNote{margin:8px auto 0;max-width:680px;font-size:.78rem;line-height:1.45;color:#647b87}';
+        d.head.appendChild(st);
+      }
+      const wrap=d.createElement('div');wrap.className='boostM3BottomSaveWrap';wrap.innerHTML='<button id="boostM3BottomSave" class="boostM3BottomSave" type="button">✓ SAVE MODULE 3 &amp; CONTINUE</button><div class="boostM3BottomSaveNote">Save your Career Mobility story before returning to the BOOST map. This is the same save action as the button at the top of the page.</div>';
+      panel.appendChild(wrap);
+      d.getElementById('boostM3BottomSave')?.addEventListener('click',()=>finishBtn.click());
+    };
+    ensure();
+    if(!d.body.dataset.boostM3BottomSaveObserver){
+      d.body.dataset.boostM3BottomSaveObserver='1';
+      const obs=new frame.contentWindow.MutationObserver(ensure);
+      obs.observe(d.body,{childList:true,subtree:true});
+    }
+  }catch(e){console.warn('BOOST Module 3 bottom save could not be inserted',e)}
+}
 function bindUserInteractions(){
   try{
     const d=frame.contentDocument;if(!d||d.__boostInteractionBound)return;d.__boostInteractionBound=true;
@@ -264,7 +287,7 @@ async function finish(){
   location.assign(target.toString());
 }
 
-frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
+frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI();injectModule3BottomSave()},250)});
 let module5AutoFinishing=false;
 window.addEventListener('message',event=>{
   if(event.origin!==location.origin||event.source!==frame.contentWindow||event.data?.type!=='boost-module5-saved'||m!=='module5'||module5AutoFinishing)return;
@@ -277,7 +300,16 @@ window.addEventListener('message',event=>{
   });
 });
 finishBtn.addEventListener('click',finish);
-if(backTopic)backTopic.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();location.assign('index.html')},true);
+if(backTopic)backTopic.addEventListener('click',event=>{
+  event.preventDefault();event.stopImmediatePropagation();
+  if(m!=='module3'){location.assign('index.html');return}
+  const j=readJourney(),done=j?.progress?.[requestedModule]==='complete'||j?.progress?.module3==='complete';
+  if(done){location.assign('index.html');return}
+  let ready=false;try{ready=completionOkay(extractSafeEvidence())}catch(_){}
+  if(!ready){location.assign('index.html');return}
+  if(confirm('Module 3 has not been saved as complete yet. Save Module 3 before returning to the BOOST map?'))finish();
+  else location.assign('index.html');
+},true);
 frame.src=m==='module4'?(c.src+(c.src.includes('?')?'&':'?')+'shell=20260910ghost4'):c.src;
 </script>
 </body>
