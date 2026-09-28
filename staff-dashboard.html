@@ -131,7 +131,7 @@ function moduleTakeaways(d,mid,r,x){
   else if(mid==='jobsearch'){if(ev.targetRole)out.push('Job-search target: '+ev.targetRole);if(ev.reflection)out.push('Participant reflection: '+ev.reflection);}
   return out;
 }
-async async function downloadPathwayCertificate(id){
+async function downloadPathwayCertificate(id){
   try{
     if(!window.jspdf?.jsPDF)throw new Error('PDF generator did not load.');
     const r=records.find(x=>String(x.journey_id)===String(id)),d=await report(id),j=d.journey||{},mods=j.modules||j,m4=mods.module4||{};
@@ -161,7 +161,7 @@ async async function downloadPathwayCertificate(id){
     const filename=String(name).replace(/[^a-z0-9-_]+/gi,'-').replace(/^-+|-+$/g,'')+'-BOOST-Certificate.pdf';doc.save(filename);
   }catch(e){alert('Could not build BOOST certificate: '+e.message)}
 }
-function downloadSummary(id){
+async function downloadSummary(id){
   const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
   const btn=document.querySelector('[data-download="'+CSS.escape(id)+'"]');if(btn){btn.disabled=true;btn.textContent='Building PDF…'}
   try{
