@@ -14,7 +14,7 @@ button,input,select{font:inherit}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}.stat{background:#fff;border:1px solid var(--line);border-radius:15px;padding:14px}.stat small{font-size:9px;font-weight:900;color:#5b7380;text-transform:uppercase;letter-spacing:.05em}.stat b{display:block;font-size:23px;color:var(--navy);margin-top:4px}
 .toolbar{display:grid;grid-template-columns:1.6fr repeat(4,minmax(150px,.7fr));gap:8px;background:#fff;border:1px solid var(--line);border-radius:15px;padding:10px;margin-bottom:12px}.toolbar input,.toolbar select{border:1px solid #c5d4dc;border-radius:10px;padding:10px;background:#fff}
 .panel{background:#fff;border:1px solid var(--line);border-radius:17px;overflow:hidden;box-shadow:0 8px 20px #0000000b}
-.gridhead,.row{display:grid;grid-template-columns:1.25fr .7fr .95fr .9fr .9fr 1.2fr .8fr .85fr 1fr;gap:8px;align-items:center}
+.gridhead,.row{display:grid;grid-template-columns:1.15fr .6fr .55fr .8fr .9fr .75fr .8fr .8fr .85fr .8fr .8fr .8fr .85fr;gap:8px;align-items:center}
 .gridhead{background:#f4f8fa;padding:10px 12px;border-bottom:1px solid var(--line);font-size:9px;font-weight:900;text-transform:uppercase;color:#5d737e}
 .row{padding:12px;border-bottom:1px solid #e6edef}.row:last-child{border-bottom:0}.row:hover{background:#fbfdfd}.row.attn{border-left:5px solid #e2a627;background:#fffdf5}.row.critical{border-left:5px solid #bf4b3c;background:#fff8f7}
 .person b{display:block;color:var(--navy);font-size:12px}.person span{display:block;color:var(--muted);font-size:9.5px;margin-top:2px}
@@ -54,7 +54,7 @@ button,input,select{font:inherit}
   </div>
 
   <div class="panel">
-    <div class="gridhead"><div>Participant</div><div>Program</div><div>Career / BOOST</div><div>Stage</div><div>Health</div><div>Next Action</div><div>Training</div><div>Financial</div><div>Quick Update</div></div>
+    <div class="gridhead"><div>Participant</div><div>Program</div><div>IEP</div><div>Training Pathway</div><div>Obligation</div><div>PM Approval</div><div>Last S&amp;T Activity</div><div>Credential</div><div>Employment</div><div>File Review</div><div>Exit</div><div>Health</div><div>Quick Update</div></div>
     <div id="rows"></div>
   </div>
 </div>
@@ -135,25 +135,29 @@ button,input,select{font:inherit}
 
 <script>
 const people=[
-{name:'William Perry',id:'667742',program:'Adult',career:'CNC Machinist',boost:'BUILD',stage:'Active Services',health:'yellow',reason:'Training completion due soon',action:'Training progress review',due:'Oct 6',training:'90%',financial:'$4,300 rem.'},
-{name:'Maria Santos',id:'3252771',program:'Adult',career:'Computer Support Specialist',boost:'BRIDGE',stage:'Employment Ready',health:'green',reason:'All readiness criteria met',action:'Targeted job search',due:'Oct 3',training:'Complete',financial:'$1,250 rem.'},
-{name:'Devon Carter',id:'1955888',program:'Adult',career:'Medical Assistant',boost:'BUILD',stage:'Active Services',health:'red',reason:'No contact for 48 days',action:'Contact participant',due:'Overdue',training:'In Progress',financial:'$2,100 rem.'},
-{name:'Jordan Lee',id:'931851',program:'DW',career:'Accounting Technician',boost:'WORK NOW',stage:'Employed',health:'green',reason:'Employment verified',action:'Exit readiness review',due:'Oct 9',training:'Complete',financial:'$0 rem.'},
-{name:'Alicia Moore',id:'2915204',program:'Adult',career:'Logistics Coordinator',boost:'READY',stage:'Follow-Up',health:'yellow',reason:'Month 2 follow-up due',action:'30-day follow-up',due:'Tomorrow',training:'N/A',financial:'Closed'}
+{name:'William Perry',id:'667742',program:'Adult',iep:'Yes',path:'ITA',obligation:'$6,000',approval:'Approved',st:'Sep 24',credential:'Pending',employment:'—',fileReview:'Oct 15',exit:'—',career:'CNC Machinist',boost:'BUILD',health:'yellow',reason:'Training completion due soon'},
+{name:'Maria Santos',id:'3252771',program:'Adult',iep:'Yes',path:'ITA',obligation:'$7,500',approval:'Approved',st:'Sep 22',credential:'Earned',employment:'Oct 12',fileReview:'Oct 20',exit:'—',career:'Computer Support Specialist',boost:'BRIDGE',health:'green',reason:'All readiness criteria met'},
+{name:'Devon Carter',id:'1955888',program:'Adult',iep:'Yes',path:'WEX',obligation:'$3,600',approval:'Approved',st:'Aug 12',credential:'N/A',employment:'—',fileReview:'Overdue',exit:'—',career:'Medical Assistant',boost:'BUILD',health:'red',reason:'No contact for 48 days'},
+{name:'Jordan Lee',id:'931851',program:'DW',iep:'Yes',path:'OJT',obligation:'$4,800',approval:'Approved',st:'Sep 26',credential:'N/A',employment:'Sep 9',fileReview:'Oct 9',exit:'—',career:'Accounting Technician',boost:'WORK NOW',health:'green',reason:'Employment verified'},
+{name:'Alicia Moore',id:'2915204',program:'Adult',iep:'Yes',path:'None',obligation:'$0',approval:'N/A',st:'Aug 29',credential:'N/A',employment:'Jun 2',fileReview:'Complete',exit:'Jul 8',career:'Logistics Coordinator',boost:'READY',health:'yellow',reason:'Month 2 follow-up due'}
 ];
 function pill(h,r){return '<span class="pill '+h+'">● '+(h==='green'?'On Track':h==='yellow'?'Needs Attention':'Action Required')+'</span><div class="small">'+r+'</div>'}
 function draw(){
  const q=document.getElementById('search').value.toLowerCase(),hf=document.getElementById('health').value;
  document.getElementById('rows').innerHTML=people.filter(p=>(!q||Object.values(p).join(' ').toLowerCase().includes(q))&&(!hf||p.health===hf)).map((p,i)=>`
  <div class="row ${p.health==='yellow'?'attn':p.health==='red'?'critical':''}">
-  <div class="person"><b>${p.name}</b><span>ID ${p.id}</span></div>
+  <div class="person"><b>${p.name}</b><span>ID ${p.id}</span><span>${p.career} • BOOST: ${p.boost}</span></div>
   <div><span class="pill blue">${p.program}</span></div>
-  <div class="person"><b>${p.career}</b><span>BOOST: ${p.boost}</span></div>
-  <div><select><option>${p.stage}</option><option>Active Services</option><option>Employment Ready</option><option>Employed</option><option>Follow-Up</option></select></div>
+  <div><select><option>${p.iep}</option><option>Yes</option><option>No</option><option>Update Due</option></select></div>
+  <div><select><option>${p.path}</option><option>ITA</option><option>WEX</option><option>OJT</option><option>Apprenticeship</option><option>None</option></select></div>
+  <div class="money">${p.obligation}<div class="small">Click for finance</div></div>
+  <div><span class="pill ${p.approval==='Approved'?'green':'blue'}">${p.approval}</span></div>
+  <div class="small">${p.st}</div>
+  <div class="small">${p.credential}</div>
+  <div class="small">${p.employment}</div>
+  <div class="small">${p.fileReview}</div>
+  <div class="small">${p.exit}</div>
   <div>${pill(p.health,p.reason)}</div>
-  <div class="action">${p.action}<div class="small">${p.due}</div></div>
-  <div class="small">${p.training}</div>
-  <div class="money">${p.financial}</div>
   <div><button class="btn alt open" data-i="${i}">Open</button></div>
  </div>`).join('');
  document.querySelectorAll('.open').forEach(b=>b.onclick=()=>document.getElementById('drawer').classList.add('show'));
