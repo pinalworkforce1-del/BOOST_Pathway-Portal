@@ -7,16 +7,17 @@ let cloudReady=false,saveTimer=null,saving=false,pending=false;
 async function call(action,body={}){const r=await fetch(endpoint(),{method:'POST',headers:headers(),body:JSON.stringify({action,...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'TalentSync cloud service unavailable');return d}
 function mergeDefaults(remote){return{participants:Array.isArray(remote?.participants)?remote.participants:[],budgets:{...clone(DEFAULT_BUDGETS),...(remote?.budgets||{})},vendors:Array.isArray(remote?.vendors)?remote.vendors:[]}}
 async function cloudLoad(){
-  if(!token()||!cfg.url||!cfg.key)return;
+  window.TALENTSYNC_CLOUD_AUTH_REQUIRED=false;
+  if(!token()||!cfg.url||!cfg.key){window.TALENTSYNC_CLOUD_AUTH_REQUIRED=true;const vb=document.querySelector('#vendorBody');if(vb)vb.innerHTML='<tr><td colspan="4" class="pipeline-empty"><strong>Secure TalentSync data is not loaded.</strong><br>Open TalentSync from the BOOST Coach Dashboard and sign in again.</td></tr>';return}
   try{
     const d=await call('load');
     state=mergeDefaults(d.state||{});
     if(d.staff?.role){role=d.staff.role;const rs=document.querySelector('#roleSelect');if(rs)rs.value=role}
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
-    cloudReady=true;
-    render();
+    cloudReady=true;window.TALENTSYNC_CLOUD_AUTH_REQUIRED=false;
+    render();if(activeView==='vendors'&&typeof renderVendors==='function')renderVendors();
     window.dispatchEvent(new CustomEvent('talentsync:cloud-ready',{detail:{participants:state.participants.length,role:d.staff?.role||role}}));
-  }catch(e){console.error('TalentSync cloud load failed',e);cloudReady=false}
+  }catch(e){console.error('TalentSync cloud load failed',e);cloudReady=false;window.TALENTSYNC_CLOUD_AUTH_REQUIRED=/session expired|401/i.test(String(e?.message||e));const vb=document.querySelector('#vendorBody');if(vb&&window.TALENTSYNC_CLOUD_AUTH_REQUIRED)vb.innerHTML='<tr><td colspan="4" class="pipeline-empty"><strong>Secure TalentSync session expired.</strong><br>Return to the BOOST Coach Dashboard, sign in again, then reopen TalentSync.</td></tr>'}
 }
 async function flush(){
   if(!cloudReady||saving||!token())return;
