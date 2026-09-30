@@ -56,7 +56,7 @@ function boostOutputs(j:any,r:any){
 }
 function baseParticipant(r:any,s:any={},j:any=null){
   return {
-    id:r.id,sourceJourneyId:r.source_journey_id,name:r.participant_name||"Participant",
+    id:r.id,sourceJourneyId:r.source_journey_id,name:r.participant_name||"Participant",email:r.participant_email||"",
     coach:r.assigned_coach_email||"",program:s.program||"",entryWage:Number(s.entryWage??boostOutputs(j,r).startingWage??0)||0,
     iepComplete:s.iepComplete||"No",lastIepUpdate:s.lastIepUpdate||"",lastServiceDate:s.lastServiceDate||"",
     industry:s.industry||r.selected_industry||"",targetOccupation:s.targetOccupation||r.primary_career_title||"",
