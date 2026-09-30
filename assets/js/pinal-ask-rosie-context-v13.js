@@ -77,6 +77,7 @@ function coachingState(body){
  return{
    currentDirection,
    careerStatuses,
+   pausedCareerHelp:careerStatuses.some(x=>x.status==='paused')?'If a saved career is paused, tell the participant to reopen Career Mobility (Module 3), return to the career comparison, and select REACTIVATE THIS CAREER or KEEP EXPLORING THIS CAREER IN BOOST for that career. Do not invent controls such as Resume, Revisit, or Reactivate unless those exact controls exist in the interface.':'',
    nextSteps,
    portalPathway:map?.pathway||rawJourney?.portal?.pathway||j?.selectedPathway||'',
    completionSource:'BOOST map completion state; treat missing completion as “not currently marked complete,” not proof the participant never did the activity.'
