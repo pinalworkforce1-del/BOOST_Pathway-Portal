@@ -5,7 +5,7 @@ const endpoint=()=>cfg.url+'/functions/v1/talentsync-data';
 const headers=()=>({'Content-Type':'application/json','apikey':cfg.key,'Authorization':'Bearer '+cfg.key,'X-BOOST-Staff-Token':token()});
 let cloudReady=false,saveTimer=null,saving=false,pending=false;
 async function call(action,body={}){const r=await fetch(endpoint(),{method:'POST',headers:headers(),body:JSON.stringify({action,...body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'TalentSync cloud service unavailable');return d}
-function mergeDefaults(remote){return{participants:Array.isArray(remote?.participants)?remote.participants:[],budgets:{...clone(DEFAULT_BUDGETS),...(remote?.budgets||{})}}}
+function mergeDefaults(remote){return{participants:Array.isArray(remote?.participants)?remote.participants:[],budgets:{...clone(DEFAULT_BUDGETS),...(remote?.budgets||{})},vendors:Array.isArray(remote?.vendors)?remote.vendors:[]}}
 async function cloudLoad(){
   if(!token()||!cfg.url||!cfg.key)return;
   try{
