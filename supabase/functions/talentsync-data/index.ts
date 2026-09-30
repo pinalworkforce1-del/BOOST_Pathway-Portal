@@ -87,7 +87,10 @@ async function loadState(){
   if(b.error)throw b.error;
   const budgets:any={};
   for(const row of b.data||[]){budgets[row.program_stream]=budgets[row.program_stream]||{};if(row.line_type==="Allocation")budgets[row.program_stream].allocation=Number(row.budget_amount||0);else budgets[row.program_stream][row.line_type]=Number(row.budget_amount||0)}
-  return {participants,budgets};
+  const vr=await db.from("talentsync_vendors").select("id,official_name,eckerd_vendor_number,vendor_types,active,notes").eq("area","pinal").order("official_name",{ascending:true});
+  if(vr.error)throw vr.error;
+  const vendors=(vr.data||[]).map((v:any)=>({id:v.id,name:v.official_name,vendorNumber:v.eckerd_vendor_number||"",types:Array.isArray(v.vendor_types)?v.vendor_types:[],active:v.active!==false,notes:v.notes||""}));
+  return {participants,budgets,vendors};
 }
 function preserveDirectorOnly(incoming:any,prior:any,role:string){
   if(role==="Director")return incoming;
@@ -129,7 +132,7 @@ async function saveParticipant(p:any,actor:string,role:string){
   }
   for(const o of Array.isArray(p.obligations)?p.obligations:[]){
     const ref=String(o.id||"").slice(0,200);if(!ref)continue;
-    const orow={client_ref:ref,participant_id:pid,program_stream:p.program||"",service_type:o.type||"",support_type:o.supportType||null,vendor_name:o.vendor||null,original_amount:Number(o.amount||0),status:o.status||"requested",requested_on:o.requestedOn||new Date().toISOString().slice(0,10),approved_on:o.approvedOn||null,requested_by:actor,approved_by:o.status==="approved"?actor:null,updated_at:now};
+    const orow={client_ref:ref,participant_id:pid,program_stream:p.program||"",service_type:o.type||"",support_type:o.supportType||null,vendor_id:isUuid(o.vendorId)?o.vendorId:null,vendor_name:o.vendor||null,vendor_number_snapshot:o.vendorNumber||null,purchase_method:o.purchaseMethod||null,merchant_name:o.merchantName||null,original_amount:Number(o.amount||0),status:o.status||"requested",requested_on:o.requestedOn||new Date().toISOString().slice(0,10),approved_on:o.approvedOn||null,requested_by:actor,approved_by:o.status==="approved"?actor:null,updated_at:now};
     const saved=await db.from("talentsync_obligations").upsert(orow,{onConflict:"client_ref"}).select("id").single();if(saved.error)throw saved.error;
     for(const pay of o.payments||[]){const pr=String(pay.id||ref+"-"+pay.date+"-"+pay.amount).slice(0,200);await db.from("talentsync_payments").upsert({client_ref:pr,obligation_id:saved.data.id,amount:Number(pay.amount||0),payment_date:pay.date||new Date().toISOString().slice(0,10),hours:pay.hours==null?null:Number(pay.hours),wage:pay.wage==null?null:Number(pay.wage),reimbursement_pct:pay.reimbursementPct==null?null:Number(pay.reimbursementPct),payment_type:pay.paymentType||null,entered_by:actor},{onConflict:"client_ref"})}
     for(const d of o.deobligations||[]){const dr=String(d.id||ref+"-"+d.date+"-"+d.amount).slice(0,200);await db.from("talentsync_deobligation_requests").upsert({client_ref:dr,obligation_id:saved.data.id,amount:Number(d.amount||0),requested_on:d.requestedOn||d.date||new Date().toISOString().slice(0,10),reason:d.reason||null,status:d.status||"requested",approved_on:d.approvedOn||null,requested_by:actor,approved_by:d.status==="approved"?actor:null,updated_at:now},{onConflict:"client_ref"})}
@@ -139,6 +142,14 @@ async function saveState(state:any,actor:string,role:string){
   for(const p of Array.isArray(state?.participants)?state.participants:[])await saveParticipant(p,actor,role);
   if(role==="Director")for(const [program,v] of Object.entries<any>(state?.budgets||{})){
     for(const [line,amount] of [["Allocation",v?.allocation],["ITA",v?.ITA],["OJT",v?.OJT],["WEX",v?.WEX],["Support Service",v?.["Support Service"]]]){if(amount==null)continue;await db.from("talentsync_budget_lines").upsert({area:"pinal",program_stream:program,line_type:line,budget_amount:Number(amount||0),updated_by:actor,updated_at:new Date().toISOString()},{onConflict:"area,program_stream,line_type"})}
+  }
+  if(role==="Director"){
+    for(const v of (Array.isArray(state?.vendors)?state.vendors:[])){
+      if(!String(v?.name||"").trim())continue;
+      const row={area:"pinal",official_name:String(v.name).trim(),eckerd_vendor_number:String(v.vendorNumber||"").trim()||null,vendor_types:Array.isArray(v.types)?v.types:[],active:v.active!==false,notes:String(v.notes||"").trim()||null,updated_by:actor,updated_at:new Date().toISOString()};
+      if(isUuid(v.id)){const r=await db.from("talentsync_vendors").update(row).eq("id",v.id);if(r.error)throw r.error}
+      else {const r=await db.from("talentsync_vendors").upsert({...row,created_by:actor},{onConflict:"area,official_name"});if(r.error)throw r.error}
+    }
   }
   await db.from("talentsync_audit_events").insert({area:"pinal",event_type:"state_saved",actor_email:actor,payload:{participant_count:Array.isArray(state?.participants)?state.participants.length:0}});
 }
