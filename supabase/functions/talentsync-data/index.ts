@@ -114,12 +114,12 @@ async function saveParticipant(p:any,actor:string,role:string){
   p=preserveDirectorOnly(p,priorRow.data?.case_state||{},role);
   await db.from("talentsync_case_state").upsert({participant_id:pid,case_state:p,state_version:1,updated_by:actor,updated_at:now},{onConflict:"participant_id"});
   await db.from("talentsync_participants").update({assigned_coach_email:p.coach||null,operational_status:p.exitDate?"exited":p.hired==="Hired"?"employed":"active",updated_at:now}).eq("id",pid);
-  await db.from("talentsync_service_plans").upsert({participant_id:pid,program_stream:p.program||null,iep_iss_status:p.iepComplete||null,target_occupation:p.targetOccupation||null,target_industry:p.industry||null,current_hourly_wage:Number(p.entryWage||0)||null,updated_by:actor,updated_at:now},{onConflict:"participant_id"});
+  await db.from("talentsync_service_plans").upsert({participant_id:pid,program_stream:p.program||null,iep_iss_status:p.iepComplete||null,target_occupation:p.targetOccupation||null,target_industry:p.industryOverride||p.industry||null,current_hourly_wage:Number(p.entryWage||0)||null,updated_by:actor,updated_at:now},{onConflict:"participant_id"});
   const ready=p.softSkills==="Yes"&&p.resumeUpdated==="Yes"&&p.interviewPrep==="Yes"&&["Yes","90%","NA"].includes(String(p.trainingComplete||""));
   await db.from("talentsync_readiness").upsert({participant_id:pid,employment_ready:ready,soft_skills_complete:p.softSkills==="Yes",resume_updated:p.resumeUpdated==="Yes",interview_prep_complete:p.interviewPrep==="Yes",training_status:p.trainingComplete||null,training_progress_pct:p.trainingComplete==="90%"?90:p.trainingComplete==="Yes"?100:null,updated_at:now},{onConflict:"participant_id"});
   if(p.hired==="Hired"&&p.startDate){
     const ex=await db.from("talentsync_employment").select("id").eq("participant_id",pid).eq("active",true).order("created_at",{ascending:true}).limit(1).maybeSingle();
-    const row={participant_id:pid,employer_name:p.employerName||null,job_title:p.targetOccupation||null,industry:p.industry||null,start_date:p.startDate,hourly_wage:Number(p.hourlyWage||0)||null,training_related_employment:p.trainingRelated==="Yes"?true:p.trainingRelated==="No"?false:null,active:true,entered_by:actor,updated_at:now};
+    const row={participant_id:pid,employer_name:p.employerName||null,job_title:p.targetOccupation||null,industry:p.industryOverride||p.industry||null,start_date:p.startDate,hourly_wage:Number(p.hourlyWage||0)||null,training_related_employment:p.trainingRelated==="Yes"?true:p.trainingRelated==="No"?false:null,active:true,entered_by:actor,updated_at:now};
     if(ex.data?.id)await db.from("talentsync_employment").update(row).eq("id",ex.data.id);else await db.from("talentsync_employment").insert(row);
   }
   if(p.exitDate){
