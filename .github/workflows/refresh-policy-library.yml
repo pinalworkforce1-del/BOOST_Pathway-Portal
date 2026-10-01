@@ -1,0 +1,40 @@
+name: Refresh Pinal Policy Library
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/refresh_policy_library.py'
+      - '.github/workflows/refresh-policy-library.yml'
+  schedule:
+    - cron: '17 13 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install policy refresh dependencies
+        run: pip install --disable-pip-version-check requests pypdf
+      - name: Refresh Chapters 200, 400, 500, and 1000
+        run: python scripts/refresh_policy_library.py
+      - name: Commit updated policy library
+        run: |
+          if git diff --quiet -- assets/data/policies; then
+            echo "No policy changes detected."
+            exit 0
+          fi
+          git config user.name "TalentSync Policy Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add assets/data/policies
+          git commit -m "Refresh Pinal policy library"
+          git push
