@@ -29,7 +29,7 @@ async function requireStaff(req:Request){
   const role=tsRole?.active===false?"Coach":(tsRole?.role||"Coach");
   const permissions={
     canDirectorView:role==="Director",
-    canManageVendors:role==="Director",
+    canManageVendors:role==="Director"||role==="Regional Admin",
     canManageBudget:role==="Director"||role==="Regional Admin",
     canApproveFinance:role==="Director"||role==="Regional Admin"
   };
