@@ -33,6 +33,20 @@ function scrubText(input:string,participantName:string,participantEmail:string){
   s=s.replace(/\b(?:DOB|date of birth|birth date)\s*[:=-]?\s*\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/gi,"[DOB REDACTED]");
   return s.slice(0,12000);
 }
+function scrubValue(value:any,participantName:string,participantEmail:string):any{
+  if(value===null||value===undefined)return value;
+  if(typeof value==="string")return scrubText(value,participantName,participantEmail);
+  if(Array.isArray(value))return value.map(v=>scrubValue(v,participantName,participantEmail));
+  if(typeof value==="object"){
+    const out:any={};
+    for(const [k,v] of Object.entries(value)){
+      if(["participant_name","participant_email","name","email","phone","phone_number","address","street_address","dob","date_of_birth","ssn","social_security_number"].includes(String(k).toLowerCase()))continue;
+      out[k]=scrubValue(v,participantName,participantEmail);
+    }
+    return out;
+  }
+  return value;
+}
 async function sha256(v:string){const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
 
 async function requirePinalStaff(req:Request){
@@ -157,6 +171,7 @@ Deno.serve(async req=>{
     const participantName=clean(identityR.data?.participant_name),participantEmail=clean(identityR.data?.participant_email);
     const safeQuestion=scrubText(question,participantName,participantEmail);
     const safeHistory=history.map((x:any)=>({role:x.role,text:scrubText(x.text,participantName,participantEmail)}));
+    const safeContext=scrubValue(context,participantName,participantEmail);
 
     const apiKey=Deno.env.get("OPENAI_API_KEY");
     if(!apiKey)return json({error:"Rosie's AI service is not configured.",model_status:"missing_secret"},503);
@@ -165,7 +180,7 @@ Deno.serve(async req=>{
     const payload={
       model:Deno.env.get("BOOST_ROSIE_MODEL")||Deno.env.get("TALENTSYNC_ROSIE_MODEL")||"gpt-5.6-luna",
       instructions:SYSTEM,
-      input:[{role:"user",content:[{type:"input_text",text:`STAFF QUESTION:\n${safeQuestion}\n\nRECENT CONVERSATION:\n${conversation||"(none)"}\n\nCONTROLLED PINAL BOOST INTAKE CONTEXT:\n${JSON.stringify(context)}`}]}],
+      input:[{role:"user",content:[{type:"input_text",text:`STAFF QUESTION:\n${safeQuestion}\n\nRECENT CONVERSATION:\n${conversation||"(none)"}\n\nCONTROLLED PINAL BOOST INTAKE CONTEXT:\n${JSON.stringify(safeContext)}`}]}],
       max_output_tokens:1400
     };
     const ai=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(payload)});
