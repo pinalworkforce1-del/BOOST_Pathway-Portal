@@ -16,6 +16,23 @@ const cors={
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
 const clean=(v:unknown)=>String(v??"").trim();
 const normEmail=(v:unknown)=>clean(v).toLowerCase();
+function redactLiteral(text:string,literal:string,label:string){
+  let s=String(text||""),needle=clean(literal).toLowerCase();
+  if(!needle)return s;
+  let lower=s.toLowerCase(),i=lower.indexOf(needle);
+  while(i>=0){s=s.slice(0,i)+label+s.slice(i+needle.length);lower=s.toLowerCase();i=lower.indexOf(needle)}
+  return s;
+}
+function scrubText(input:string,participantName:string,participantEmail:string){
+  let s=String(input||"");
+  s=redactLiteral(s,participantName,"[PARTICIPANT NAME REDACTED]");
+  s=redactLiteral(s,participantEmail,"[EMAIL REDACTED]");
+  s=s.replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,"[EMAIL REDACTED]");
+  s=s.replace(/\b(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}\b/g,"[PHONE REDACTED]");
+  s=s.replace(/\b\d{3}-\d{2}-\d{4}\b/g,"[SSN REDACTED]");
+  s=s.replace(/\b(?:DOB|date of birth|birth date)\s*[:=-]?\s*\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/gi,"[DOB REDACTED]");
+  return s.slice(0,12000);
+}
 async function sha256(v:string){const h=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,"0")).join("")}
 
 async function requirePinalStaff(req:Request){
@@ -48,20 +65,16 @@ async function loadContext(journeyId:string){
   if(knowledgeR.error)throw knowledgeR.error;
   return {
     participant:{
-      journey_id:j.id,
-      name:j.participant_name||"Participant",
-      email:j.participant_email||null,
+      label:"Participant",
       participant_status:j.participant_status||null,
       selected_pathway:j.selected_pathway||null,
       selected_industry:j.selected_industry||null,
       primary_career_title:j.primary_career_title||null,
       h3_status:j.h3_status||null,
       current_step:j.current_step||null,
-      boost_completed_at:j.boost_completed_at||null,
-      created_at:j.created_at||null,
-      updated_at:j.updated_at||null
+      boost_completed_at:j.boost_completed_at||null
     },
-    assignment:assignR.data||null,
+    assignment:{assigned:!!assignR.data?.primary_staff_email},
     boost_journey:j.journey_data||{},
     module_progress:progressR.data||[],
     eligibility_policy:knowledgeR.data||[]
@@ -72,6 +85,13 @@ const SYSTEM=`You are Rosie, the Pinal County BOOST Coach View Intake & Eligibil
 
 ROLE
 You support PRE-ENROLLMENT intake, Adult/Dislocated Worker eligibility analysis, Priority of Service review, documentation planning, and intake-note drafting. You are intentionally separate from TalentSync Rosie, which handles post-enrollment case management.
+
+PRIVACY BOUNDARY
+- You are identity-blind. The context intentionally excludes participant name, email, phone, address, DOB, SSN, and document identifiers.
+- Refer to the person only as "Participant."
+- Do not ask staff for direct identifiers.
+- Prefer structured facts such as Veteran: Yes, Disability barrier: Yes, or Reentry barrier: Yes rather than detailed sensitive narratives unless a specific policy rule genuinely requires more.
+- Never reproduce or infer direct identifiers in an intake note.
 
 STRICT DECISION BOUNDARY
 - You may analyze documented facts against controlled Pinal policy and identify a likely eligibility pathway or DW category.
@@ -133,15 +153,19 @@ Deno.serve(async req=>{
 
     const context=await loadContext(journeyId);
     if(!context)return json({error:"Pinal BOOST participant not found."},404);
+    const identityR=await db.from("pinal_boost_journeys").select("participant_name,participant_email").eq("id",journeyId).maybeSingle();
+    const participantName=clean(identityR.data?.participant_name),participantEmail=clean(identityR.data?.participant_email);
+    const safeQuestion=scrubText(question,participantName,participantEmail);
+    const safeHistory=history.map((x:any)=>({role:x.role,text:scrubText(x.text,participantName,participantEmail)}));
 
     const apiKey=Deno.env.get("OPENAI_API_KEY");
     if(!apiKey)return json({error:"Rosie's AI service is not configured.",model_status:"missing_secret"},503);
 
-    const conversation=history.map((h:any)=>`${h.role.toUpperCase()}: ${h.text}`).join("\n");
+    const conversation=safeHistory.map((h:any)=>`${h.role.toUpperCase()}: ${h.text}`).join("\n");
     const payload={
       model:Deno.env.get("BOOST_ROSIE_MODEL")||Deno.env.get("TALENTSYNC_ROSIE_MODEL")||"gpt-5.6-luna",
       instructions:SYSTEM,
-      input:[{role:"user",content:[{type:"input_text",text:`STAFF QUESTION:\n${question}\n\nRECENT CONVERSATION:\n${conversation||"(none)"}\n\nCONTROLLED PINAL BOOST INTAKE CONTEXT:\n${JSON.stringify(context)}`}]}],
+      input:[{role:"user",content:[{type:"input_text",text:`STAFF QUESTION:\n${safeQuestion}\n\nRECENT CONVERSATION:\n${conversation||"(none)"}\n\nCONTROLLED PINAL BOOST INTAKE CONTEXT:\n${JSON.stringify(context)}`}]}],
       max_output_tokens:1400
     };
     const ai=await fetch("https://api.openai.com/v1/responses",{method:"POST",headers:{Authorization:`Bearer ${apiKey}`,"Content-Type":"application/json"},body:JSON.stringify(payload)});
