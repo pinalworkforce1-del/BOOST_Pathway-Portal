@@ -27,7 +27,13 @@ async function requireStaff(req:Request){
   const normalized=email(a.email);
   const {data:tsRole}=await db.from("talentsync_staff_roles").select("role,active").ilike("email",normalized).maybeSingle();
   const role=tsRole?.active===false?"Coach":(tsRole?.role||"Coach");
-  return {email:normalized,display_name:a.display_name||a.email,role};
+  const permissions={
+    canDirectorView:role==="Director",
+    canManageVendors:role==="Director",
+    canManageBudget:role==="Director"||role==="Regional Admin",
+    canApproveFinance:role==="Director"||role==="Regional Admin"
+  };
+  return {email:normalized,display_name:a.display_name||a.email,role,permissions};
 }
 function boostOutputs(j:any,r:any){
   const jd=j?.journey_data||{},m=jd.modules||jd,m1=m.module1||{},m2=m.module2||{},m3=m.module3||{},m4=m.module4||{},m5=m.module5||{},skill=m.skillmobility||{},fin=m.financial||{},ai=m.ai||m.careerAi||{};
@@ -92,8 +98,8 @@ async function loadState(){
   const vendors=(vr.data||[]).map((v:any)=>({id:v.id,name:v.official_name,vendorNumber:v.eckerd_vendor_number||"",types:Array.isArray(v.vendor_types)?v.vendor_types:[],active:v.active!==false,notes:v.notes||""}));
   return {participants,budgets,vendors};
 }
-function preserveDirectorOnly(incoming:any,prior:any,role:string){
-  if(role==="Director")return incoming;
+function preserveApprovalOnly(incoming:any,prior:any,role:string){
+  if(role==="Director"||role==="Regional Admin")return incoming;
   const p={...incoming};
   const priorObs=Array.isArray(prior?.obligations)?prior.obligations:[];
   p.obligations=(Array.isArray(incoming?.obligations)?incoming.obligations:[]).map((o:any)=>{
@@ -111,7 +117,7 @@ async function saveParticipant(p:any,actor:string,role:string){
   if(!isUuid(p?.id))return;
   const now=new Date().toISOString(),pid=String(p.id);
   const priorRow=await db.from("talentsync_case_state").select("case_state").eq("participant_id",pid).maybeSingle();
-  p=preserveDirectorOnly(p,priorRow.data?.case_state||{},role);
+  p=preserveApprovalOnly(p,priorRow.data?.case_state||{},role);
   await db.from("talentsync_case_state").upsert({participant_id:pid,case_state:p,state_version:1,updated_by:actor,updated_at:now},{onConflict:"participant_id"});
   await db.from("talentsync_participants").update({assigned_coach_email:p.coach||null,operational_status:p.exitDate?"exited":p.hired==="Hired"?"employed":"active",updated_at:now}).eq("id",pid);
   await db.from("talentsync_service_plans").upsert({participant_id:pid,program_stream:p.program||null,iep_iss_status:p.iepComplete||null,target_occupation:p.targetOccupation||null,target_industry:p.industryOverride||p.industry||null,current_hourly_wage:Number(p.entryWage||0)||null,updated_by:actor,updated_at:now},{onConflict:"participant_id"});
@@ -142,7 +148,7 @@ async function saveParticipant(p:any,actor:string,role:string){
 }
 async function saveState(state:any,actor:string,role:string){
   for(const p of Array.isArray(state?.participants)?state.participants:[])await saveParticipant(p,actor,role);
-  if(role==="Director")for(const [program,v] of Object.entries<any>(state?.budgets||{})){
+  if(role==="Director"||role==="Regional Admin")for(const [program,v] of Object.entries<any>(state?.budgets||{})){
     for(const [line,amount] of [["Allocation",v?.allocation],["ITA",v?.ITA],["OJT",v?.OJT],["WEX",v?.WEX],["Support Service",v?.["Support Service"]]]){if(amount==null)continue;await db.from("talentsync_budget_lines").upsert({area:"pinal",program_stream:program,line_type:line,budget_amount:Number(amount||0),updated_by:actor,updated_at:new Date().toISOString()},{onConflict:"area,program_stream,line_type"})}
   }
   if(role==="Director"){
