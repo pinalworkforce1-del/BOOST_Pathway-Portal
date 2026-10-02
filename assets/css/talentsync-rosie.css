@@ -38,3 +38,59 @@
   .tsr-avatar.big{width:86px!important;height:124px!important;min-width:86px!important}
   .tsr-head{min-height:132px}
 }
+
+
+/* 2026-10-02 — Rosie visual standard v4: current career-coach image across Coach View + TalentSync. */
+.tsr-avatar,
+.tsr-avatar.big,
+.tsr-fab .tsr-avatar{
+  background-image:url("../images/rosie-career-coach.webp?v=20261002")!important;
+  background-repeat:no-repeat!important;
+  background-size:contain!important;
+  background-position:center bottom!important;
+  background-color:transparent!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  color:transparent!important;
+  text-shadow:none!important;
+  overflow:visible!important;
+}
+.tsr-avatar{
+  width:62px!important;
+  height:86px!important;
+  min-width:62px!important;
+}
+.tsr-avatar.big{
+  width:132px!important;
+  height:182px!important;
+  min-width:132px!important;
+}
+.tsr-head{
+  min-height:188px!important;
+  padding:10px 14px!important;
+  align-items:center!important;
+}
+.tsr-fab{
+  min-height:78px;
+  padding:5px 16px 5px 6px!important;
+  gap:8px!important;
+}
+.tsr-fab .tsr-avatar{
+  width:58px!important;
+  height:72px!important;
+  min-width:58px!important;
+}
+@media(max-width:600px){
+  .tsr-avatar.big{
+    width:110px!important;
+    height:152px!important;
+    min-width:110px!important;
+  }
+  .tsr-head{min-height:160px!important}
+  .tsr-fab .tsr-avatar{
+    width:52px!important;
+    height:66px!important;
+    min-width:52px!important;
+  }
+}
