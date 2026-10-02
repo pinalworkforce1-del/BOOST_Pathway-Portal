@@ -31,18 +31,21 @@ async function requirePinalStaff(req:Request){
 }
 
 async function loadContext(journeyId:string){
-  const [journeyR,progressR,assignR,knowledgeR]=await Promise.all([
-    db.from("pinal_boost_journeys").select("*").eq("id",journeyId).maybeSingle(),
-    db.from("boost_module_progress").select("module_id,pathway,status,evidence,completed_at,updated_at").eq("region","pinal").eq("journey_id",journeyId).order("completed_at",{ascending:true}),
+  const journeyR=await db.from("pinal_boost_journeys").select("*").eq("id",journeyId).maybeSingle();
+  if(journeyR.error)throw journeyR.error;
+  if(!journeyR.data)return null;
+  const j=journeyR.data;
+  const progressPromise=j.user_id
+    ? db.from("boost_module_progress").select("module_id,pathway,status,evidence,completed_at,updated_at").eq("region","pinal").eq("user_id",j.user_id).order("completed_at",{ascending:true})
+    : Promise.resolve({data:[],error:null} as any);
+  const [progressR,assignR,knowledgeR]=await Promise.all([
+    progressPromise,
     db.from("boost_participant_assignments").select("primary_staff_email,secondary_staff_email,assigned_at,updated_at").eq("area","pinal").eq("journey_id",journeyId).maybeSingle(),
     db.from("boost_intake_rosie_knowledge").select("category,topic,content,source_type,source_ref").eq("area",AREA).eq("active",true).order("sort_order",{ascending:true})
   ]);
-  if(journeyR.error)throw journeyR.error;
-  if(!journeyR.data)return null;
   if(progressR.error)throw progressR.error;
   if(assignR.error)throw assignR.error;
   if(knowledgeR.error)throw knowledgeR.error;
-  const j=journeyR.data;
   return {
     participant:{
       journey_id:j.id,
