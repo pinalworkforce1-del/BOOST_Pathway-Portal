@@ -16,8 +16,7 @@ function boot(){
  let busy=false;
  function classify(){if(busy)return;busy=true;requestAnimationFrame(()=>{try{
    const movedGrid=document.getElementById('movedGrid');if(!movedGrid)return;
-   [...movedGrid.querySelectorAll('.person')].forEach(card=>grid.appendChild(card));
-   const cards=[...grid.querySelectorAll(':scope > .person')];let finished=0,stalled=0,approved=0,moved=0;const drop=new Map();
+   const cards=[...grid.querySelectorAll(':scope > .person'),...movedGrid.querySelectorAll(':scope > .person')];let finished=0,stalled=0,approved=0,moved=0;const drop=new Map();
    cards.forEach(card=>{
     const text=(card.innerText||'').toLowerCase();const modules=[...card.querySelectorAll('.module')];const done=modules.filter(x=>x.classList.contains('done')).length;
     const isFinished=(modules.length>0&&done===modules.length)||/\bcompleted\b/.test(text)&&!/not completed/.test(text);
