@@ -12,7 +12,25 @@ async function cloudLoad(){
   try{
     const d=await call('load');
     state=mergeDefaults(d.state||{});
-    if(d.staff?.role){role=d.staff.role;const rs=document.querySelector('#roleSelect');if(rs)rs.value=role}
+    if(d.staff?.role){
+      role=d.staff.role;
+      const permissions=d.staff.permissions||{
+        canDirectorView:role==='Director',
+        canManageVendors:role==='Director',
+        canManageBudget:role==='Director'||role==='Regional Admin',
+        canApproveFinance:role==='Director'||role==='Regional Admin'
+      };
+      window.TALENTSYNC_PERMISSIONS=permissions;
+      const rs=document.querySelector('#roleSelect');
+      if(rs){rs.value=role;rs.disabled=true;rs.title='Access is assigned by TalentSync administration';}
+      const budgetTab=document.querySelector('[data-view="budget"]');
+      const vendorTab=document.querySelector('[data-view="vendors"]');
+      if(budgetTab)budgetTab.classList.toggle('hidden',!(permissions.canManageBudget||permissions.canApproveFinance));
+      if(vendorTab)vendorTab.classList.toggle('hidden',!permissions.canManageVendors);
+      const reset=document.querySelector('#resetBtn');
+      if(reset)reset.classList.toggle('hidden',!permissions.canDirectorView);
+      if((activeView==='budget'&&!(permissions.canManageBudget||permissions.canApproveFinance))||(activeView==='vendors'&&!permissions.canManageVendors))switchView('operations');
+    }
     localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
     cloudReady=true;window.TALENTSYNC_CLOUD_AUTH_REQUIRED=false;
     render();if(activeView==='vendors'&&typeof renderVendors==='function')renderVendors();
