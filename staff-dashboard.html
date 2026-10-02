@@ -206,7 +206,7 @@ function render(){const q=$('search').value.trim().toLowerCase(),pf=$('pathFilte
     });
     btn.disabled=false;btn.textContent='Approve Enrollment → TalentSync';
   }
-})
+})}
 function renderNotices(){const unread=notices.filter(n=>!n.read_at).length;$('coachBadge').dataset.notices=String(unread);$('noticeList').innerHTML=notices.length?notices.map(n=>'<div class="notif '+(n.read_at?'':'unread')+'" data-notice="'+esc(n.id)+'" data-journey="'+esc(n.journey_id)+'"><strong>'+esc(n.title)+'</strong><div>'+esc(n.body)+'</div><small>'+fmt(n.created_at)+(n.email_status&&n.email_status!=='disabled'?' • '+esc(n.email_status):'')+'</small></div>').join(''):'<div class="notice">No staff notifications yet.</div>'}
 const DETAIL_SKIP_KEYS=new Set(['browserState','schema_version','evidenceVersion','intelligenceVersion','source','capturedAt','updated_at','updatedAt','interactionCount','version','recovered_from','journey_payload_saved']);
 const FRIENDLY_LABELS={
