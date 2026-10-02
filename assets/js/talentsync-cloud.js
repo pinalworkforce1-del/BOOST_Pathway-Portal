@@ -16,7 +16,7 @@ async function cloudLoad(){
       role=d.staff.role;
       const permissions=d.staff.permissions||{
         canDirectorView:role==='Director',
-        canManageVendors:role==='Director',
+        canManageVendors:role==='Director'||role==='Regional Admin',
         canManageBudget:role==='Director'||role==='Regional Admin',
         canApproveFinance:role==='Director'||role==='Regional Admin'
       };
