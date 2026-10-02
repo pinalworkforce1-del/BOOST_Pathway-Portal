@@ -7,7 +7,7 @@ function participant(){try{return state?.participants?.find(p=>String(p.id)===St
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function md(s){return esc(s).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
 function add(text,who='bot'){const c=document.querySelector('#tsRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.innerHTML=md(text);c.appendChild(d);c.scrollTop=c.scrollHeight}
-function syncContext(){const p=participant(),el=document.querySelector('#tsRosieContext');if(el)el.textContent=p?(p.name+' · '+(p.program||'Program not set')+' · '+(p.pathway||'No pathway')):'Select a participant in TalentSync first.'}
+function syncContext(){const p=participant(),el=document.querySelector('#tsRosieContext');if(el)el.textContent=p?('Participant · '+(p.program||'Program not set')+' · '+(p.pathway||'No pathway')):'Select a participant in TalentSync first.'}
 async function ask(q){
  q=String(q||'').trim();if(!q)return;
  const p=participant();if(!p){add('Select a participant first so I can use the correct Pinal TalentSync case.');return}
