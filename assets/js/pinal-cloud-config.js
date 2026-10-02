@@ -5,4 +5,4 @@ window.PINAL_BOOST_CONFIG = Object.freeze({
   authRedirect: 'https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/'
 });
 
-(()=>{if(/staff-dashboard\.html$/i.test(location.pathname)){const s=document.createElement('script');s.src='assets/js/talentsync-coach.js?v=1';s.defer=true;document.head.appendChild(s)}})();
+(()=>{if(/staff-dashboard\.html$/i.test(location.pathname)){const s=document.createElement('script');s.src='assets/js/talentsync-coach.js?v=2';s.defer=true;document.head.appendChild(s)}})();
