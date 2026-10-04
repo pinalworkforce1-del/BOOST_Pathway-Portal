@@ -1,1 +1,108 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOOST Ready 2 Work</title><link rel="stylesheet" href="styles.css"></head><body><div class="app"><header><div class="brand">BOOST • READY 2 WORK</div><div class="header-right"><div class="trail" id="stageHeader">Soft Skills Base Camp</div><div class="build">Integrated First Run</div></div></header><main class="stage"><section class="visual"><img id="sceneImg" alt="Workplace scenario"><div class="badge" id="sceneBadge"></div><div class="skilloverlay" id="skilloverlay"><div class="skillcard"><h2>YOUR WORK READY SKILLS</h2><p>Your decision changed your profile.</p><div class="overgrid" id="overgrid"></div><div class="overlayfoot">Select here to continue.</div></div></div></section><section class="panel" id="panel"><div class="skillhud"><div class="hudhead"><b>WORK READY SKILLS</b><span>Evidence builds as you make decisions</span></div><div class="skillgrid" id="skillgrid"></div></div><div class="progress-wrap"><div class="progress"><span id="progress"></span></div><div class="progress-label"><span id="progressText"></span><span id="stageProgress"></span></div></div><div class="stage-chip" id="stageChip"></div><h1 id="title"></h1><p class="scenario" id="setup"></p><div class="audio-row"><button class="btn" id="listen">🔊 Hear scenario & responses</button><button class="btn secondary" id="cc">CC</button></div><div id="promptCaption" class="caption"></div><div class="choices" id="choices"></div><div class="feedback" id="feedback"><h3 id="feedbackTitle"></h3><div id="feedbackText"></div><div class="audio-row"><button class="btn" id="replay">🔊 Replay impact</button></div><div id="impactCaption" class="caption"></div></div><div class="controls"><button class="btn secondary" id="back">← Previous</button><button class="btn" id="next">Next scenario →</button></div><div class="note">Progress is saved on this device. Cloud save is the next integration step.</div></section></main></div><script src="course-data.js"></script><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102d49">
+<title>BOOST Get 2 Work Ready</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="#map" data-route="map" aria-label="Ready 2 Work map">BOOST • GET 2 WORK READY</a>
+    <div class="top-progress" aria-label="Ready 2 Work progress"><span id="overallProgressText">0 of 22 scenarios complete</span><div class="top-track"><i id="overallProgressBar"></i></div></div>
+    <div class="top-actions"><a class="top-link" href="../">← BOOST Map</a><button id="resetBtn" class="top-link button-link" type="button">Start over</button></div>
+  </header>
+
+  <main id="viewMap" class="view map-view">
+    <section class="hero-map">
+      <img src="assets/r2w-pathway-map.webp" alt="Get 2 Work Ready pathway map showing Soft Skills Base Camp, Resume Retreat, Interview Landing, certificate, and employment opportunities">
+      <button class="map-hotspot hs-soft" data-stage="Soft Skills Base Camp" aria-label="Open Soft Skills Base Camp"></button>
+      <button class="map-hotspot hs-resume" data-stage="Resume Retreat" aria-label="Open Resume Retreat"></button>
+      <button class="map-hotspot hs-interview" data-stage="Interview Landing" aria-label="Open Interview Landing"></button>
+      <button class="map-hotspot hs-cert" data-route="certificate" aria-label="Open Work Ready Certificate"></button>
+    </section>
+    <section class="map-content">
+      <div class="intro-copy"><span class="eyebrow">YOUR READY 2 WORK JOURNEY</span><h1>Build your skills. Show your value. Get ready to work.</h1><p>Move through three work-readiness areas. Your decisions build a six-skill mastery profile that follows you through the experience and onto your BOOST Work Ready Certificate.</p></div>
+      <div id="stageCards" class="stage-cards"></div>
+      <div class="certificate-callout">
+        <div><span class="eyebrow">FINAL MILESTONE</span><h2>BOOST Work Ready Certificate</h2><p>Complete the published Ready 2 Work requirements to unlock an employer-facing certificate with your demonstrated soft-skill mastery profile.</p></div>
+        <button class="primary-btn" data-route="certificate">View certificate progress →</button>
+      </div>
+    </section>
+  </main>
+
+  <main id="viewStage" class="view stage-home" hidden>
+    <section class="stage-hero">
+      <img id="stageHomeImg" alt="">
+      <div class="stage-home-overlay">
+        <button class="ghost-btn" data-route="map">← Ready 2 Work map</button>
+        <div class="stage-home-copy"><span id="stageNumber" class="eyebrow"></span><h1 id="stageHomeTitle"></h1><p id="stageHomeTagline"></p></div>
+        <div class="selection-board">
+          <div class="board-head"><div><span class="eyebrow">YOUR NEXT MOVES</span><h2>Choose an experience</h2></div><div id="stageHomeProgress" class="status-pill"></div></div>
+          <button id="requiredPathBtn" class="board-card required-card" type="button"><span class="card-kicker">REQUIRED PATH</span><strong id="requiredPathTitle"></strong><small id="requiredPathMeta"></small><span class="card-arrow">→</span></button>
+          <div class="board-grid">
+            <button class="board-card optional-card" type="button" disabled><span class="card-kicker">PRACTICE</span><strong>Skill Lab</strong><small>Additional practice experiences will unlock here.</small></button>
+            <button class="board-card optional-card" type="button" disabled><span class="card-kicker">WATCH & LEARN</span><strong>Video Resources</strong><small>Curated employer and career-readiness videos can be added here.</small></button>
+            <button class="board-card optional-card" type="button" disabled><span class="card-kicker">PLAY</span><strong>Games & Challenges</strong><small>Optional skill-building games can be layered into this board later.</small></button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main id="viewScene" class="view scene-view" hidden>
+    <section class="scene-visual">
+      <img id="sceneImg" alt="Workplace scenario">
+      <div class="scene-badge" id="sceneBadge"></div>
+    </section>
+    <section class="scene-panel">
+      <div class="scene-nav"><button class="ghost-btn dark" id="backToStage">← Area home</button><button class="ghost-btn dark" data-route="map">Ready 2 Work map</button></div>
+      <div class="skill-hud" id="skillHud">
+        <div class="skill-hud-head"><div><span class="eyebrow">YOUR WORK READY SKILLS</span><strong>Evidence builds with every decision.</strong></div><button id="skillToggle" class="skill-toggle" type="button">View skills</button></div>
+        <div class="compact-skill-strip" id="compactSkillStrip"></div>
+        <div class="skill-grid" id="skillGrid"></div>
+      </div>
+      <div class="scene-progress"><div class="progress-track"><i id="sceneProgressBar"></i></div><div class="progress-meta"><span id="sceneProgressText"></span><span id="stageProgressText"></span></div></div>
+      <span id="sceneStageChip" class="stage-chip"></span><h1 id="sceneTitle"></h1><p id="sceneSetup" class="scene-setup"></p>
+      <div class="audio-row"><button class="primary-btn" id="listenBtn" type="button">🔊 Hear scenario & responses</button><button class="secondary-btn" id="ccBtn" type="button">CC</button></div>
+      <div id="promptCaption" class="caption-box"></div>
+      <div id="choices" class="choices"></div>
+      <div id="inlineFeedback" class="inline-feedback" hidden><strong id="inlineFeedbackTitle"></strong><p id="inlineFeedbackText"></p><button id="replayBtn" class="secondary-btn" type="button">🔊 Replay impact</button><div id="impactCaption" class="caption-box"></div></div>
+      <div class="scene-controls"><button id="prevSceneBtn" class="secondary-btn" type="button">← Previous</button><button id="nextSceneBtn" class="primary-btn" type="button">Next scenario →</button></div>
+      <p class="save-note">Progress is saved on this device for this prototype.</p>
+      <audio id="promptAudio" preload="auto"></audio><audio id="impactAudio" preload="auto"></audio>
+    </section>
+  </main>
+
+  <main id="viewCertificate" class="view certificate-view" hidden>
+    <section class="certificate-toolbar"><button class="ghost-btn dark" data-route="map">← Ready 2 Work map</button><div><span class="eyebrow">FINAL MILESTONE</span><strong id="certificateStatus"></strong></div><button id="printCertificateBtn" class="primary-btn" type="button">Print / Save PDF</button></section>
+    <section id="certificate" class="certificate-sheet">
+      <img class="certificate-bg" src="assets/r2w-certificate-bg.webp" alt="">
+      <div class="certificate-content">
+        <div class="cert-brand-row"><div class="azwork-lockup"><span class="azwork-mark">ARIZONA@WORK</span><small>Pinal County</small></div><div class="boost-lockup">BOOST<br><small>GET 2 WORK READY</small></div></div>
+        <div class="cert-title"><span>CERTIFICATE OF WORK READINESS</span><h1>BOOST Work Ready Certificate</h1><p>This recognizes demonstrated work-readiness evidence across soft skills, resume readiness, and interview readiness.</p></div>
+        <div class="name-block"><label for="participantName">Presented to</label><input id="participantName" type="text" autocomplete="name" placeholder="Participant Name"></div>
+        <div class="mastery-title">Soft Skill Mastery Profile</div><div id="certificateSkills" class="certificate-skills"></div>
+        <div class="readiness-row"><div><strong>Resume Readiness</strong><span id="resumeReadiness"></span></div><div><strong>Interview Readiness</strong><span id="interviewReadiness"></span></div></div>
+        <div class="cert-footer"><div><small>Completion date</small><strong id="certificateDate"></strong></div><div><small>Certificate ID</small><strong id="certificateId"></strong></div><div class="signature"><span></span><small>ARIZONA@WORK Pinal County</small></div></div>
+        <div id="certificateLock" class="certificate-lock"><strong>Certificate Locked</strong><span id="certificateLockText"></span></div>
+      </div>
+    </section>
+    <p class="certificate-note">Employer-recognition language can be strengthened later as Pinal County formally validates the credential with employer partners.</p>
+  </main>
+</div>
+
+<dialog id="impactDialog" class="impact-dialog">
+  <div class="impact-card">
+    <button id="impactClose" class="impact-close" type="button" aria-label="Close impact card">×</button>
+    <span class="eyebrow">YOUR DECISION • SKILL IMPACT</span><h2 id="impactDialogTitle"></h2><p id="impactDialogText"></p>
+    <div id="impactSkillGrid" class="impact-skill-grid"></div><button id="impactContinue" class="primary-btn" type="button">Continue</button>
+  </div>
+</dialog>
+
+<script src="course-data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
