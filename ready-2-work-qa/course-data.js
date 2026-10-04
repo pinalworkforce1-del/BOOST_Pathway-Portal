@@ -385,7 +385,7 @@ window.R2W_COURSE = {
       "stage": "Soft Skills Base Camp",
       "title": "Running Late",
       "img": "assests/R2W-S01-IMG.webp",
-      "promptFile": null,
+      "promptFile": "assests/R2W-S01-PROMPT.mp3",
       "promptVtt": null,
       "setup": "You realize you will arrive late for your shift because of an unexpected delay.",
       "choices": {
@@ -408,7 +408,7 @@ window.R2W_COURSE = {
           "feedback": "You have communicated the delay, which helps, but your supervisor still does not know when you expect to arrive or how the shift may be affected. You're demonstrating Communication."
         },
         "C": {
-          "file": null,
+          "file": "assests/R2W-S01-IMPACT-C.mp3",
           "vtt": null,
           "narration": "You chose: Contact your supervisor, give a realistic ETA, and explain how you will minimize the impact. Strong decision. Your supervisor has the information needed to adjust coverage and plan around your delay. You're demonstrating Planning & Time Management, Communication, and Professionalism & Integrity.",
           "feedback": "Strong decision. Your supervisor has the information needed to adjust coverage and plan around your delay. You're demonstrating Planning & Time Management, Communication, and Professionalism & Integrity."
@@ -427,7 +427,7 @@ window.R2W_COURSE = {
       "stage": "Soft Skills Base Camp",
       "title": "Unclear Instructions",
       "img": "assests/R2W-S02-IMG.webp",
-      "promptFile": null,
+      "promptFile": "assests/R2W-S02-PROMPT.mp3",
       "promptVtt": null,
       "setup": "A supervisor gives you a task, but one important part of the instruction is unclear.",
       "choices": {
