@@ -3,3 +3,9 @@
 @media print{body{background:#fff}.topbar,.certificate-toolbar,.certificate-note{display:none!important}.view{display:none!important}.certificate-view{display:block!important;padding:0}.certificate-sheet{box-shadow:none;width:100%;max-width:none}.certificate-lock{display:none!important}}
 
 .stage-card.locked{opacity:.52;filter:grayscale(.35);cursor:not-allowed}.stage-card.locked img{filter:grayscale(.55)}.stage-card.locked .status-pill{background:#e7eaec;color:#697781}.stage-card:disabled{color:inherit}
+
+.map-state-indicator{position:absolute;right:-10px;top:-10px;z-index:4;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#fff;color:#173f60;border:3px solid #fff;box-shadow:0 5px 16px rgba(0,0,0,.38);font-size:1.35rem;font-weight:950;pointer-events:none}
+.map-hotspot.map-complete .map-state-indicator{background:#2f7d4c;color:#fff}
+.map-hotspot.map-locked{cursor:not-allowed;background:rgba(12,26,38,.16)}
+.map-hotspot.map-locked .map-state-indicator{background:#243847;color:#fff;font-size:1.1rem}
+.map-hotspot.map-current .map-state-indicator{background:#e7ad35;color:#102d49}
