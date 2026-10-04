@@ -139,6 +139,18 @@
 
   function renderMap(){
     updateOverall();
+    document.querySelectorAll('.map-hotspot').forEach(h=>{
+      h.classList.remove('map-complete','map-locked','map-current');
+      h.querySelector('.map-state-indicator')?.remove();
+      let complete=false, unlocked=true;
+      if(h.dataset.stage){ complete=stageComplete(h.dataset.stage); unlocked=stageUnlocked(h.dataset.stage); }
+      else if(h.dataset.route==='certificate'){ complete=allComplete(); unlocked=allComplete(); }
+      const indicator=document.createElement('span'); indicator.className='map-state-indicator';
+      if(complete){ h.classList.add('map-complete'); indicator.textContent='✓'; indicator.setAttribute('aria-label','Complete'); }
+      else if(!unlocked){ h.classList.add('map-locked'); indicator.textContent='🔒'; indicator.setAttribute('aria-label','Locked'); }
+      else { h.classList.add('map-current'); indicator.textContent='→'; indicator.setAttribute('aria-label','Available now'); }
+      h.appendChild(indicator);
+    });
     const cards=$('stageCards'); cards.innerHTML='';
     stageOrder.forEach((stage,i)=>{
       const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total, unlocked=stageUnlocked(stage);
@@ -251,7 +263,7 @@
   }
 
   document.addEventListener('click',e=>{
-    const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); route(r.dataset.route); }
+    const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); if(r.dataset.route!=='certificate'||allComplete()) route(r.dataset.route); }
     const s=e.target.closest('[data-stage]'); if(s){ e.preventDefault(); const stage=s.dataset.stage; if(stageUnlocked(stage)) route('stage',{stage}); }
   });
   $('backToStage').onclick=()=>route('stage',{stage:scenes[state.currentScene].stage});
