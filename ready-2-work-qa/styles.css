@@ -28,3 +28,7 @@
   .scene-visual img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
   .scene-visual img.media-failed{aspect-ratio:auto;min-height:84px;padding:18px;background:#eef2f5}
 }
+
+@media(max-width:900px){
+  .scene-visual.media-failed{display:none}
+}
