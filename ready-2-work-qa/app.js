@@ -71,14 +71,28 @@
     return m;
   })();
 
-  function mastery(key){
-    const raw = Number(state.skillScores[key]||0);
-    const max = Math.max(1,maxPositive[key]||1);
-    const ratio = Math.max(0, raw) / max;
-    if(ratio >= .85) return {label:'Advanced',pct:100};
-    if(ratio >= .68) return {label:'Strong',pct:82};
-    if(ratio >= .48) return {label:'Demonstrated',pct:62};
-    return {label:'Developing',pct:35};
+  function masteryFromRatio(raw,max){
+    const ratio = Math.max(0, Number(raw||0)) / Math.max(1,Number(max||1));
+    if(ratio >= .85) return {label:'Advanced',pct:100,ratio};
+    if(ratio >= .68) return {label:'Strong',pct:82,ratio};
+    if(ratio >= .48) return {label:'Demonstrated',pct:62,ratio};
+    return {label:'Developing',pct:Math.max(8,Math.round(ratio*100)),ratio};
+  }
+  function liveMaxPositive(){
+    const m={COM:0,PRO:0,PSA:0,TEAM:0,TIME:0,QUAL:0};
+    for(const s of scenes){
+      if(!Object.prototype.hasOwnProperty.call(state.sceneSelections,String(s.id)) && !Object.prototype.hasOwnProperty.call(state.sceneSelections,s.id)) continue;
+      for(const k of skillOrder){
+        let best=0;
+        for(const choice of ['A','B','C','D']) best=Math.max(best,Number(weights[s.id]?.[choice]?.[k]||0));
+        m[k]+=best;
+      }
+    }
+    return m;
+  }
+  function mastery(key,mode='live'){
+    const max = mode==='final' ? maxPositive[key] : liveMaxPositive()[key];
+    return masteryFromRatio(state.skillScores[key],max);
   }
 
   function answeredCount(){ return Object.keys(state.sceneSelections).filter(id=>scenes.some(s=>String(s.id)===String(id))).length; }
@@ -215,7 +229,7 @@
     updateOverall(); recalcScores();
     $('participantName').value=state.participantName||'';
     const grid=$('certificateSkills'); grid.innerHTML='';
-    skillOrder.forEach(k=>{ const m=mastery(k); const r=document.createElement('div'); r.className='cert-skill'; r.innerHTML=`<strong>${skillNames[k]}</strong><strong>${m.label}</strong>`; grid.appendChild(r); });
+    skillOrder.forEach(k=>{ const m=mastery(k,'final'); const r=document.createElement('div'); r.className='cert-skill'; r.innerHTML=`<strong>${skillNames[k]}</strong><strong>${m.label}</strong>`; grid.appendChild(r); });
     const resumeDone=stageComplete('Resume Retreat'), interviewDone=stageComplete('Interview Landing');
     $('resumeReadiness').textContent=resumeDone?'Complete':'In Progress'; $('interviewReadiness').textContent=interviewDone?'Complete':'In Progress';
     $('certificateDate').textContent=allComplete()?new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric'}).format(new Date()):'Pending completion';
