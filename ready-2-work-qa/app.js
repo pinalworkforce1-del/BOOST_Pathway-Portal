@@ -198,17 +198,19 @@
     const s=scenes[state.currentScene]; activeStage=s.stage;
     const sceneImg=$('sceneImg');
     const mediaUrl=new URL(s.img,document.baseURI).href;
+    const sceneVisual=sceneImg.closest('.scene-visual');
     sceneImg.classList.remove('media-failed');
+    sceneVisual?.classList.remove('media-loaded');
+    sceneVisual?.classList.remove('media-failed');
     sceneImg.alt=`${s.title} scenario`;
     sceneImg.onerror=null;
-    sceneImg.onload=()=>sceneImg.classList.remove('media-failed');
+    sceneImg.onload=()=>{ sceneImg.classList.remove('media-failed'); sceneVisual?.classList.add('media-loaded'); };
     sceneImg.onerror=()=>{
       sceneImg.classList.add('media-failed');
       sceneImg.alt='';
       sceneImg.removeAttribute('src');
-      sceneImg.closest('.scene-visual')?.classList.add('media-failed');
+      sceneVisual?.classList.remove('media-loaded'); sceneVisual?.classList.add('media-failed');
     };
-    sceneImg.closest('.scene-visual')?.classList.remove('media-failed');
     sceneImg.src=mediaUrl;
     $('sceneBadge').textContent=`R2W-S${String(s.id).padStart(2,'0')} • ${s.stage}`;
     $('sceneStageChip').textContent=s.stage; $('sceneTitle').textContent=s.title; $('sceneSetup').textContent=s.setup;
