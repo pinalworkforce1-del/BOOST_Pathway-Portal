@@ -196,7 +196,23 @@
   function renderScene(){
     updateOverall(); recalcScores(); saveState(); lastImpact=null;
     const s=scenes[state.currentScene]; activeStage=s.stage;
-    $('sceneImg').src=s.img; $('sceneImg').alt=`${s.title} scenario`;
+    const sceneImg=$('sceneImg');
+    const mediaUrl=new URL(s.img,document.baseURI).href;
+    sceneImg.classList.remove('media-failed');
+    sceneImg.alt=`${s.title} scenario`;
+    sceneImg.onerror=null;
+    sceneImg.onload=()=>sceneImg.classList.remove('media-failed');
+    sceneImg.onerror=()=>{
+      if(sceneImg.dataset.retry!==mediaUrl){
+        sceneImg.dataset.retry=mediaUrl;
+        setTimeout(()=>{ sceneImg.src=mediaUrl+(mediaUrl.includes('?')?'&':'?')+'retry=1'; },250);
+      }else{
+        sceneImg.classList.add('media-failed');
+        sceneImg.alt='Scenario image unavailable. Continue with the scenario text.';
+      }
+    };
+    sceneImg.dataset.retry='';
+    sceneImg.src=mediaUrl;
     $('sceneBadge').textContent=`R2W-S${String(s.id).padStart(2,'0')} • ${s.stage}`;
     $('sceneStageChip').textContent=s.stage; $('sceneTitle').textContent=s.title; $('sceneSetup').textContent=s.setup;
     $('sceneProgressBar').style.width=`${((state.currentScene+1)/scenes.length)*100}%`;
