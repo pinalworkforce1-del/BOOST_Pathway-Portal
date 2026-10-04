@@ -32,6 +32,7 @@
   let state = {
     currentScene: 0,
     ccOn: true,
+    audioOn: false,
     sceneSelections: {},
     skillScores: {COM:0,PRO:0,PSA:0,TEAM:0,TIME:0,QUAL:0},
     participantName: '',
@@ -177,6 +178,8 @@
   }
   function speak(text,onend){ if(onend) onend(); }
   function attachTrack(audio,src){ audio.querySelectorAll('track').forEach(t=>t.remove()); if(!src)return; const t=document.createElement('track'); t.kind='captions';t.srclang='en';t.label='English';t.src=src;t.default=state.ccOn; audio.appendChild(t); }
+  function updateAudioControl(){ $('listenBtn').textContent=state.audioOn?'🔊 Audio On':'🔇 Audio Off'; $('listenBtn').setAttribute('aria-pressed',state.audioOn?'true':'false'); }
+  function playPrompt(s){ if(!state.audioOn||!s?.promptFile)return; stopAudio(); attachTrack(promptAudio,s.promptVtt); promptAudio.src=s.promptFile; promptAudio.play().catch(()=>{}); }
 
   function renderScene(){
     updateOverall(); recalcScores(); saveState(); lastImpact=null;
@@ -199,7 +202,8 @@
     if(previous){ showInline(s,previous); }
     $('prevSceneBtn').disabled=state.currentScene===0;
     $('nextSceneBtn').textContent=state.currentScene===scenes.length-1?'Return to Ready 2 Work map →':(scenes[state.currentScene+1].stage!==s.stage?`Continue to ${scenes[state.currentScene+1].stage} →`:'Next scenario →');
-    $('ccBtn').textContent=state.ccOn?'CC':'CC Off';
+    $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; updateAudioControl();
+    if(state.audioOn) setTimeout(()=>playPrompt(s),120);
   }
 
   function showInline(s,k){ const im=s.impact[k]; lastImpact={s,k,im}; $('inlineFeedback').hidden=false; $('inlineFeedbackTitle').textContent=`You chose ${k}`; $('inlineFeedbackText').textContent=im.feedback||im.narration||''; $('impactCaption').textContent=im.narration||''; $('impactCaption').classList.toggle('show',state.ccOn); }
@@ -223,7 +227,7 @@
 
   function playImpact(s,k){
     const im=s.impact[k]; stopAudio(); attachTrack(impactAudio,im.vtt);
-    if(im.file){ impactAudio.src=im.file; impactAudio.play().catch(()=>{}); }
+    if(state.audioOn && im.file){ impactAudio.src=im.file; impactAudio.play().catch(()=>{}); }
   }
 
   function certificateId(){
@@ -259,7 +263,7 @@
     if(next.stage!==current.stage){ route('map'); return; }
     route('scene',{index:state.currentScene+1});
   };
-  $('listenBtn').onclick=()=>{ const s=scenes[state.currentScene]; stopAudio(); attachTrack(promptAudio,s.promptVtt); if(s.promptFile){promptAudio.src=s.promptFile;promptAudio.play().catch(()=>{});} };
+  $('listenBtn').onclick=()=>{ state.audioOn=!state.audioOn; saveState(); updateAudioControl(); if(state.audioOn) playPrompt(scenes[state.currentScene]); else stopAudio(); };
   $('replayBtn').onclick=()=>{ if(lastImpact) playImpact(lastImpact.s,lastImpact.k); };
   $('ccBtn').onclick=()=>{ state.ccOn=!state.ccOn; saveState(); $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; $('promptCaption').classList.toggle('show',state.ccOn); $('impactCaption').classList.toggle('show',state.ccOn&&!$('inlineFeedback').hidden); };
   $('skillToggle').onclick=()=>{ const h=$('skillHud'); h.classList.toggle('expanded'); $('skillToggle').textContent=h.classList.contains('expanded')?'Hide skills':'View skills'; };
