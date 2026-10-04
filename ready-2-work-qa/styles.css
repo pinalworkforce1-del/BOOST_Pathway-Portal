@@ -38,3 +38,9 @@
   .scene-visual.media-loaded{display:block!important}
   .scene-visual.media-failed{display:none!important}
 }
+
+/* hidden routed views must never participate in layout */
+.view[hidden]{display:none!important}
+@media(max-width:900px){
+  #viewScene[hidden]{display:none!important}
+}
