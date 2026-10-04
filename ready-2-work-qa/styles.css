@@ -15,3 +15,9 @@
 .readiness-progress-track{height:10px;margin:15px 0;border-radius:999px;background:#dfe6eb;overflow:hidden}.readiness-progress-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#e9b43f,#2f7d4c);transition:width .3s ease}
 .readiness-stage-status{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.readiness-stage-chip{display:grid;gap:3px;padding:11px 12px;border-radius:12px;background:#eef2f5;border:1px solid #d8e0e5}.readiness-stage-chip span{font-size:.72rem;color:#687985}.readiness-stage-chip.complete{background:#e7f3e9;border-color:#b8d8c0}.readiness-stage-chip.current{background:#fff8e7;border-color:#e6c36c}.readiness-stage-chip.locked{opacity:.65}
 @media(max-width:760px){.readiness-stage-status{grid-template-columns:1fr}}
+
+/* Place map status badges on the illustrated destination signs, not hotspot corners */
+.hs-soft .map-state-indicator{right:2%;top:8%}
+.hs-resume .map-state-indicator{right:3%;top:7%}
+.hs-interview .map-state-indicator{right:3%;top:8%}
+.hs-cert .map-state-indicator{right:4%;top:8%}
