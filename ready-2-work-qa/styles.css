@@ -9,3 +9,9 @@
 .map-hotspot.map-locked{cursor:not-allowed;background:rgba(12,26,38,.16)}
 .map-hotspot.map-locked .map-state-indicator{background:#243847;color:#fff;font-size:1.1rem}
 .map-hotspot.map-current .map-state-indicator{background:#e7ad35;color:#102d49}
+
+.readiness-progress{max-width:1500px;margin:0 auto 14px;padding:18px 20px;border-radius:18px;background:#fff;box-shadow:0 8px 24px rgba(24,55,77,.09);border:1px solid #d5dee4}
+.readiness-progress h2{margin:4px 0 4px}.readiness-progress p{margin:0;color:#63717d}
+.readiness-progress-track{height:10px;margin:15px 0;border-radius:999px;background:#dfe6eb;overflow:hidden}.readiness-progress-track i{display:block;height:100%;width:0;background:linear-gradient(90deg,#e9b43f,#2f7d4c);transition:width .3s ease}
+.readiness-stage-status{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.readiness-stage-chip{display:grid;gap:3px;padding:11px 12px;border-radius:12px;background:#eef2f5;border:1px solid #d8e0e5}.readiness-stage-chip span{font-size:.72rem;color:#687985}.readiness-stage-chip.complete{background:#e7f3e9;border-color:#b8d8c0}.readiness-stage-chip.current{background:#fff8e7;border-color:#e6c36c}.readiness-stage-chip.locked{opacity:.65}
+@media(max-width:760px){.readiness-stage-status{grid-template-columns:1fr}}
