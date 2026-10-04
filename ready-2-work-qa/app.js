@@ -155,7 +155,7 @@
     if('speechSynthesis' in window) speechSynthesis.cancel();
     [promptAudio,impactAudio].forEach(a=>{ if(a){a.pause(); try{a.currentTime=0}catch(e){}} });
   }
-  function speak(text,onend){ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.rate=.95; if(onend)u.onend=onend; speechSynthesis.speak(u); }
+  function speak(text,onend){ if(onend) onend(); }
   function attachTrack(audio,src){ audio.querySelectorAll('track').forEach(t=>t.remove()); if(!src)return; const t=document.createElement('track'); t.kind='captions';t.srclang='en';t.label='English';t.src=src;t.default=state.ccOn; audio.appendChild(t); }
 
   function renderScene(){
@@ -203,7 +203,7 @@
 
   function playImpact(s,k){
     const im=s.impact[k]; stopAudio(); attachTrack(impactAudio,im.vtt);
-    if(im.file){ impactAudio.src=im.file; impactAudio.play().catch(()=>speak(im.narration||im.feedback||'')); } else speak(im.narration||im.feedback||'');
+    if(im.file){ impactAudio.src=im.file; impactAudio.play().catch(()=>{}); }
   }
 
   function certificateId(){
@@ -233,7 +233,7 @@
   $('backToStage').onclick=()=>route('stage',{stage:scenes[state.currentScene].stage});
   $('prevSceneBtn').onclick=()=>{ if(state.currentScene>0) route('scene',{index:state.currentScene-1}); };
   $('nextSceneBtn').onclick=()=>{ if(state.currentScene>=scenes.length-1) route('map'); else route('scene',{index:state.currentScene+1}); };
-  $('listenBtn').onclick=()=>{ const s=scenes[state.currentScene]; stopAudio(); attachTrack(promptAudio,s.promptVtt); if(s.promptFile){promptAudio.src=s.promptFile;promptAudio.play().catch(()=>speak(promptText(s)))}else speak(promptText(s)); };
+  $('listenBtn').onclick=()=>{ const s=scenes[state.currentScene]; stopAudio(); attachTrack(promptAudio,s.promptVtt); if(s.promptFile){promptAudio.src=s.promptFile;promptAudio.play().catch(()=>{});} };
   $('replayBtn').onclick=()=>{ if(lastImpact) playImpact(lastImpact.s,lastImpact.k); };
   $('ccBtn').onclick=()=>{ state.ccOn=!state.ccOn; saveState(); $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; $('promptCaption').classList.toggle('show',state.ccOn); $('impactCaption').classList.toggle('show',state.ccOn&&!$('inlineFeedback').hidden); };
   $('skillToggle').onclick=()=>{ const h=$('skillHud'); h.classList.toggle('expanded'); $('skillToggle').textContent=h.classList.contains('expanded')?'Hide skills':'View skills'; };
