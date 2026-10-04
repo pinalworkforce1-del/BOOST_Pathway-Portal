@@ -203,15 +203,12 @@
     sceneImg.onerror=null;
     sceneImg.onload=()=>sceneImg.classList.remove('media-failed');
     sceneImg.onerror=()=>{
-      if(sceneImg.dataset.retry!==mediaUrl){
-        sceneImg.dataset.retry=mediaUrl;
-        setTimeout(()=>{ sceneImg.src=mediaUrl+(mediaUrl.includes('?')?'&':'?')+'retry=1'; },250);
-      }else{
-        sceneImg.classList.add('media-failed');
-        sceneImg.alt='Scenario image unavailable. Continue with the scenario text.';
-      }
+      sceneImg.classList.add('media-failed');
+      sceneImg.alt='';
+      sceneImg.removeAttribute('src');
+      sceneImg.closest('.scene-visual')?.classList.add('media-failed');
     };
-    sceneImg.dataset.retry='';
+    sceneImg.closest('.scene-visual')?.classList.remove('media-failed');
     sceneImg.src=mediaUrl;
     $('sceneBadge').textContent=`R2W-S${String(s.id).padStart(2,'0')} • ${s.stage}`;
     $('sceneStageChip').textContent=s.stage; $('sceneTitle').textContent=s.title; $('sceneSetup').textContent=s.setup;
