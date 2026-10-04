@@ -100,6 +100,10 @@
   function stageAnswered(stage){ return stageScenes(stage).filter(s=>state.sceneSelections[s.id]).length; }
   function stageComplete(stage){ const list=stageScenes(stage); return list.length>0 && stageAnswered(stage)===list.length; }
   function allComplete(){ return answeredCount()===scenes.length; }
+  function stageUnlocked(stage){
+    const i=stageOrder.indexOf(stage);
+    return i<=0 || stageComplete(stageOrder[i-1]);
+  }
   function firstIncompleteIndex(stage){
     const list=stageScenes(stage);
     const s=list.find(x=>!state.sceneSelections[x.id]) || list[0];
@@ -136,10 +140,12 @@
     updateOverall();
     const cards=$('stageCards'); cards.innerHTML='';
     stageOrder.forEach((stage,i)=>{
-      const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total;
-      const b=document.createElement('button'); b.className='stage-card';
-      b.innerHTML=`<img src="${def.home}" alt=""><div class="stage-card-copy"><span>STAGE ${i+1}</span><h2>${stage}</h2><p>${def.description}</p><div class="stage-card-foot"><span class="status-pill ${complete?'complete':''}">${complete?'Complete':`${done} of ${total} complete`}</span><strong>${complete?'Review →':'Continue →'}</strong></div></div>`;
-      b.onclick=()=>route('stage',{stage}); cards.appendChild(b);
+      const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total, unlocked=stageUnlocked(stage);
+      const b=document.createElement('button'); b.className=`stage-card ${unlocked?'':'locked'}`; b.disabled=!unlocked;
+      const status=complete?'Complete':unlocked?`${done} of ${total} complete`:'Locked';
+      const action=complete?'Review →':unlocked?'Continue →':'Complete prior stage';
+      b.innerHTML=`<img src="${def.home}" alt=""><div class="stage-card-copy"><span>STAGE ${i+1}</span><h2>${stage}</h2><p>${def.description}</p><div class="stage-card-foot"><span class="status-pill ${complete?'complete':''}">${status}</span><strong>${action}</strong></div></div>`;
+      if(unlocked) b.onclick=()=>route('stage',{stage}); cards.appendChild(b);
     });
   }
 
@@ -242,11 +248,17 @@
 
   document.addEventListener('click',e=>{
     const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); route(r.dataset.route); }
-    const s=e.target.closest('[data-stage]'); if(s){ e.preventDefault(); route('stage',{stage:s.dataset.stage}); }
+    const s=e.target.closest('[data-stage]'); if(s){ e.preventDefault(); const stage=s.dataset.stage; if(stageUnlocked(stage)) route('stage',{stage}); }
   });
   $('backToStage').onclick=()=>route('stage',{stage:scenes[state.currentScene].stage});
   $('prevSceneBtn').onclick=()=>{ if(state.currentScene>0) route('scene',{index:state.currentScene-1}); };
-  $('nextSceneBtn').onclick=()=>{ if(state.currentScene>=scenes.length-1) route('map'); else route('scene',{index:state.currentScene+1}); };
+  $('nextSceneBtn').onclick=()=>{
+    const current=scenes[state.currentScene];
+    if(state.currentScene>=scenes.length-1){ route('map'); return; }
+    const next=scenes[state.currentScene+1];
+    if(next.stage!==current.stage){ route('map'); return; }
+    route('scene',{index:state.currentScene+1});
+  };
   $('listenBtn').onclick=()=>{ const s=scenes[state.currentScene]; stopAudio(); attachTrack(promptAudio,s.promptVtt); if(s.promptFile){promptAudio.src=s.promptFile;promptAudio.play().catch(()=>{});} };
   $('replayBtn').onclick=()=>{ if(lastImpact) playImpact(lastImpact.s,lastImpact.k); };
   $('ccBtn').onclick=()=>{ state.ccOn=!state.ccOn; saveState(); $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; $('promptCaption').classList.toggle('show',state.ccOn); $('impactCaption').classList.toggle('show',state.ccOn&&!$('inlineFeedback').hidden); };
