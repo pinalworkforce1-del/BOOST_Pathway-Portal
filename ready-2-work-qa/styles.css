@@ -32,3 +32,9 @@
 @media(max-width:900px){
   .scene-visual.media-failed{display:none}
 }
+
+@media(max-width:900px){
+  .scene-visual{display:none!important}
+  .scene-visual.media-loaded{display:block!important}
+  .scene-visual.media-failed{display:none!important}
+}
