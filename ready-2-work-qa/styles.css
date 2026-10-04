@@ -21,3 +21,10 @@
 .hs-resume .map-state-indicator{right:3%;top:7%}
 .hs-interview .map-state-indicator{right:3%;top:8%}
 .hs-cert .map-state-indicator{right:4%;top:8%}
+
+.scene-visual img.media-failed{height:auto;min-height:0;aspect-ratio:auto;object-fit:contain;background:var(--paper);padding:18px;color:#536676}
+@media(max-width:900px){
+  .scene-visual{width:100%;min-height:0;aspect-ratio:auto;background:#102233}
+  .scene-visual img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
+  .scene-visual img.media-failed{aspect-ratio:auto;min-height:84px;padding:18px;background:#eef2f5}
+}
