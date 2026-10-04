@@ -144,7 +144,7 @@
       h.querySelector('.map-state-indicator')?.remove();
       let complete=false, unlocked=true;
       if(h.dataset.stage){ complete=stageComplete(h.dataset.stage); unlocked=stageUnlocked(h.dataset.stage); }
-      else if(h.dataset.route==='certificate'){ complete=allComplete(); unlocked=allComplete(); }
+      else if(h.dataset.route==='certificate'){ complete=allComplete(); unlocked=true; }
       const indicator=document.createElement('span'); indicator.className='map-state-indicator';
       if(complete){ h.classList.add('map-complete'); indicator.textContent='✓'; indicator.setAttribute('aria-label','Complete'); }
       else if(!unlocked){ h.classList.add('map-locked'); indicator.textContent='🔒'; indicator.setAttribute('aria-label','Locked'); }
@@ -250,20 +250,28 @@
   function renderCertificate(){
     updateOverall(); recalcScores();
     $('participantName').value=state.participantName||'';
+    const earned=allComplete(), n=answeredCount(), total=scenes.length;
+    $('readinessProgressTitle').textContent=earned?'Work Ready Certificate earned':'Your progress so far';
+    $('readinessProgressMeta').textContent=earned?`${total} of ${total} scenarios complete • all Ready 2 Work areas complete`:`${n} of ${total} scenarios complete • your skill profile updates with every decision`;
+    $('readinessProgressBar').style.width=`${(n/total)*100}%`;
+    const stageStatus=$('readinessStageStatus'); stageStatus.innerHTML='';
+    stageOrder.forEach(stage=>{ const done=stageComplete(stage), unlocked=stageUnlocked(stage), el=document.createElement('div'); el.className=`readiness-stage-chip ${done?'complete':unlocked?'current':'locked'}`; el.innerHTML=`<strong>${done?'✓':unlocked?'→':'🔒'} ${stage}</strong><span>${done?'Complete':unlocked?(stageAnswered(stage)?`${stageAnswered(stage)} of ${stageScenes(stage).length} complete`:'Available'):'Locked'}</span>`; stageStatus.appendChild(el); });
+    $('masteryProfileTitle').textContent=earned?'Final Soft Skill Mastery Profile':'Current Soft Skill Progress';
     const grid=$('certificateSkills'); grid.innerHTML='';
-    skillOrder.forEach(k=>{ const m=mastery(k,'final'); const r=document.createElement('div'); r.className='cert-skill'; r.innerHTML=`<strong>${skillNames[k]}</strong><strong>${m.label}</strong>`; grid.appendChild(r); });
+    skillOrder.forEach(k=>{ const m=mastery(k,earned?'final':'live'); const r=document.createElement('div'); r.className='cert-skill'; r.innerHTML=`<strong>${skillNames[k]}</strong><strong>${m.label}</strong>`; grid.appendChild(r); });
     const resumeDone=stageComplete('Resume Retreat'), interviewDone=stageComplete('Interview Landing');
     $('resumeReadiness').textContent=resumeDone?'Complete':'In Progress'; $('interviewReadiness').textContent=interviewDone?'Complete':'In Progress';
     $('certificateDate').textContent=allComplete()?new Intl.DateTimeFormat('en-US',{month:'long',day:'numeric',year:'numeric'}).format(new Date()):'Pending completion';
     $('certificateId').textContent=certificateId();
-    $('certificateStatus').textContent=allComplete()?'Certificate earned':'Certificate progress';
-    $('certificateLock').classList.toggle('show',!allComplete());
-    $('certificateLockText').textContent=`Complete all ${scenes.length} currently published Ready 2 Work scenarios to unlock this first-run certificate. ${answeredCount()} of ${scenes.length} are complete.`;
-    $('printCertificateBtn').disabled=!allComplete();
+    $('certificateStatus').textContent=earned?'Certificate earned':'Work Readiness Progress';
+    $('certificateLock').classList.toggle('show',!earned);
+    $('certificateLock').querySelector('strong').textContent='Certificate in Progress';
+    $('certificateLockText').textContent=`Keep building your work-readiness evidence. ${n} of ${total} scenarios are complete. Your current skill profile is shown above; the final credential unlocks when all Ready 2 Work requirements are complete.`;
+    $('printCertificateBtn').disabled=!earned;
   }
 
   document.addEventListener('click',e=>{
-    const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); if(r.dataset.route!=='certificate'||allComplete()) route(r.dataset.route); }
+    const r=e.target.closest('[data-route]'); if(r){ e.preventDefault(); route(r.dataset.route); }
     const s=e.target.closest('[data-stage]'); if(s){ e.preventDefault(); const stage=s.dataset.stage; if(stageUnlocked(stage)) route('stage',{stage}); }
   });
   $('backToStage').onclick=()=>route('stage',{stage:scenes[state.currentScene].stage});
