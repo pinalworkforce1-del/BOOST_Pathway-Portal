@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#102d49">
 <title>BOOST Get 2 Work Ready</title>
-<link rel="stylesheet" href="styles.css?v=20261004-r2w9">
+<link rel="stylesheet" href="styles.css?v=20261004-r2w10">
 </head>
 <body>
 <div class="app-shell">
@@ -78,13 +78,18 @@
 
   <main id="viewCertificate" class="view certificate-view" hidden>
     <section class="certificate-toolbar"><button class="ghost-btn dark" data-route="map">← Ready 2 Work map</button><div><span class="eyebrow">FINAL MILESTONE</span><strong id="certificateStatus"></strong></div><button id="printCertificateBtn" class="primary-btn" type="button">Print / Save PDF</button></section>
-    <section id="certificate" class="certificate-sheet">
+    <section id="readinessProgress" class="readiness-progress">
+        <div><span class="eyebrow">WORK READINESS PROGRESS</span><h2 id="readinessProgressTitle">Your progress so far</h2><p id="readinessProgressMeta"></p></div>
+        <div class="readiness-progress-track"><i id="readinessProgressBar"></i></div>
+        <div id="readinessStageStatus" class="readiness-stage-status"></div>
+      </section>
+      <section id="certificate" class="certificate-sheet">
       <img class="certificate-bg" src="assests/r2w-certificate-bg.webp" alt="">
       <div class="certificate-content">
         <div class="cert-brand-row"><div class="azwork-lockup"><span class="azwork-mark">ARIZONA@WORK</span><small>Pinal County</small></div><div class="boost-lockup">BOOST<br><small>GET 2 WORK READY</small></div></div>
         <div class="cert-title"><span>CERTIFICATE OF WORK READINESS</span><h1>BOOST Work Ready Certificate</h1><p>This recognizes demonstrated work-readiness evidence across soft skills, resume readiness, and interview readiness.</p></div>
         <div class="name-block"><label for="participantName">Presented to</label><input id="participantName" type="text" autocomplete="name" placeholder="Participant Name"></div>
-        <div class="mastery-title">Soft Skill Mastery Profile</div><div id="certificateSkills" class="certificate-skills"></div>
+        <div class="mastery-title" id="masteryProfileTitle">Soft Skill Mastery Profile</div><div id="certificateSkills" class="certificate-skills"></div>
         <div class="readiness-row"><div><strong>Resume Readiness</strong><span id="resumeReadiness"></span></div><div><strong>Interview Readiness</strong><span id="interviewReadiness"></span></div></div>
         <div class="cert-footer"><div><small>Completion date</small><strong id="certificateDate"></strong></div><div><small>Certificate ID</small><strong id="certificateId"></strong></div><div class="signature"><span></span><small>ARIZONA@WORK Pinal County</small></div></div>
         <div id="certificateLock" class="certificate-lock"><strong>Certificate Locked</strong><span id="certificateLockText"></span></div>
@@ -103,6 +108,6 @@
 </dialog>
 
 <script src="course-data.js?v=20261004-r2w5"></script>
-<script src="app.js?v=20261004-r2w9"></script>
+<script src="app.js?v=20261004-r2w10"></script>
 </body>
 </html>
