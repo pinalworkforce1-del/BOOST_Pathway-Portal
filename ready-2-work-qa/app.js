@@ -11,19 +11,19 @@
     'Soft Skills Base Camp': {
       number: '1 • SOFT SKILLS BASE CAMP',
       tagline: 'Build the skills you’ll take to work.',
-      home: 'assets/r2w-base-camp-home.webp',
+      home: 'assests/r2w-base-camp-home.webp',
       description: 'Practice the everyday decisions employers notice: communication, professionalism, problem solving, teamwork, planning, and quality.'
     },
     'Resume Retreat': {
       number: '2 • RESUME RETREAT',
       tagline: 'Show employers what you bring.',
-      home: 'assets/r2w-resume-retreat-home.webp',
+      home: 'assests/r2w-resume-retreat-home.webp',
       description: 'Turn real experience into credible, employer-ready resume evidence.'
     },
     'Interview Landing': {
       number: '3 • INTERVIEW LANDING',
       tagline: 'Practice telling your story with confidence.',
-      home: 'assets/r2w-interview-landing-home.webp',
+      home: 'assests/r2w-interview-landing-home.webp',
       description: 'Prepare for interview moments that require judgment, confidence, and clear examples.'
     }
   };
