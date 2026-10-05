@@ -190,10 +190,23 @@
 
   let resumeStep=0;
   function resumeData(){ state.resumeBuilder=state.resumeBuilder||{step:0,target:'',summary:'',experience:'',evidence:'',skills:'',education:'',integrity:false,ready:false,complete:false}; return state.resumeBuilder; }
+  const occupationAliases=[
+    {match:/^(cdl|truck|truck driver|tractor trailer|tractor-trailer)$/i,title:'Heavy and Tractor-Trailer Truck Drivers'},
+    {match:/^(cnc|cnc operator|cnc machinist)$/i,title:'Computer Numerically Controlled Tool Operators'},
+    {match:/^(it|it support|help desk|tech support)$/i,title:'Computer User Support Specialists'},
+    {match:/^(network|network support|network technician)$/i,title:'Computer Network Support Specialists'},
+    {match:/^(weld|welder|welding)$/i,title:'Welders, Cutters, Solderers, and Brazers'},
+    {match:/^(electrician|electrical)$/i,title:'Electricians'},
+    {match:/^(hvac|heating and cooling|air conditioning)$/i,title:'Heating, Air Conditioning, and Refrigeration Mechanics and Installers'},
+    {match:/^(customer service|csr)$/i,title:'Customer Service Representatives'},
+    {match:/^(medical assistant|ma)$/i,title:'Medical Assistants'},
+    {match:/^(cna|nursing assistant)$/i,title:'Nursing Assistants'}
+  ];
+  function normalizeOccupationEntry(value){const v=String(value||'').trim();const hit=occupationAliases.find(x=>x.match.test(v));return hit?hit.title:v;}
   function renderResumeBuilder(){
     const d=resumeData(); resumeStep=Math.max(0,Math.min(3,d.step||0));
     const fields={rbTarget:'target',rbSummary:'summary',rbExperience:'experience',rbEvidence:'evidence',rbSkills:'skills',rbEducation:'education'};
-    Object.entries(fields).forEach(([id,key])=>{ $(id).value=d[key]||''; $(id).oninput=e=>{d[key]=e.target.value; saveState(); renderResumePreview();}; });
+    Object.entries(fields).forEach(([id,key])=>{ $(id).value=d[key]||''; $(id).oninput=e=>{d[key]=e.target.value; saveState(); renderResumePreview();}; }); $('rbTarget').onchange=e=>{const formal=normalizeOccupationEntry(e.target.value);d.target=formal;e.target.value=formal;saveState();renderResumePreview();};
     $('rbIntegrity').checked=!!d.integrity; $('rbReady').checked=!!d.ready;
     $('rbIntegrity').onchange=e=>{d.integrity=e.target.checked; saveState();}; $('rbReady').onchange=e=>{d.ready=e.target.checked; saveState();};
     document.querySelectorAll('.resume-step').forEach((el,i)=>el.hidden=i!==resumeStep);
