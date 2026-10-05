@@ -216,6 +216,31 @@
     renderResumePreview();
   }
   function renderResumePreview(){ const d=resumeData(); $('rpName').textContent=state.participantName||'Your Name'; $('rpTarget').textContent=d.target||'Target occupation'; $('rpSummary').textContent=d.summary||'Your professional summary will appear here.'; $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; }
+  const R2W_AI_URL='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/ready2work-resume-ai';
+  const R2W_AI_KEY='sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF';
+  async function callR2WResumeAI(body){const res=await fetch(R2W_AI_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':R2W_AI_KEY},body:JSON.stringify(body)});let data={};try{data=await res.json()}catch(_){}if(!res.ok)throw new Error(data?.message||data?.error||'Rosie AI is unavailable right now.');return data}
+  function showResumeCoach(id,html){const el=$(id);if(!el)return;el.hidden=false;el.innerHTML=html}
+  async function rosieBuildBullet(){
+    const d=resumeData(),btn=$('rbBuildBullet'),choices=$('rbBulletChoices');if(!String(d.experience||'').trim()){showResumeCoach('rbBulletCoach','<b>Tell me about the experience first.</b><br>Use normal words. I’ll help shape it for the résumé.');$('rbExperience').focus();return}
+    btn.disabled=true;btn.textContent='Rosie is working…';choices.innerHTML='';showResumeCoach('rbBulletCoach','<b>Working from your real experience…</b><br>I won’t add facts you didn’t give me.');
+    try{const data=await callR2WResumeAI({mode:'bullet',evidence:{targetOccupation:d.target,experience:d.experience,context:d.evidence}});
+      if(data.needsClarification){showResumeCoach('rbBulletCoach','<b>I need one detail before I write it.</b><br>'+escapeHtml(data.question||'Tell me one more detail about what you did.')+'<br><small>Add the answer in Evidence or accomplishments, then try again.</small>');$('rbEvidence').focus();return}
+      if(data.integrityFailed)throw new Error('Rosie caught an unsupported detail and stopped the draft. Add more factual detail and try again.');
+      const drafts=[{label:'Clear & Direct',text:data.clearDirect},{label:'Skills Forward',text:data.skillsForward}].filter(x=>x.text);
+      showResumeCoach('rbBulletCoach','<b>Rosie drafted these only from what you entered.</b><br>Choose one, then edit it if you want.');
+      choices.innerHTML=drafts.map((x,i)=>'<button type="button" class="rosie-draft" data-rb-draft="'+i+'"><b>'+escapeHtml(x.label)+'</b><span>'+escapeHtml(x.text)+'</span></button>').join('');
+      choices.querySelectorAll('[data-rb-draft]').forEach(b=>b.onclick=()=>{d.evidence=drafts[Number(b.dataset.rbDraft)].text;$('rbEvidence').value=d.evidence;saveState();renderResumePreview();choices.querySelectorAll('.rosie-draft').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
+    }catch(e){showResumeCoach('rbBulletCoach','<b>Rosie AI is temporarily unavailable.</b><br>'+escapeHtml(e.message||'Your own words are still saved.'))}finally{btn.disabled=false;btn.textContent='✦ Rosie: Turn This Into Résumé Evidence'}
+  }
+  async function rosieBuildSummary(){
+    const d=resumeData(),btn=$('rbDraftSummary');btn.disabled=true;btn.textContent='Rosie is drafting…';showResumeCoach('rbSummaryCoach','<b>Building from your résumé evidence…</b>');
+    try{const data=await callR2WResumeAI({mode:'summary',evidence:{targetOccupation:d.target,experience:d.experience,evidence:d.evidence,skills:d.skills,education:d.education}});
+      if(data.needsClarification){showResumeCoach('rbSummaryCoach','<b>I need a little more evidence first.</b><br>'+escapeHtml(data.question||'Add more experience or skills, then try again.'));return}
+      if(!data.summary)throw new Error('No summary was returned.');d.summary=data.summary;$('rbSummary').value=d.summary;saveState();renderResumePreview();showResumeCoach('rbSummaryCoach','<b>Draft ready.</b><br>Read it and change anything that doesn’t sound like you.');
+    }catch(e){showResumeCoach('rbSummaryCoach','<b>Rosie AI is temporarily unavailable.</b><br>'+escapeHtml(e.message||'Your current résumé is still saved.'))}finally{btn.disabled=false;btn.textContent='✦ Rosie: Help Build My Summary'}
+  }
+  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+
   function validateResumeStep(){ const d=resumeData(); if(resumeStep===0)return d.target.trim()&&d.summary.trim(); if(resumeStep===1)return d.experience.trim()&&d.evidence.trim(); if(resumeStep===2)return d.skills.trim()&&d.education.trim(); return d.integrity&&d.ready; }
 
   function renderSkillHud(changed={}){
@@ -350,6 +375,8 @@
     if(state.currentScene<scenes.length-1) route('scene',{index:state.currentScene+1});
   };
   $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
+  $('rbBuildBullet').onclick=rosieBuildBullet;
+  $('rbDraftSummary').onclick=rosieBuildSummary;
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
   $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
   $('listenBtn').onclick=()=>{ state.audioOn=!state.audioOn; saveState(); updateAudioControl(); if(state.audioOn) playPrompt(scenes[state.currentScene]); else stopAudio(); };
