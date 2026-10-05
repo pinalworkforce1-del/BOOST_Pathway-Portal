@@ -132,6 +132,9 @@
       if(Number.isInteger(opts.index)) state.currentScene=Math.max(0,Math.min(scenes.length-1,opts.index));
       $('viewScene').hidden=false; renderScene(); history.replaceState(null,'',`#scene-${scenes[state.currentScene].id}`); window.scrollTo(0,0); return;
     }
+    if(name==='resume-builder'){
+      $('viewResumeBuilder').hidden=false; renderResumeBuilder(); history.replaceState(null,'','#resume-builder'); window.scrollTo(0,0); return;
+    }
     if(name==='certificate'){
       $('viewCertificate').hidden=false; renderCertificate(); history.replaceState(null,'','#certificate'); window.scrollTo(0,0); return;
     }
