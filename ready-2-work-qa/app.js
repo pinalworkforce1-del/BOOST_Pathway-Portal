@@ -214,7 +214,7 @@
     $('rbIntegrity').onchange=e=>{d.integrity=e.target.checked; saveState();}; $('rbReady').onchange=e=>{d.ready=e.target.checked; saveState();};
     document.querySelectorAll('.resume-step').forEach((el,i)=>el.hidden=i!==resumeStep);
     const stepper=$('resumeStepper'); stepper.innerHTML=''; ['Studio setup','Experience discovery','Skills, education & target','Format, build & verify'].forEach((x,i)=>{const b=document.createElement('span');b.className='resume-step-dot '+(i<resumeStep?'done':i===resumeStep?'current':'');b.textContent=(i<resumeStep?'✓ ':i===resumeStep?'→ ':'')+x;stepper.appendChild(b);});
-    $('rbPrev').disabled=resumeStep===0; $('rbNext').textContent=resumeStep===3?(d.complete?'Résumé complete ✓':'Complete Résumé ✓'):'Continue →';
+    $('rbPrev').disabled=resumeStep===0; $('rbNext').textContent=resumeStep===3?(d.complete?'Résumé complete ✓':'Complete Résumé ✓'):resumeStep===1?'Continue to Skills & Education →':'Continue →';
     $('resumeBuilderStatus').textContent=d.complete?'Complete':'Step '+(resumeStep+1)+' of 4';
     const rosieGuidance=[
       {title:'Set up your Résumé Studio.',message:"Give me the basics employers need, then tell me where you're headed. If you already have a résumé, we'll be able to bring it into this same evidence-based process.",example:'For privacy, this QA version keeps contact information in this browser while we build secure participant storage.'},
@@ -388,9 +388,10 @@
   $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
   if($('rbBuildBullet')) $('rbBuildBullet').onclick=rosieBuildBullet;
   if($('rbAddExperience')) $('rbAddExperience').onclick=addResumeExperience;
-  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();d.evidence='';$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;$('rbEvidence').focus()};
+  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.evidence='';$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;saveState();$('rbEvidence').focus()};
   if($('rbAnalyzeJob')) $('rbAnalyzeJob').onclick=()=>{const d=resumeData();const panel=$('rbAlignmentPanel');if(!d.jobDescription.trim()){showResumeCoach('rbJobCoach','<b>Paste the job description first.</b><br>Then Rosie can compare it with your verified evidence.');return}showResumeCoach('rbJobCoach','<b>Target job saved.</b><br>The alignment panel separates what your evidence supports from what you should not claim. Live semantic matching is the next AI connection.');if(panel)panel.hidden=false;};
   if($('rbResumeUpload')) $('rbResumeUpload').onchange=e=>{const f=e.target.files?.[0];if(f)alert('QA only: '+f.name+' was selected, but it has not been uploaded or transmitted. Secure résumé import will be wired before production.')};
+  if($('rbSaveLater')) $('rbSaveLater').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.step=resumeStep;d.savedForLaterAt=new Date().toISOString();saveState();route('map');setTimeout(()=>{const note=document.createElement('div');note.className='save-later-toast';note.innerHTML='<strong>Progress saved.</strong><span>Résumé Studio will reopen where you left off.</span>';document.body.appendChild(note);setTimeout(()=>note.classList.add('show'),30);setTimeout(()=>{note.classList.remove('show');setTimeout(()=>note.remove(),250)},3500)},50)};
   if($('rbDraftSummary')) $('rbDraftSummary').onclick=rosieBuildSummary;
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
   $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
