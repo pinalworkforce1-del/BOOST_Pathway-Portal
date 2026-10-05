@@ -36,7 +36,8 @@
     sceneSelections: {},
     skillScores: {COM:0,PRO:0,PSA:0,TEAM:0,TIME:0,QUAL:0},
     participantName: '',
-    firstOpened: new Date().toISOString()
+    firstOpened: new Date().toISOString(),
+    resumeBuilder: {step:0,target:'',summary:'',experience:'',evidence:'',skills:'',education:'',integrity:false,ready:false,complete:false}
   };
   let activeStage = stageOrder[0];
   let lastImpact = null;
@@ -99,7 +100,7 @@
   function answeredCount(){ return Object.keys(state.sceneSelections).filter(id=>scenes.some(s=>String(s.id)===String(id))).length; }
   function stageScenes(stage){ return scenes.filter(s=>s.stage===stage); }
   function stageAnswered(stage){ return stageScenes(stage).filter(s=>state.sceneSelections[s.id]).length; }
-  function stageComplete(stage){ const list=stageScenes(stage); return list.length>0 && stageAnswered(stage)===list.length; }
+  function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; return scenariosDone; }
   function allComplete(){ return answeredCount()===scenes.length; }
   function stageUnlocked(stage){
     const i=stageOrder.indexOf(stage);
@@ -171,7 +172,35 @@
     $('requiredPathTitle').textContent=complete?'Review required scenarios':'Continue required scenarios';
     $('requiredPathMeta').textContent=complete?`${total} of ${total} complete • revisit any decision`:`${done} of ${total} complete • skill impact updates after every decision`;
     $('requiredPathBtn').onclick=()=>route('scene',{index:firstIncompleteIndex(stage)});
+    const grid=$('stageExperienceGrid'); grid.querySelectorAll('.resume-builder-card').forEach(x=>x.remove());
+    if(stage==='Resume Retreat'){
+      const scenariosDone=done===total, rb=state.resumeBuilder||{};
+      const b=document.createElement('button'); b.type='button'; b.className='board-card resume-builder-card'+(scenariosDone?'':' locked'); b.disabled=!scenariosDone;
+      b.innerHTML=`<span class="card-kicker">REQUIRED • STEP 2</span><strong>Résumé Builder</strong><small>${!scenariosDone?'Complete the 5 Resume Retreat decisions to unlock.':rb.complete?'Employer-ready résumé complete ✓':'Build, review, and approve your employer-ready résumé.'}</small><span class="card-arrow">${rb.complete?'✓':'→'}</span>`;
+      if(scenariosDone) b.onclick=()=>route('resume-builder'); grid.prepend(b);
+      $('requiredPathTitle').textContent=scenariosDone?'Review Resume Decision Trail':'Continue Resume Decision Trail';
+      $('requiredPathMeta').textContent=`${done} of ${total} decisions complete • Résumé Builder ${rb.complete?'complete':scenariosDone?'unlocked':'locked'}`;
+      $('stageHomeProgress').textContent=stageComplete(stage)?'Complete':scenariosDone?'Builder required':`${done} of ${total} decisions`;
+    }
   }
+
+
+  let resumeStep=0;
+  function resumeData(){ state.resumeBuilder=state.resumeBuilder||{step:0,target:'',summary:'',experience:'',evidence:'',skills:'',education:'',integrity:false,ready:false,complete:false}; return state.resumeBuilder; }
+  function renderResumeBuilder(){
+    const d=resumeData(); resumeStep=Math.max(0,Math.min(3,d.step||0));
+    const fields={rbTarget:'target',rbSummary:'summary',rbExperience:'experience',rbEvidence:'evidence',rbSkills:'skills',rbEducation:'education'};
+    Object.entries(fields).forEach(([id,key])=>{ $(id).value=d[key]||''; $(id).oninput=e=>{d[key]=e.target.value; saveState(); renderResumePreview();}; });
+    $('rbIntegrity').checked=!!d.integrity; $('rbReady').checked=!!d.ready;
+    $('rbIntegrity').onchange=e=>{d.integrity=e.target.checked; saveState();}; $('rbReady').onchange=e=>{d.ready=e.target.checked; saveState();};
+    document.querySelectorAll('.resume-step').forEach((el,i)=>el.hidden=i!==resumeStep);
+    const stepper=$('resumeStepper'); stepper.innerHTML=''; ['Direction','Experience','Skills & education','Review'].forEach((x,i)=>{const b=document.createElement('span');b.className='resume-step-dot '+(i<resumeStep?'done':i===resumeStep?'current':'');b.textContent=(i<resumeStep?'✓ ':i===resumeStep?'→ ':'')+x;stepper.appendChild(b);});
+    $('rbPrev').disabled=resumeStep===0; $('rbNext').textContent=resumeStep===3?(d.complete?'Résumé complete ✓':'Complete Résumé ✓'):'Continue →';
+    $('resumeBuilderStatus').textContent=d.complete?'Complete':'Step '+(resumeStep+1)+' of 4';
+    renderResumePreview();
+  }
+  function renderResumePreview(){ const d=resumeData(); $('rpName').textContent=state.participantName||'Your Name'; $('rpTarget').textContent=d.target||'Target occupation'; $('rpSummary').textContent=d.summary||'Your professional summary will appear here.'; $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; }
+  function validateResumeStep(){ const d=resumeData(); if(resumeStep===0)return d.target.trim()&&d.summary.trim(); if(resumeStep===1)return d.experience.trim()&&d.evidence.trim(); if(resumeStep===2)return d.skills.trim()&&d.education.trim(); return d.integrity&&d.ready; }
 
   function renderSkillHud(changed={}){
     const grid=$('skillGrid'); const compact=$('compactSkillStrip'); grid.innerHTML=''; compact.innerHTML='';
@@ -298,6 +327,9 @@
     if(next.stage!==current.stage){ route('map'); return; }
     route('scene',{index:state.currentScene+1});
   };
+  $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
+  $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
+  $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
   $('listenBtn').onclick=()=>{ state.audioOn=!state.audioOn; saveState(); updateAudioControl(); if(state.audioOn) playPrompt(scenes[state.currentScene]); else stopAudio(); };
   $('replayBtn').onclick=()=>{ if(lastImpact) playImpact(lastImpact.s,lastImpact.k); };
   $('ccBtn').onclick=()=>{ state.ccOn=!state.ccOn; saveState(); $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; $('promptCaption').classList.toggle('show',state.ccOn); $('impactCaption').classList.toggle('show',state.ccOn&&!$('inlineFeedback').hidden); };
@@ -312,6 +344,7 @@
   const hash=location.hash||'#map';
   if(hash.startsWith('#scene-')){ const id=Number(hash.split('-')[1]); const idx=scenes.findIndex(s=>s.id===id); route('scene',{index:idx>=0?idx:0}); }
   else if(hash==='#certificate') route('certificate');
+  else if(hash==='#resume-builder'){ route('resume-builder'); }
   else if(hash.startsWith('#stage-')){ const wanted=hash.slice(7); const stage=stageOrder.find(s=>slug(s)===wanted)||stageOrder[0]; route('stage',{stage}); }
   else route('map');
 })();
