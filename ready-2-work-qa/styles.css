@@ -74,3 +74,13 @@
 .save-later-toast.show{opacity:1;transform:translateY(0)}
 .save-later-toast span{font-size:13px;opacity:.9}
 @media(max-width:760px){.resume-builder-controls{align-items:stretch}.resume-exit-actions{width:100%;justify-content:stretch}.resume-exit-actions button{flex:1 1 180px}.save-later-toast{left:14px;right:14px;bottom:14px}}
+
+/* R2W42 • interactive alignment gap coaching */
+.gap-explore-item{padding:12px 0;border-top:1px solid #dbe3e8}
+.gap-explore-item:first-of-type{margin-top:8px}
+.gap-explore-item p{margin:0 0 9px}
+.gap-explore-btn{border:1px solid #7b4ab5;background:#fff;color:#63329c;border-radius:10px;padding:8px 11px;font-weight:800;cursor:pointer}
+.gap-explore-convo{margin-top:10px;padding:12px;border-radius:12px;background:#fff8df;border-left:4px solid #efb51d}
+.rosie-gap-question textarea{width:100%;margin:10px 0}
+.rosie-mini-badge{display:inline-block;background:#7541ad;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
+.gap-reply-actions{display:flex;gap:8px;flex-wrap:wrap}
