@@ -189,7 +189,10 @@
 
 
   let resumeStep=0;
-  function resumeData(){ state.resumeBuilder=state.resumeBuilder||{step:0,target:'',summary:'',experience:'',evidence:'',skills:'',education:'',integrity:false,ready:false,complete:false}; return state.resumeBuilder; }
+  function resumeData(){ state.resumeBuilder=state.resumeBuilder||{step:0,target:'',summary:'',experience:'',evidence:'',skills:'',education:'',integrity:false,ready:false,complete:false}; const d=state.resumeBuilder;if(!Array.isArray(d.experiences))d.experiences=[];if(d.experiences.length===0&&(String(d.experience||'').trim()||String(d.evidence||'').trim()))d.experiences.push({experience:d.experience||'',evidence:d.evidence||''});if(!Number.isInteger(d.activeExperience))d.activeExperience=0;return d; }
+  function syncActiveExperience(d){if(!Array.isArray(d.experiences))d.experiences=[];const has=String(d.experience||'').trim()||String(d.evidence||'').trim();if(has)d.experiences[d.activeExperience||0]={experience:d.experience||'',evidence:d.evidence||''};}
+  function loadExperience(d,i){syncActiveExperience(d);const x=d.experiences[i]||{experience:'',evidence:''};d.activeExperience=i;d.experience=x.experience||'';d.evidence=x.evidence||'';saveState();renderResumeBuilder();}
+  function addResumeExperience(){const d=resumeData();syncActiveExperience(d);d.experiences.push({experience:'',evidence:''});d.activeExperience=d.experiences.length-1;d.experience='';d.evidence='';saveState();renderResumeBuilder();$('rbExperience')?.focus();}
   const occupationAliases=[
     {match:/^(cdl|truck|truck driver|tractor trailer|tractor-trailer)$/i,title:'Heavy and Tractor-Trailer Truck Drivers'},
     {match:/^(cnc|cnc operator|cnc machinist)$/i,title:'Computer Numerically Controlled Tool Operators'},
@@ -219,9 +222,10 @@
       {title:'What can you actually demonstrate?',message:"Think about tools, software, equipment, technical abilities, workplace skills, education, training, licenses, and credentials. Only claim what you can explain or demonstrate.",example:'If your experience already shows a skill, you can still list it here—but keep it specific and truthful.'},
       {title:'Now we build the top of the résumé.',message:"I have your target, experience, evidence, skills, and education. I can draft a professional summary from those facts. Then you make the final call.",example:'Before you finish, ask yourself: “Could I comfortably explain every statement in an interview?”'}
     ], rg=rosieGuidance[resumeStep]; if($('rosieStepTitle'))$('rosieStepTitle').textContent=rg.title;if($('rosieStepMessage'))$('rosieStepMessage').textContent=rg.message;if($('rosieStepExample'))$('rosieStepExample').textContent=rg.example;
+    if(resumeStep===1){syncActiveExperience(d);const list=$('rbExperienceList');if(list){list.innerHTML=d.experiences.map((x,i)=>'<button type="button" class="experience-chip '+(i===d.activeExperience?'active':'')+'" data-exp-index="'+i+'"><span>Experience '+(i+1)+'</span><small>'+(escapeHtml((x.experience||'').slice(0,48))||'New experience')+'</small></button>').join('');list.querySelectorAll('[data-exp-index]').forEach(b=>b.onclick=()=>loadExperience(d,Number(b.dataset.expIndex)));}}
     renderResumePreview();
   }
-  function renderResumePreview(){ const d=resumeData(); $('rpName').textContent=state.participantName||'Your Name'; $('rpTarget').textContent=d.target||'Target occupation'; $('rpSummary').textContent=d.summary||'Your professional summary will appear here.'; $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; }
+  function renderResumePreview(){ const d=resumeData();syncActiveExperience(d); $('rpName').textContent=state.participantName||'Your Name'; $('rpTarget').textContent=d.target||'Target occupation'; $('rpSummary').textContent=d.summary||'Your professional summary will appear here.';const pl=$('rpExperienceList');if(pl){const xs=d.experiences.filter(x=>String(x.experience||'').trim()||String(x.evidence||'').trim());pl.innerHTML=xs.map((x,i)=>'<div class="preview-experience"><strong>'+(escapeHtml(x.experience||('Experience '+(i+1))))+'</strong>'+(x.evidence?'<p>'+escapeHtml(x.evidence)+'</p>':'')+'</div>').join('');$('rpExperience').hidden=xs.length>0;$('rpEvidence').hidden=xs.length>0;} $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; }
   const R2W_AI_URL='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/ready2work-resume-ai';
   const R2W_AI_KEY='sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF';
   async function callR2WResumeAI(body){const res=await fetch(R2W_AI_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':R2W_AI_KEY},body:JSON.stringify(body)});let data={};try{data=await res.json()}catch(_){}if(!res.ok)throw new Error(data?.message||data?.error||'Rosie AI is unavailable right now.');return data}
@@ -383,6 +387,7 @@
   };
   $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
   if($('rbBuildBullet')) $('rbBuildBullet').onclick=rosieBuildBullet;
+  if($('rbAddExperience')) $('rbAddExperience').onclick=addResumeExperience;
   if($('rbDraftSummary')) $('rbDraftSummary').onclick=rosieBuildSummary;
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
   $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
