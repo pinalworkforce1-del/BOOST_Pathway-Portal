@@ -375,8 +375,8 @@
     if(state.currentScene<scenes.length-1) route('scene',{index:state.currentScene+1});
   };
   $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
-  $('rbBuildBullet').onclick=rosieBuildBullet;
-  $('rbDraftSummary').onclick=rosieBuildSummary;
+  if($('rbBuildBullet')) $('rbBuildBullet').onclick=rosieBuildBullet;
+  if($('rbDraftSummary')) $('rbDraftSummary').onclick=rosieBuildSummary;
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
   $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
   $('listenBtn').onclick=()=>{ state.audioOn=!state.audioOn; saveState(); updateAudioControl(); if(state.audioOn) playPrompt(scenes[state.currentScene]); else stopAudio(); };
