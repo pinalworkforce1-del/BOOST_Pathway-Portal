@@ -231,7 +231,7 @@
     btn.disabled=true;btn.textContent='Rosie is working…';choices.innerHTML='';showResumeCoach('rbBulletCoach','<b>Working from your real experience…</b><br>I won’t add facts you didn’t give me.');
     try{const data=await callR2WResumeAI({mode:'bullet',evidence:{targetOccupation:d.target,experience:d.experience,context:d.evidence}});
       if(data.needsClarification){showResumeCoach('rbBulletCoach','<b>I need one detail before I write it.</b><br>'+escapeHtml(data.question||'Tell me one more detail about what you did.')+'<br><small>Add the answer in Evidence or accomplishments, then try again.</small>');$('rbEvidence').focus();return}
-      if(data.integrityFailed){showResumeCoach('rbBulletCoach','<b>Rosie wants to verify one detail before using it.</b><br>I caught wording that may go beyond what you entered. Add a little more detail about that responsibility or result, then ask me again.');return}
+      if(data.integrityFailed){startRosieClarification(data.question||'Can you give me one more factual detail so I can verify that wording?','verify');return}
       const drafts=[{label:'Clear & Direct',text:data.clearDirect},{label:'Skills Forward',text:data.skillsForward}].filter(x=>x.text);
       showResumeCoach('rbBulletCoach','<b>Rosie drafted these only from what you entered.</b><br>Choose one, then edit it if you want.');
       choices.innerHTML=drafts.map((x,i)=>'<button type="button" class="rosie-draft" data-rb-draft="'+i+'"><b>'+escapeHtml(x.label)+'</b><span>'+escapeHtml(x.text)+'</span></button>').join('');
