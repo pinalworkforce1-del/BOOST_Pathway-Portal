@@ -231,12 +231,12 @@
     btn.disabled=true;btn.textContent='Rosie is working…';choices.innerHTML='';showResumeCoach('rbBulletCoach','<b>Working from your real experience…</b><br>I won’t add facts you didn’t give me.');
     try{const data=await callR2WResumeAI({mode:'bullet',evidence:{targetOccupation:d.target,experience:d.experience,context:d.evidence}});
       if(data.needsClarification){showResumeCoach('rbBulletCoach','<b>I need one detail before I write it.</b><br>'+escapeHtml(data.question||'Tell me one more detail about what you did.')+'<br><small>Add the answer in Evidence or accomplishments, then try again.</small>');$('rbEvidence').focus();return}
-      if(data.integrityFailed)throw new Error('Rosie caught an unsupported detail and stopped the draft. Add more factual detail and try again.');
+      if(data.integrityFailed){showResumeCoach('rbBulletCoach','<b>Rosie wants to verify one detail before using it.</b><br>I caught wording that may go beyond what you entered. Add a little more detail about that responsibility or result, then ask me again.');return}
       const drafts=[{label:'Clear & Direct',text:data.clearDirect},{label:'Skills Forward',text:data.skillsForward}].filter(x=>x.text);
       showResumeCoach('rbBulletCoach','<b>Rosie drafted these only from what you entered.</b><br>Choose one, then edit it if you want.');
       choices.innerHTML=drafts.map((x,i)=>'<button type="button" class="rosie-draft" data-rb-draft="'+i+'"><b>'+escapeHtml(x.label)+'</b><span>'+escapeHtml(x.text)+'</span></button>').join('');
       choices.querySelectorAll('[data-rb-draft]').forEach(b=>b.onclick=()=>{d.evidence=drafts[Number(b.dataset.rbDraft)].text;$('rbEvidence').value=d.evidence;saveState();renderResumePreview();choices.querySelectorAll('.rosie-draft').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
-    }catch(e){showResumeCoach('rbBulletCoach','<b>Rosie AI is temporarily unavailable.</b><br>'+escapeHtml(e.message||'Your own words are still saved.'))}finally{btn.disabled=false;btn.textContent='✦ Rosie: Turn This Into Résumé Evidence'}
+    }catch(e){showResumeCoach('rbBulletCoach','<b>Rosie could not complete that draft.</b><br>'+escapeHtml(e.message||'Your own words are still saved. Please try again.'))}finally{btn.disabled=false;btn.textContent='✦ Rosie: Turn This Into Résumé Evidence'}
   }
   async function rosieBuildSummary(){
     const d=resumeData(),btn=$('rbDraftSummary');btn.disabled=true;btn.textContent='Rosie is drafting…';showResumeCoach('rbSummaryCoach','<b>Building from your résumé evidence…</b>');
