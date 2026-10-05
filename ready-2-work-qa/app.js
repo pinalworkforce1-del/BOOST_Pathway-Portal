@@ -210,9 +210,15 @@
     $('rbIntegrity').checked=!!d.integrity; $('rbReady').checked=!!d.ready;
     $('rbIntegrity').onchange=e=>{d.integrity=e.target.checked; saveState();}; $('rbReady').onchange=e=>{d.ready=e.target.checked; saveState();};
     document.querySelectorAll('.resume-step').forEach((el,i)=>el.hidden=i!==resumeStep);
-    const stepper=$('resumeStepper'); stepper.innerHTML=''; ['Direction','Experience','Skills & education','Review'].forEach((x,i)=>{const b=document.createElement('span');b.className='resume-step-dot '+(i<resumeStep?'done':i===resumeStep?'current':'');b.textContent=(i<resumeStep?'✓ ':i===resumeStep?'→ ':'')+x;stepper.appendChild(b);});
+    const stepper=$('resumeStepper'); stepper.innerHTML=''; ['Career direction','Experience discovery','Skills & education','Build & verify'].forEach((x,i)=>{const b=document.createElement('span');b.className='resume-step-dot '+(i<resumeStep?'done':i===resumeStep?'current':'');b.textContent=(i<resumeStep?'✓ ':i===resumeStep?'→ ':'')+x;stepper.appendChild(b);});
     $('rbPrev').disabled=resumeStep===0; $('rbNext').textContent=resumeStep===3?(d.complete?'Résumé complete ✓':'Complete Résumé ✓'):'Continue →';
     $('resumeBuilderStatus').textContent=d.complete?'Complete':'Step '+(resumeStep+1)+' of 4';
+    const rosieGuidance=[
+      {title:'Start with the destination.',message:"Tell me where you're headed. You don't need résumé language yet—we'll build that together from what you've actually done.",example:'Example: Type CDL and I’ll translate it to the employer-recognized occupation.'},
+      {title:'Tell me the story. I’ll help with the résumé language.',message:"Use normal words. I may ask a follow-up about tools, responsibilities, people served, problems solved, deadlines, safety, or results—but I won't fill in facts for you.",example:'Instead of trying to write a bullet, try: “I opened the store, counted the register, helped customers, and trained new people.”'},
+      {title:'What can you actually demonstrate?',message:"Think about tools, software, equipment, technical abilities, workplace skills, education, training, licenses, and credentials. Only claim what you can explain or demonstrate.",example:'If your experience already shows a skill, you can still list it here—but keep it specific and truthful.'},
+      {title:'Now we build the top of the résumé.',message:"I have your target, experience, evidence, skills, and education. I can draft a professional summary from those facts. Then you make the final call.",example:'Before you finish, ask yourself: “Could I comfortably explain every statement in an interview?”'}
+    ], rg=rosieGuidance[resumeStep]; if($('rosieStepTitle'))$('rosieStepTitle').textContent=rg.title;if($('rosieStepMessage'))$('rosieStepMessage').textContent=rg.message;if($('rosieStepExample'))$('rosieStepExample').textContent=rg.example;
     renderResumePreview();
   }
   function renderResumePreview(){ const d=resumeData(); $('rpName').textContent=state.participantName||'Your Name'; $('rpTarget').textContent=d.target||'Target occupation'; $('rpSummary').textContent=d.summary||'Your professional summary will appear here.'; $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; }
@@ -241,7 +247,7 @@
   }
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 
-  function validateResumeStep(){ const d=resumeData(); if(resumeStep===0)return d.target.trim()&&d.summary.trim(); if(resumeStep===1)return d.experience.trim()&&d.evidence.trim(); if(resumeStep===2)return d.skills.trim()&&d.education.trim(); return d.integrity&&d.ready; }
+  function validateResumeStep(){ const d=resumeData(); if(resumeStep===0)return d.target.trim(); if(resumeStep===1)return d.experience.trim()&&d.evidence.trim(); if(resumeStep===2)return d.skills.trim()||d.education.trim(); return d.summary.trim()&&d.integrity&&d.ready; }
 
   function renderSkillHud(changed={}){
     const grid=$('skillGrid'); const compact=$('compactSkillStrip'); grid.innerHTML=''; compact.innerHTML='';
