@@ -226,26 +226,13 @@
   const R2W_AI_KEY='sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF';
   async function callR2WResumeAI(body){const res=await fetch(R2W_AI_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':R2W_AI_KEY},body:JSON.stringify(body)});let data={};try{data=await res.json()}catch(_){}if(!res.ok)throw new Error(data?.message||data?.error||'Rosie AI is unavailable right now.');return data}
   function showResumeCoach(id,html){const el=$(id);if(!el)return;el.hidden=false;el.innerHTML=html}
-  function typeRosieQuestion(el,text,done){el.textContent='';let i=0;const tick=()=>{el.textContent=text.slice(0,i++);if(i<=text.length)setTimeout(tick,18);else if(done)done()};tick()}
-  function startRosieClarification(question,mode='clarify'){
-    const box=$('rbBulletCoach');if(!box)return;
-    box.hidden=false;
-    box.innerHTML='<div class="rosie-live-convo"><div class="rosie-convo-label">'+(mode==='verify'?'Quick fact check':'One more detail')+'</div><div class="rosie-speaking"><b>Rosie</b><div id="rosieTypedQuestion" class="rosie-typed-question"></div></div><div id="rosieReplyWrap" class="rosie-reply-wrap" hidden><label for="rosieReply">Your answer</label><textarea id="rosieReply" rows="3" placeholder="Answer Rosie in your own words…"></textarea><button id="rosieSendReply" type="button" class="rosie-send-btn">Send to Rosie →</button></div></div>';
-    const q=$('rosieTypedQuestion'),wrap=$('rosieReplyWrap');
-    typeRosieQuestion(q,question,()=>{wrap.hidden=false;$('rosieReply')?.focus()});
-    $('rosieSendReply').onclick=async()=>{
-      const reply=$('rosieReply').value.trim();if(!reply){$('rosieReply').focus();return}
-      const d=resumeData();d.evidence=[d.evidence,reply].filter(Boolean).join(d.evidence?'\n':'');$('rbEvidence').value=d.evidence;saveState();
-      showResumeCoach('rbBulletCoach','<b>Got it.</b> Let me use that with what you already told me…');
-      await rosieBuildBullet();
-    };
-  }
   async function rosieBuildBullet(){
     const d=resumeData(),btn=$('rbBuildBullet'),choices=$('rbBulletChoices');if(!String(d.experience||'').trim()){showResumeCoach('rbBulletCoach','<b>Tell me about the experience first.</b><br>Use normal words. I’ll help shape it for the résumé.');$('rbExperience').focus();return}
     btn.disabled=true;btn.textContent='Rosie is working…';choices.innerHTML='';showResumeCoach('rbBulletCoach','<b>Working from your real experience…</b><br>I won’t add facts you didn’t give me.');
+    const askInline=(question,label)=>{const box=$('rbBulletCoach');box.hidden=false;box.innerHTML='<div class="rosie-live-convo"><div class="rosie-convo-label">'+label+'</div><div class="rosie-speaking"><b>Rosie</b><div class="rosie-typed-question"></div></div><div class="rosie-reply-wrap"><label>Your answer</label><textarea rows="3" placeholder="Answer Rosie in your own words…"></textarea><button type="button" class="rosie-send-btn">Send to Rosie →</button></div></div>';const q=box.querySelector('.rosie-typed-question'),reply=box.querySelector('textarea'),send=box.querySelector('button');q.textContent='';let i=0;const timer=setInterval(()=>{q.textContent=question.slice(0,++i);if(i>=question.length){clearInterval(timer);reply.focus()}},18);send.onclick=async()=>{const answer=reply.value.trim();if(!answer){reply.focus();return}d.evidence=[d.evidence,answer].filter(Boolean).join(d.evidence?'\\n':'');$('rbEvidence').value=d.evidence;saveState();showResumeCoach('rbBulletCoach','<b>Got it.</b> Let me use that with what you already told me…');await rosieBuildBullet()}};
     try{const data=await callR2WResumeAI({mode:'bullet',evidence:{targetOccupation:d.target,experience:d.experience,context:d.evidence}});
-      if(data.needsClarification){startRosieClarification(data.question||'Tell me one more detail about what you did.','clarify');return}
-      if(data.integrityFailed){startRosieClarification(data.question||'Can you give me one more factual detail so I can verify that wording?','verify');return}
+      if(data.needsClarification){askInline(data.question||'Tell me one more detail about what you did.','One more detail');return}
+      if(data.integrityFailed){askInline(data.question||'Can you give me one more factual detail so I can verify that wording?','Quick fact check');return}
       const drafts=[{label:'Clear & Direct',text:data.clearDirect},{label:'Skills Forward',text:data.skillsForward}].filter(x=>x.text);
       showResumeCoach('rbBulletCoach','<b>Rosie drafted these only from what you entered.</b><br>Choose one, then edit it if you want.');
       choices.innerHTML=drafts.map((x,i)=>'<button type="button" class="rosie-draft" data-rb-draft="'+i+'"><b>'+escapeHtml(x.label)+'</b><span>'+escapeHtml(x.text)+'</span></button>').join('');
