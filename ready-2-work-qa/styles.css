@@ -84,3 +84,22 @@
 .rosie-gap-question textarea{width:100%;margin:10px 0}
 .rosie-mini-badge{display:inline-block;background:#7541ad;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}
 .gap-reply-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* R2W44 • ATS-safe résumé visual treatments */
+.visual-style-card{margin:16px 0;padding:16px;border:1px solid #d7e0e8;border-radius:16px;background:#fbfcfe}
+.visual-style-card>strong{display:block;font-size:1.05rem;margin:4px 0}
+.visual-style-card>p{margin:4px 0 12px;color:#53657a}
+.visual-style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.visual-style-options button{padding:11px;border:1px solid #cbd7e3;border-radius:12px;background:#fff;font-weight:800;cursor:pointer}
+.visual-style-options button small{display:block;margin-top:3px;font-weight:500;color:#66788d}
+.visual-style-options button.selected{border:2px solid #7442ad;background:#f7f1ff;color:#63329c}
+.resume-preview #rpTarget{font-weight:800;font-size:1.08rem;letter-spacing:.01em;color:#26384b;margin-top:14px}
+.resume-preview.resume-style-classic{font-family:Georgia,"Times New Roman",serif}
+.resume-preview.resume-style-classic .eyebrow{font-family:Arial,sans-serif}
+.resume-preview.resume-style-classic #rpName{text-transform:none;letter-spacing:0}
+.resume-preview.resume-style-modern #rpName{text-transform:uppercase;letter-spacing:.015em}
+.resume-preview.resume-style-modern #rpTarget{font-size:1.12rem}
+.resume-preview.resume-style-clean{font-family:Arial,sans-serif}
+.resume-preview.resume-style-clean h3{border-bottom:0!important;margin-top:22px!important}
+.resume-preview.resume-style-clean #rpTarget{font-size:1.06rem}
+@media(max-width:700px){.visual-style-options{grid-template-columns:1fr}}
