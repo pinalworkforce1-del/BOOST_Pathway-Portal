@@ -257,7 +257,11 @@
     }
     if(previous){ showInline(s,previous); }
     $('prevSceneBtn').disabled=state.currentScene===0;
-    $('nextSceneBtn').textContent=state.currentScene===scenes.length-1?'Return to Ready 2 Work map →':(scenes[state.currentScene+1].stage!==s.stage?`Continue to ${scenes[state.currentScene+1].stage} →`:'Next scenario →');
+    const stageList=stageScenes(s.stage), isStageEnd=s.id===stageList[stageList.length-1].id;
+    if(!isStageEnd) $('nextSceneBtn').textContent='Next scenario →';
+    else if(s.stage==='Soft Skills Base Camp') $('nextSceneBtn').textContent='Continue to Resume Retreat →';
+    else if(s.stage==='Resume Retreat') $('nextSceneBtn').textContent='Continue to Résumé Builder →';
+    else $('nextSceneBtn').textContent='View Work Readiness Progress →';
     $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; updateAudioControl();
     if(state.audioOn) setTimeout(()=>playPrompt(s),120);
   }
@@ -321,11 +325,13 @@
   $('backToStage').onclick=()=>route('stage',{stage:scenes[state.currentScene].stage});
   $('prevSceneBtn').onclick=()=>{ if(state.currentScene>0) route('scene',{index:state.currentScene-1}); };
   $('nextSceneBtn').onclick=()=>{
-    const current=scenes[state.currentScene];
-    if(state.currentScene>=scenes.length-1){ route('map'); return; }
-    const next=scenes[state.currentScene+1];
-    if(next.stage!==current.stage){ route('map'); return; }
-    route('scene',{index:state.currentScene+1});
+    const current=scenes[state.currentScene], list=stageScenes(current.stage), isStageEnd=current.id===list[list.length-1].id;
+    if(isStageEnd){
+      if(current.stage==='Soft Skills Base Camp'){ route('stage',{stage:'Resume Retreat'}); return; }
+      if(current.stage==='Resume Retreat'){ route('resume-builder'); return; }
+      if(current.stage==='Interview Landing'){ route('certificate'); return; }
+    }
+    if(state.currentScene<scenes.length-1) route('scene',{index:state.currentScene+1});
   };
   $('resumeBackBtn').onclick=()=>route('stage',{stage:'Resume Retreat'});
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
