@@ -5,6 +5,7 @@ on:
     paths:
       - 'ready-2-work-qa/resume-strategy-v1.js'
       - 'ready-2-work-qa/resume-strategy-v1.css'
+      - '.github/workflows/activate-r2w46-resume-strategy.yml'
 permissions:
   contents: write
 jobs:
