@@ -1,0 +1,47 @@
+name: Wire R2W Resume Studio polish
+
+on:
+  push:
+    paths:
+      - '.github/workflows/r2w-wire-resume-polish.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire Resume Studio UX assets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('ready-2-work-qa/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          css = '<link rel="stylesheet" href="resume-polish-v1.css?v=20261005-r2w45">'
+          if css not in s:
+              s = s.replace('</head>', css + '\n</head>')
+
+          polish = '<script src="resume-polish-v1.js?v=20261005-r2w45"></script>'
+          arrival = '<script src="resume-step-arrival-v1.js?v=20261005-r2w45"></script>'
+          if polish not in s:
+              s = s.replace('</body>', polish + '\n' + arrival + '\n</body>')
+          elif arrival not in s:
+              s = s.replace('</body>', arrival + '\n</body>')
+
+          p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit wiring
+        run: |
+          if git diff --quiet; then
+            echo 'Already wired.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ready-2-work-qa/index.html
+          git commit -m 'Activate Resume Studio R2W45 UX polish'
+          git push
