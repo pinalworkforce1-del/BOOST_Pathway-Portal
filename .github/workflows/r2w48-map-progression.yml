@@ -1,0 +1,80 @@
+name: Enforce Ready 2 Work map progression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/r2w48-map-progression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Ready 2 Work progression
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app = Path('ready-2-work-qa/app.js')
+          s = app.read_text(encoding='utf-8')
+
+          replacements = [
+            (
+              "const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total, unlocked=stageUnlocked(stage);",
+              "const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=stageComplete(stage), unlocked=stageUnlocked(stage);"
+            ),
+            (
+              "const status=complete?'Complete':unlocked?`${done} of ${total} complete`:'Locked';",
+              "let status=complete?'Complete':unlocked?`${done} of ${total} scenarios complete`:'Locked'; if(stage==='Resume Retreat'&&done===total&&!state.resumeBuilder?.complete) status='Résumé Builder required'; if(stage==='Interview Landing'&&done===total&&!state.mockInterview?.complete) status='Mock Interview required';"
+            ),
+            (
+              "updateOverall(); const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total;",
+              "updateOverall(); const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=stageComplete(stage);"
+            ),
+            (
+              "if(current.stage==='Soft Skills Base Camp'){ route('stage',{stage:'Resume Retreat'}); return; }",
+              "if(current.stage==='Soft Skills Base Camp'){ route('map'); return; }"
+            ),
+            (
+              "setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);",
+              "setTimeout(()=>route('map'),350);"
+            ),
+          ]
+
+          for old, new in replacements:
+            if old not in s:
+              raise SystemExit('Expected app.js signature not found: '+old[:100])
+            s = s.replace(old, new, 1)
+          app.write_text(s, encoding='utf-8')
+
+          mock = Path('ready-2-work-qa/mock-interview.html')
+          if mock.exists():
+            m = mock.read_text(encoding='utf-8')
+            old = "document.getElementById('return').onclick=()=>location.href='index.html#stage-interview-landing';"
+            new = "document.getElementById('return').onclick=()=>location.href='index.html#map';"
+            if old in m:
+              m = m.replace(old, new, 1)
+            elif new not in m:
+              raise SystemExit('Expected mock interview return signature not found')
+            mock.write_text(m, encoding='utf-8')
+
+          index = Path('ready-2-work-qa/index.html')
+          x = index.read_text(encoding='utf-8')
+          x = x.replace('app.js?v=20261005-r2w44', 'app.js?v=20261006-r2w48')
+          index.write_text(x, encoding='utf-8')
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ready-2-work-qa/app.js ready-2-work-qa/mock-interview.html ready-2-work-qa/index.html
+          if git diff --cached --quiet; then
+            echo "Progression patch already active"
+          else
+            git commit -m "Fix Ready 2 Work map progression and completion handoff"
+            git push
+          fi
