@@ -29,6 +29,15 @@
 .resume-preview-tools{display:flex;justify-content:flex-end;margin:-2px 0 10px}
 .resume-preview-tools .secondary-btn{padding:8px 11px;font-size:.78rem}
 
+/* R2W47 • résumé header standard: name, contact line, and target are always centered. */
+.resume-preview #rpName,
+.resume-preview #rpContact,
+.resume-preview #rpTarget{text-align:center!important;margin-left:auto!important;margin-right:auto!important}
+.resume-preview #rpName{width:100%}
+.resume-preview #rpContact{width:100%;margin-top:0!important}
+.resume-preview #rpTarget{width:100%;margin-top:12px!important;margin-bottom:12px!important}
+.resume-preview #rpSummary{text-align:left!important}
+
 @media(max-width:700px){
   .resume-step-start-cue{align-items:flex-start}
   .resume-skills-list.two-column{grid-template-columns:1fr}
@@ -54,7 +63,10 @@
   body.print-resume-mode .resume-workspace{display:block!important}
   body.print-resume-mode .resume-preview{display:block!important;position:static!important;width:100%!important;max-width:none!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;color:#111!important}
   body.print-resume-mode .resume-preview .eyebrow{display:none!important}
-  body.print-resume-mode .resume-preview h2{font-size:24pt!important;margin:0 0 5pt!important;color:#111!important}
+  body.print-resume-mode .resume-preview h2{font-size:24pt!important;margin:0 0 5pt!important;color:#111!important;text-align:center!important}
+  body.print-resume-mode .resume-preview #rpContact,
+  body.print-resume-mode .resume-preview #rpTarget{text-align:center!important}
+  body.print-resume-mode .resume-preview #rpSummary{text-align:left!important}
   body.print-resume-mode .resume-preview h3{margin-top:14pt!important;color:#111!important;break-after:avoid}
   body.print-resume-mode .resume-preview p,
   body.print-resume-mode .resume-preview li,
