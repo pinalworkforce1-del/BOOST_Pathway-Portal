@@ -100,8 +100,8 @@
   function answeredCount(){ return Object.keys(state.sceneSelections).filter(id=>scenes.some(s=>String(s.id)===String(id))).length; }
   function stageScenes(stage){ return scenes.filter(s=>s.stage===stage); }
   function stageAnswered(stage){ return stageScenes(stage).filter(s=>state.sceneSelections[s.id]).length; }
-  function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; return scenariosDone; }
-  function allComplete(){ return answeredCount()===scenes.length; }
+  function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; if(stage==='Interview Landing') return scenariosDone && !!state.mockInterview?.complete; return scenariosDone; }
+  function allComplete(){ return answeredCount()===scenes.length && !!state.resumeBuilder?.complete && !!state.mockInterview?.complete; }
   function stageUnlocked(stage){
     const i=stageOrder.indexOf(stage);
     return i<=0 || stageComplete(stageOrder[i-1]);
@@ -382,7 +382,7 @@
     if(isStageEnd){
       if(current.stage==='Soft Skills Base Camp'){ route('stage',{stage:'Resume Retreat'}); return; }
       if(current.stage==='Resume Retreat'){ route('resume-builder'); return; }
-      if(current.stage==='Interview Landing'){ route('certificate'); return; }
+      if(current.stage==='Interview Landing'){ route('stage',{stage:'Interview Landing'}); return; }
     }
     if(state.currentScene<scenes.length-1) route('scene',{index:state.currentScene+1});
   };
