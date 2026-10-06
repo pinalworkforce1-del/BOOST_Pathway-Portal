@@ -1,0 +1,42 @@
+name: Activate R2W47 Interview Gating
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ready-2-work-qa/mock-interview.html'
+      - 'ready-2-work-qa/interview-landing-v1.js'
+permissions:
+  contents: write
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gate Interview Landing completion on mock interview
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('ready-2-work-qa/app.js')
+          s=p.read_text()
+          old="function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; return scenariosDone; }"
+          new="function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; if(stage==='Interview Landing') return scenariosDone && !!state.mockInterview?.complete; return scenariosDone; }"
+          if old in s:
+              s=s.replace(old,new)
+          old2="function allComplete(){ return answeredCount()===scenes.length; }"
+          new2="function allComplete(){ return answeredCount()===scenes.length && !!state.resumeBuilder?.complete && !!state.mockInterview?.complete; }"
+          if old2 in s:
+              s=s.replace(old2,new2)
+          old3="if(current.stage==='Interview Landing'){ route('certificate'); return; }"
+          new3="if(current.stage==='Interview Landing'){ route('stage',{stage:'Interview Landing'}); return; }"
+          if old3 in s:
+              s=s.replace(old3,new3)
+          p.write_text(s)
+          PY
+      - name: Commit activation
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ready-2-work-qa/app.js
+          git commit -m 'Require Rosie mock interview before certificate'
+          git push
