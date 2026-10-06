@@ -157,9 +157,9 @@
     });
     const cards=$('stageCards'); cards.innerHTML='';
     stageOrder.forEach((stage,i)=>{
-      const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total, unlocked=stageUnlocked(stage);
+      const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=stageComplete(stage), unlocked=stageUnlocked(stage);
       const b=document.createElement('button'); b.className=`stage-card ${unlocked?'':'locked'}`; b.disabled=!unlocked;
-      const status=complete?'Complete':unlocked?`${done} of ${total} complete`:'Locked';
+      let status=complete?'Complete':unlocked?`${done} of ${total} scenarios complete`:'Locked'; if(stage==='Resume Retreat'&&done===total&&!state.resumeBuilder?.complete) status='Résumé Builder required'; if(stage==='Interview Landing'&&done===total&&!state.mockInterview?.complete) status='Mock Interview required';
       const action=complete?'Review →':unlocked?'Continue →':'Complete prior stage';
       b.innerHTML=`<img src="${def.home}" alt=""><div class="stage-card-copy"><span>STAGE ${i+1}</span><h2>${stage}</h2><p>${def.description}</p><div class="stage-card-foot"><span class="status-pill ${complete?'complete':''}">${status}</span><strong>${action}</strong></div></div>`;
       if(unlocked) b.onclick=()=>route('stage',{stage}); cards.appendChild(b);
@@ -167,7 +167,7 @@
   }
 
   function renderStageHome(stage){
-    updateOverall(); const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=done===total;
+    updateOverall(); const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=stageComplete(stage);
     $('stageHomeImg').src=def.home; $('stageHomeImg').alt=`${stage} home environment`;
     $('stageNumber').textContent=def.number; $('stageHomeTitle').textContent=stage; $('stageHomeTagline').textContent=def.tagline;
     $('stageHomeProgress').textContent=complete?'Complete':`${done} of ${total} complete`;
@@ -380,7 +380,7 @@
   $('nextSceneBtn').onclick=()=>{
     const current=scenes[state.currentScene], list=stageScenes(current.stage), isStageEnd=current.id===list[list.length-1].id;
     if(isStageEnd){
-      if(current.stage==='Soft Skills Base Camp'){ route('stage',{stage:'Resume Retreat'}); return; }
+      if(current.stage==='Soft Skills Base Camp'){ route('map'); return; }
       if(current.stage==='Resume Retreat'){ route('resume-builder'); return; }
       if(current.stage==='Interview Landing'){ route('stage',{stage:'Interview Landing'}); return; }
     }
@@ -397,7 +397,7 @@
   if($('rbSaveLater')) $('rbSaveLater').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.step=resumeStep;d.savedForLaterAt=new Date().toISOString();saveState();route('map');setTimeout(()=>{const note=document.createElement('div');note.className='save-later-toast';note.innerHTML='<strong>Progress saved.</strong><span>Résumé Studio will reopen where you left off.</span>';document.body.appendChild(note);setTimeout(()=>note.classList.add('show'),30);setTimeout(()=>{note.classList.remove('show');setTimeout(()=>note.remove(),250)},3500)},50)};
   if($('rbDraftSummary')) $('rbDraftSummary').onclick=rosieBuildSummary;
   $('rbPrev').onclick=()=>{ if(resumeStep>0){resumeStep--; resumeData().step=resumeStep; saveState(); renderResumeBuilder();} };
-  $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('stage',{stage:'Resume Retreat'}),350);} };
+  $('rbNext').onclick=()=>{ if(!validateResumeStep()){ alert('Complete the required fields on this step before continuing.'); return; } const d=resumeData(); if(resumeStep<3){resumeStep++;d.step=resumeStep;saveState();renderResumeBuilder();}else{d.complete=true;d.completedAt=new Date().toISOString();saveState();renderResumeBuilder();updateOverall();setTimeout(()=>route('map'),350);} };
   $('listenBtn').onclick=()=>{ state.audioOn=!state.audioOn; saveState(); updateAudioControl(); if(state.audioOn) playPrompt(scenes[state.currentScene]); else stopAudio(); };
   $('replayBtn').onclick=()=>{ if(lastImpact) playImpact(lastImpact.s,lastImpact.k); };
   $('ccBtn').onclick=()=>{ state.ccOn=!state.ccOn; saveState(); $('ccBtn').textContent=state.ccOn?'CC':'CC Off'; $('promptCaption').classList.toggle('show',state.ccOn); $('impactCaption').classList.toggle('show',state.ccOn&&!$('inlineFeedback').hidden); };
