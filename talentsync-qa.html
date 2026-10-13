@@ -11,10 +11,10 @@
 <div class="app-shell">
   <header class="topbar">
     <div class="brand"><div class="brand-mark">TS</div><div><h1>TalentSync</h1><small>Quality Assurance · Pinal County</small></div></div>
-    <div class="topbar-actions"><span class="qa-user" id="qaUser">Loading secure QA workspace…</span><a class="qa-link-btn" href="talentsync.html">← TalentSync</a></div>
+    <div class="topbar-actions"><span class="qa-user" id="qaUser">Loading secure QA workspace…</span><a class="qa-link-btn" href="talentsync-qa-planning.html">QA Planning</a><a class="qa-link-btn" href="talentsync.html">← TalentSync</a></div>
   </header>
   <main class="main qa-main">
-    <div class="page-head qa-head"><div><h2>Quality Assurance Command Center</h2><p>Review files, route findings, verify corrections, and identify quality trends without copy/paste.</p></div><button class="primary-btn" id="newReviewBtn" hidden>+ New QA Review</button></div>
+    <div class="page-head qa-head"><div><h2>Quality Assurance Command Center</h2><p>Review files, route findings, verify corrections, and identify quality trends without copy/paste.</p></div><button class="primary-btn" id="newReviewBtn" hidden>+ Active Caseload Review</button></div>
     <div id="qaAlert" class="qa-alert hidden"></div>
     <section class="kpis qa-kpis" id="qaKpis"></section>
 
@@ -40,5 +40,6 @@
 <script src="assets/js/pinal-cloud-config.js?v=20261013-qa1"></script>
 <script src="assets/js/talentsync-qa.js?v=20261013-qa1"></script>
 <script src="assets/js/talentsync-qa-manual.js?v=20261013-qa2"></script>
+<script>window.addEventListener('load',()=>setTimeout(()=>{const b=document.getElementById('manualReviewBtn');if(b)b.textContent='+ Historic AJC Review';},350));</script>
 </body>
 </html>
