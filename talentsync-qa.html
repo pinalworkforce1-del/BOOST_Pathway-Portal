@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>TalentSync — Quality Assurance</title>
+  <link rel="stylesheet" href="assets/css/talentsync.css?v=20260930-rating1">
+  <link rel="stylesheet" href="assets/css/talentsync-qa.css?v=20261013-qa1">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">TS</div><div><h1>TalentSync</h1><small>Quality Assurance · Pinal County</small></div></div>
+    <div class="topbar-actions"><span class="qa-user" id="qaUser">Loading secure QA workspace…</span><a class="qa-link-btn" href="talentsync.html">← TalentSync</a></div>
+  </header>
+  <main class="main qa-main">
+    <div class="page-head qa-head"><div><h2>Quality Assurance Command Center</h2><p>Review files, route findings, verify corrections, and identify quality trends without copy/paste.</p></div><button class="primary-btn" id="newReviewBtn" hidden>+ New QA Review</button></div>
+    <div id="qaAlert" class="qa-alert hidden"></div>
+    <section class="kpis qa-kpis" id="qaKpis"></section>
+
+    <section class="qa-grid">
+      <div class="panel">
+        <div class="panel-head"><div><h3 id="findingsTitle">Corrections</h3><p id="findingsHelp">Items requiring action or QA verification.</p></div><select id="findingFilter"><option value="open">Open workflow</option><option value="all">All findings</option><option value="closed">Closed</option></select></div>
+        <div class="panel-body"><div id="findingCards" class="qa-finding-list"></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h3>Recent Reviews</h3><p>Review history and current QA status.</p></div><input id="reviewSearch" placeholder="Search participant, PID, coach…"></div>
+        <div class="table-wrap"><table class="pipeline-table"><thead><tr><th>Date</th><th>Participant</th><th>Module</th><th>Score</th><th>Issues</th><th>Status</th></tr></thead><tbody id="reviewBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="trendPanel" hidden>
+      <div class="panel-head"><div><h3>Quality Signals</h3><p>Live roll-up from submitted QA findings.</p></div></div>
+      <div class="panel-body"><div class="qa-trends" id="qaTrends"></div></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay" id="qaModal"><div class="modal qa-modal"><div class="modal-head"><h3 id="qaModalTitle">New QA Review</h3><button class="icon-btn" id="qaModalClose">×</button></div><div class="modal-body" id="qaModalBody"></div></div></div>
+<script src="assets/js/pinal-cloud-config.js?v=20261013-qa1"></script>
+<script src="assets/js/talentsync-qa.js?v=20261013-qa1"></script>
+</body>
+</html>
