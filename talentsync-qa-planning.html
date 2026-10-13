@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TalentSync — QA Planning</title>
+<link rel="stylesheet" href="assets/css/talentsync.css?v=20260930-rating1">
+<link rel="stylesheet" href="assets/css/talentsync-qa-planning.css?v=20261013-qap1">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar"><div class="brand"><div class="brand-mark">TS</div><div><h1>TalentSync</h1><small>Director QA Planning · Pinal County</small></div></div><div class="topbar-actions"><span id="planUser">Loading…</span><a class="qa-link-btn" href="talentsync.html">← TalentSync</a><a class="qa-link-btn" href="talentsync-qa.html">QA Command Center</a></div></header>
+<main class="main qap-main">
+<div class="page-head"><div><h2>QA Planning & Accountability</h2><p>Set quarterly review expectations, distribute weekly accountability, and assign reviews to QA and the live TalentSync coach roster.</p></div><div class="qap-quarter"><label>Quarter</label><select id="quarterSelect"></select></div></div>
+<div id="planAlert" class="qap-alert hidden"></div>
+<section class="qap-kpis" id="planKpis"></section>
+<section class="qap-grid">
+<div class="panel"><div class="panel-head"><div><h3>Quarterly Review Plan</h3><p>Enrollment target × review percentage = required reviews.</p></div></div><div class="panel-body"><div id="programPlan" class="program-plan"></div><div class="qap-actions"><button class="primary-btn" id="savePlanBtn">Save Plan</button></div></div></div>
+<div class="panel"><div class="panel-head"><div><h3>Reviewer Distribution</h3><p>QA should carry the majority; coaches share peer and self review accountability.</p></div></div><div class="panel-body"><div class="mix-grid"><label>QA %<input id="qaPct" type="number" min="0" max="100" value="70"></label><label>Peer %<input id="peerPct" type="number" min="0" max="100" value="20"></label><label>Self %<input id="selfPct" type="number" min="0" max="100" value="10"></label></div><div class="mix-total" id="mixTotal">Total 100%</div><div class="roster-box"><h4>TalentSync Coach Pool</h4><div id="coachRoster" class="roster-list"></div></div><div class="roster-box"><h4>QA / Leadership Pool</h4><div id="qaRoster" class="roster-list"></div></div></div></div>
+</section>
+<section class="panel"><div class="panel-head"><div><h3>Weekly QA Schedule</h3><p>Generated from the quarterly obligation and distributed across the quarter.</p></div><div class="qap-actions"><button class="primary-btn" id="generateBtn">Generate / Refresh Schedule</button></div></div><div class="table-wrap"><table class="pipeline-table qap-table"><thead><tr><th>Week</th><th>Due</th><th>Program</th><th>Method</th><th>Reviewer</th><th>Participant</th><th>Status</th></tr></thead><tbody id="scheduleBody"></tbody></table></div></section>
+</main></div>
+<script src="assets/js/pinal-cloud-config.js?v=20261013-qa1"></script>
+<script src="assets/js/talentsync-qa-planning.js?v=20261013-qap1"></script>
+</body></html>
