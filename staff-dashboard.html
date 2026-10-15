@@ -336,6 +336,36 @@ function module2CoachView(ev){
  html+=box('Suggested coach follow-up','<div class="coachNote">Review actual local postings and entry wages; confirm credentials and experience required; explore employment-first or paid training options; discuss commute, schedule and financial fit; agree on the next action.</div>');
  return html+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
 }
+function mobilityCoachView(ev){
+ const m=ev&&typeof ev==='object'?ev:{};
+ const start=m.startingPoint||{};
+ const careers=Array.isArray(m.careers)?m.careers:[];
+ const decisions=m.careerDecisionsBySoc||{};
+ const skills=Array.isArray(m.selfAssessment)?m.selfAssessment:[];
+ const box=(heading,content)=>'<article class="evidenceCard"><h4>'+esc(heading)+'</h4>'+content+'</article>';
+ const row=(heading,value)=>'<div class="item"><b>'+esc(heading)+'</b>'+esc(String(value))+'</div>';
+ const grid=content=>'<div class="evidenceGrid">'+content+'</div>';
+ let out='<div class="coachNote"><b>Coach reading guide:</b> These are participant-reported occupations and skill ratings. Verify destination requirements before concluding a skill transfers.</div>';
+ let starting=row('Occupation',start.title||'Not recorded');
+ if(m.currentWage!==undefined&&m.currentWage!==null&&m.currentWage!=='')starting+=row('Reported current wage',m.currentWage);
+ out+=box('Starting occupation',grid(starting));
+ const all=careers.slice();
+ for(const [soc,decision] of Object.entries(decisions)){
+  if(!all.some(x=>String(x.soc)===String(soc)))all.push({soc,decision});
+ }
+ const destinations=all.filter(x=>String(x.soc||'')!==String(start.soc||''));
+ const destinationRows=destinations.map(x=>row(x.title||'Occupation '+String(x.soc||''),'Participant direction: '+String(x.decision||decisions[x.soc]||'Explored'))).join('');
+ out+=box('Destination occupations',destinationRows?grid(destinationRows):'<div class="coachNote">No distinct destination recorded.</div>');
+ let skillRows='';
+ for(const [heading,usage] of [['Used regularly','Used Regularly'],['Used sometimes','Used Sometimes'],['Limited experience','Limited Experience']]){
+  const list=skills.filter(x=>String(x.use||'').toLowerCase()===usage.toLowerCase()).map(x=>x.skill).filter(Boolean);
+  if(list.length)skillRows+=row(heading,list.join(' • '));
+ }
+ out+=box('Skills that may support mobility',skillRows?grid(skillRows)+'<div class="coachNote">Self-assessed skill use is not verified occupation-specific alignment.</div>':'<div class="coachNote">No skill ratings saved.</div>');
+ if(m.workNote)out+=box('Participant reflection','<div class="coachNote">'+esc(String(m.workNote))+'</div>');
+ out+=box('Coach next steps','<div class="coachNote">Compare existing skills to destination job requirements; document examples, credentials and gaps; identify immediate employment opportunities or a bridge pathway.</div>');
+ return out+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
+}
 function coachModuleView(id,ev){
  const m=ev&&typeof ev==='object'?ev:{};
  const specs={
@@ -368,7 +398,7 @@ function completionSummary(rows,moduleId){
   const when=latest.completed_at||latest.updated_at;
   return '<div class="completionOk"><strong>Completion verified ✓</strong><span>'+esc(names[moduleId]||label(moduleId))+(when?' completed '+esc(fmt(when)):'')+'. Participant evidence was saved successfully.</span></div>';
 }
-async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):['module1','module3','module4','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
+async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):['module1','module4','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 function intakeRosieAdd(text,who='bot'){const c=$('intakeRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.textContent=String(text||'');c.appendChild(d);c.scrollTop=c.scrollHeight}
 function intakeRosieQuick(){const q=$('intakeRosieQuick');if(!q)return;q.innerHTML='';const items=[['Adult Eligibility','Analyze Adult eligibility separately from Priority of Service. Show supported facts, missing verification, and policy basis.'],['DW Category','Analyze Dislocated Worker eligibility and identify the likely category or competing categories, supported facts, missing verification, and policy basis.'],['Priority of Service','Analyze Adult Priority of Service using only documented facts and identify missing verification.'],["What's Missing?",'List the eligibility facts or documentation still missing before staff can make a determination.'],['Draft Intake Note','Draft a professional intake note using BOOST outcomes and documented eligibility facts. Do not invent anything. Flag pending verification.'],['Prep for Intake','Summarize the BOOST career story and the most important Adult/DW eligibility and Priority of Service questions to resolve at intake.']];items.forEach(([label,prompt])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>intakeRosieAsk(prompt);q.appendChild(b)})}
 function intakeRosieReset(){const c=$('intakeRosieChat');if(!c)return;c.innerHTML='<div class="tsr-msg bot"><strong>Hi, I’m Rosie — Intake & Eligibility.</strong><br>I can help with Pinal Adult/DW eligibility, Priority of Service, missing verification, and intake-note drafting. Staff make the official eligibility determination.<br><br><strong>Privacy:</strong> Do not enter names or other direct identifiers. Provide only the facts needed for the eligibility question.</div><div class="tsr-quick" id="intakeRosieQuick"></div>';intakeRosieQuick()}
