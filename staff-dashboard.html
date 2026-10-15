@@ -301,6 +301,41 @@ function detailRows(obj){
   }
   return '<span>'+esc(obj)+'</span>';
 }
+function module2CoachView(ev){
+ const m=ev&&typeof ev==='object'?ev:{},valid=m.validationBySoc||{},careers=Array.isArray(m.careers)?m.careers:[],align=m.alignmentBySoc||{};
+ const keys=[...new Set([...Object.keys(valid),...Object.keys(align)])];
+ const value=(v)=>v===null||v===undefined||v===''?'Not recorded':String(v);
+ const field=(label,v)=>v===null||v===undefined||v===''?'':'<div class="item"><b>'+esc(label)+'</b>'+esc(String(v))+'</div>';
+ const box=(title,body)=>'<article class="evidenceCard"><h4>'+esc(title)+'</h4>'+body+'</article>';
+ let html='<div class="coachNote"><b>Coach reading guide:</b> Participant-reported job research is not independently verified. Confirm wages, employer requirements and hiring opportunities before planning services.</div>';
+ const profile=m.alignmentProfile||{};
+ const drivers=profile.validatedWorkDrivers||profile.workDrivers||[];
+ if(Array.isArray(drivers)&&drivers.length){
+  html+=box('What matters to this participant','<div class="evidenceGrid">'+drivers.map(d=>typeof d==='string'?field('Work preference',d):d&&typeof d==='object'?field(d.label||d.name||'Work preference',d.value||d.response||d.importance||d.rating):'').join('')+'</div>');
+ }else if(drivers&&typeof drivers==='object'){
+  html+=box('What matters to this participant','<div class="evidenceGrid">'+Object.entries(drivers).filter(([k])=>!['model','interestWeight','workDriverWeight','note'].includes(k)).map(([k,v])=>field(friendlyLabel(k),typeof v==='object'?v.label||v.value||v.response||'':v)).join('')+'</div>');
+ }
+ const careerList=keys.length?keys:careers.map((_,i)=>String(i));
+ if(!careerList.length)html+=box('Career validation','<div class="coachNote">No detailed career validation responses were saved in this record. Do not infer that research was completed.</div>');
+ careerList.forEach((soc,i)=>{
+  const v=valid[soc]||{},a=align[soc]||{},career=careers.find(x=>String(x.soc||'')===soc)||careers[i]||{};
+  const title=career.title||career.careerTitle||v.title||a.title||'Career '+(i+1);
+  const wages=v.postedWage||career.postedWage||'';
+  const entries=[
+   ['Research area',v.researchLocation],['Openings reviewed or found',v.openingsFound],
+   ['Hiring evidence (participant assessment)',v.jobs],['What the participant noticed',v.jobsNote],
+   ['Common posted wage',wages],['Starting wage works for participant',v.wages],
+   ['Preparation assessment',v.prep],['Requirements or gaps identified',v.prepNote],
+   ['Employer-supported training',v.employerSupport],['Employer training details',v.employerSupportNote],
+   ['Life and schedule fit',v.life],['Life-fit considerations',v.lifeNote],
+   ['Still interested in pursuing',v.future]
+  ];
+  const content=entries.map(([k,x])=>field(k,x)).filter(Boolean).join('');
+  html+=box(title,'<div class="evidenceGrid">'+(content||'<div class="coachNote">No participant research responses were saved for this career.</div>')+'</div>');
+ });
+ html+=box('Suggested coach follow-up','<div class="coachNote">Review actual local postings and entry wages; confirm credentials and experience required; explore employment-first or paid training options; discuss commute, schedule and financial fit; agree on the next action.</div>');
+ return html+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
+}
 function evidence(report,id){const j=report.journey||{},mods=j.modules||{};if(id==='industry'){const out={};for(const [k,v] of Object.entries(mods))if(k.startsWith('industry-'))out[k]=v;return out}if(id==='ai')return mods.ai||mods.careerAi||j.ai||j.careerAi||null;return mods[id]||j[id]||null}
 async function report(id){const d=await api('coach_report',{journey_id:id});return d.report||{}}
 function completionSummary(rows,moduleId){
@@ -309,7 +344,7 @@ function completionSummary(rows,moduleId){
   const when=latest.completed_at||latest.updated_at;
   return '<div class="completionOk"><strong>Completion verified ✓</strong><span>'+esc(names[moduleId]||label(moduleId))+(when?' completed '+esc(fmt(when)):'')+'. Participant evidence was saved successfully.</span></div>';
 }
-async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>Participant Journey Evidence</h3>'+detailRows(ev)+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
+async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 function intakeRosieAdd(text,who='bot'){const c=$('intakeRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.textContent=String(text||'');c.appendChild(d);c.scrollTop=c.scrollHeight}
 function intakeRosieQuick(){const q=$('intakeRosieQuick');if(!q)return;q.innerHTML='';const items=[['Adult Eligibility','Analyze Adult eligibility separately from Priority of Service. Show supported facts, missing verification, and policy basis.'],['DW Category','Analyze Dislocated Worker eligibility and identify the likely category or competing categories, supported facts, missing verification, and policy basis.'],['Priority of Service','Analyze Adult Priority of Service using only documented facts and identify missing verification.'],["What's Missing?",'List the eligibility facts or documentation still missing before staff can make a determination.'],['Draft Intake Note','Draft a professional intake note using BOOST outcomes and documented eligibility facts. Do not invent anything. Flag pending verification.'],['Prep for Intake','Summarize the BOOST career story and the most important Adult/DW eligibility and Priority of Service questions to resolve at intake.']];items.forEach(([label,prompt])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>intakeRosieAsk(prompt);q.appendChild(b)})}
 function intakeRosieReset(){const c=$('intakeRosieChat');if(!c)return;c.innerHTML='<div class="tsr-msg bot"><strong>Hi, I’m Rosie — Intake & Eligibility.</strong><br>I can help with Pinal Adult/DW eligibility, Priority of Service, missing verification, and intake-note drafting. Staff make the official eligibility determination.<br><br><strong>Privacy:</strong> Do not enter names or other direct identifiers. Provide only the facts needed for the eligibility question.</div><div class="tsr-quick" id="intakeRosieQuick"></div>';intakeRosieQuick()}
