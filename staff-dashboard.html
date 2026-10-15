@@ -338,21 +338,6 @@ function module2CoachView(ev){
 }
 function coachModuleView(id,ev){
  const m=ev&&typeof ev==='object'?ev:{};
- const start=m.startingPoint||{};
- const careers=Array.isArray(m.careers)?m.careers:[];
- const decisions=m.careerDecisionsBySoc||{};
- const skills=Array.isArray(m.selfAssessment)?m.selfAssessment:[];
- const card=(title,content)=>'<article class="evidenceCard"><h4>'+esc(title)+'</h4>'+content+'</article>';
- const item=(title,value)=>'<div class="item"><b>'+esc(title)+'</b>'+esc(String(value))+'</div>';
- const grid=(content)=>'<div class="evidenceGrid">'+content+'</div>';
- const startTitle=start.title||(m.fields&&m.fields.occSearch)||'Not recorded';
- let html='<div class="coachNote"><b>Career mobility evidence:</b> Occupations and skill-use ratings are participant-reported. Confirm which skills transfer to each destination and verify requirements.</div>';
- let startFields=item('Starting occupation',startTitle);
- const currentWage=m.currentWage||(m.fields&&m.fields.currentWage);
- if(currentWage!==undefined&&currentWage!==null&&currentWage!==''){
-  const wage=Number(currentWage);
-  startFields+=item('Reported current wage',Number.isFinite(wage)?'
- const m=ev&&typeof ev==='object'?ev:{};
  const specs={
  module1:[['Career interests',[['Top interests','topInterests'],['Careers explored','careers'],['Saved careers','savedCareers'],['Participant reflection','reflection']]]],
  module3:[['Transferable skills and mobility',[['Work activities','workActivities'],['Self-assessed skills','selfAssessment'],['Strengths','strengths'],['Immediate opportunities','immediateMobility'],['Skill gaps','skillGaps'],['Participant reflection','reflection']]]],
