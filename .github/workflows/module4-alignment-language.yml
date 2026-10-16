@@ -41,3 +41,4 @@ jobs:
           git add staff-dashboard.html
           git commit -m "Replace Module 4 alignment percentage with descriptive rating"
           git push
+# trigger
