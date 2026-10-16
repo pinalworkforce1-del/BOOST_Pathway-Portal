@@ -1,0 +1,43 @@
+name: Use textual Module 4 alignment language
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/module4-alignment-language.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Coach View
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('staff-dashboard.html')
+          s=p.read_text(encoding='utf-8')
+          old="if(score!==undefined&&score!==null&&score!=='')evidence+=item('Overall alignment',Number.isFinite(Number(score))?Number(score).toFixed(1)+'%':score);"
+          new="if(score!==undefined&&score!==null&&score!==''&&Number.isFinite(Number(score))){const n=Number(score);const alignmentLabel=n>=75?'Strong Alignment':n>=55?'Promising Alignment':n>=35?'Mixed Alignment':'Limited Alignment';evidence+=item('Career alignment',alignmentLabel);evidence+=item('How alignment was determined','BOOST considered interests, work preferences, career research, preparation, wage fit, life fit and confidence. This is a career-exploration signal, not a prediction of success.');}"
+          if old not in s: raise SystemExit('alignment display anchor not found')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import re,subprocess,tempfile
+          s=Path('staff-dashboard.html').read_text(encoding='utf-8')
+          for js in re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',s,re.I):
+              if not js.strip(): continue
+              with tempfile.NamedTemporaryFile('w',suffix='.js',delete=False,encoding='utf-8') as f:
+                  f.write(js); name=f.name
+              subprocess.run(['node','--check',name],check=True)
+          PY
+      - name: Commit
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add staff-dashboard.html
+          git commit -m "Replace Module 4 alignment percentage with descriptive rating"
+          git push
