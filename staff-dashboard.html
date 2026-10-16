@@ -366,6 +366,53 @@ function mobilityCoachView(ev){
  out+=box('Coach next steps','<div class="coachNote">Compare existing skills to destination job requirements; document examples, credentials and gaps; identify immediate employment opportunities or a bridge pathway.</div>');
  return out+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
 }
+function module4DecisionView(ev){
+ const m=ev&&typeof ev==='object'?ev:{};
+ const r=m.resultSnapshot&&typeof m.resultSnapshot==='object'?m.resultSnapshot:m;
+ const career=r.career||m.career||{};
+ const soc=String(career.soc||r.selectedSoc||m.selectedSoc||'');
+ const title=career.title||r.careerTitle||m.careerTitle||'Career decision';
+ const route=String(r.participantDirection||m.participantDirection||r.route||m.route||(r.decision&&r.decision.code)||(m.decision&&m.decision.code)||'').toUpperCase();
+ const answers=r.answers||m.answers||{};
+ const prep=r.preparationIntel||m.preparationIntel||{};
+ const entry=r.entryWage||m.entryWage||{};
+ const wage=r.wageComparison||m.wageComparison||{};
+ const alignMap=r.alignmentBySoc||m.alignmentBySoc||{};
+ const alignment=(soc&&alignMap[soc])||{};
+ const signal=r.boostSignal||m.boostSignal||{};
+ const card=(heading,content)=>'<article class="evidenceCard"><h4>'+esc(heading)+'</h4>'+content+'</article>';
+ const item=(heading,value)=>value===undefined||value===null||value===''?'':'<div class="item"><b>'+esc(heading)+'</b>'+esc(String(value))+'</div>';
+ const grid=content=>'<div class="evidenceGrid">'+content+'</div>';
+ const hourly=v=>Number.isFinite(Number(v))?'$'+Number(v).toFixed(2)+'/hr':'';
+ const answer=(key,value)=>{
+  const v=String(value||'').toLowerCase();
+  const maps={wagefit:{yes:'Starting wage works for me',maybe:'Needs a closer look',no:'Starting wage does not work for me'},prepready:{yes:'Ready now',ready:'Ready now',partial:'Some preparation gap',maybe:'Some preparation gap',no:'Not ready yet',not_ready:'Not ready yet'},employer:{yes:'Employer-supported route identified',maybe:'Possible — needs verification',no:'Not identified'},lifefit:{yes:'Works for my life now',maybe:'Needs adjustment or discussion',no:'Does not fit my life right now'},confidence:{high:'High confidence',medium:'Medium confidence',low:'Low confidence'}};
+  return (maps[key]&&maps[key][v])||String(value||'Not recorded');
+ };
+ const routeTitles={READY:'READY — Work Now',BRIDGE:'BRIDGE — Earn While You Learn',BUILD:'BUILD — Build Toward the Career',RECONSIDER:'RECONSIDER — Explore Before Committing'};
+ const routeMeaning={READY:'The evidence points toward an employment-first move. The participant may be positioned to pursue this occupation now, subject to employer-specific verification.',BRIDGE:'The career remains viable, but a short experience, paid training, apprenticeship, OJT, or employer-supported bridge should be confirmed before treating it as an immediate placement.',BUILD:'The career remains a target, but the participant identified a meaningful preparation or credential gap. The next step is to verify the gap and decide whether a training investment makes sense.',RECONSIDER:'The current evidence does not support committing to this target yet. The participant should compare alternatives or revisit the career evidence before investing additional time or funding.'};
+ const coachAction={READY:'Confirm active local openings, employer-specific requirements and the participant’s job-search plan. Move into employment activity unless new evidence shows a barrier.',BRIDGE:'Identify the exact bridge needed and prioritize paid or employer-supported options. Confirm the employer pathway, duration, wage and successful-completion expectations.',BUILD:'Verify the exact credential or preparation requirement. Compare training options, cost, entry wage and expected wage gain. If training remains the right solution, use Module 5 to test the investment.',RECONSIDER:'Return to the strongest alternatives from Career Validation and Career Mobility. Clarify what is driving the mismatch before making a service or training commitment.'};
+ let out='<div class="coachNote"><b>Participant decision report:</b> This view mirrors the evidence the participant used in Decide. The coach layer below focuses on verification and the next service conversation.</div>';
+ out+=card('Decision',grid(item('Career',title)+item('Direction',routeTitles[route]||route||'Not recorded')+(soc?item('SOC',soc):'')));
+ let why='';
+ why+=item('Starting wage fit',answer('wagefit',answers.wagefit));why+=item('Preparation readiness',answer('prepready',answers.prepready));why+=item('Employer-supported route',answer('employer',answers.employer));why+=item('Life fit',answer('lifefit',answers.lifefit));why+=item('Decision confidence',answer('confidence',answers.confidence));
+ out+=card('Why the participant chose this direction',grid(why));
+ let evidence='';
+ const entryHourly=entry.hourly!==undefined?entry.hourly:signal.wage25;
+ const baseline=wage.baselineHourly;
+ if(entryHourly!==undefined&&entryHourly!==null&&entryHourly!=='')evidence+=item('Point-of-entry wage',hourly(entryHourly)||entryHourly);
+ if(baseline!==undefined&&baseline!==null&&baseline!=='')evidence+=item('Participant wage baseline',hourly(baseline)||baseline);
+ const score=alignment.overallAlignmentScore!==undefined?alignment.overallAlignmentScore:signal.overallAlignmentScore;
+ if(score!==undefined&&score!==null&&score!=='')evidence+=item('Overall alignment',Number.isFinite(Number(score))?Number(score).toFixed(1)+'%':score);
+ if(signal.annualOpenings!==undefined&&signal.annualOpenings!==null)evidence+=item('Annual openings',Number(signal.annualOpenings).toLocaleString());
+ if(signal.growthPercent!==undefined&&signal.growthPercent!==null)evidence+=item('Growth',Number(signal.growthPercent).toFixed(1)+'%');
+ if(prep.label)evidence+=item('Preparation signal',prep.label);if(prep.summary)evidence+=item('Preparation context',prep.summary);
+ out+=card('Career evidence used in the decision',evidence?grid(evidence):'<div class="coachNote">No additional decision evidence was saved in this record.</div>');
+ if(Number.isFinite(Number(entryHourly))&&Number.isFinite(Number(baseline))){const delta=Number(entryHourly)-Number(baseline);const direction=delta<0?'below':delta>0?'above':'equal to';out+=card('Wage check','<div class="coachNote">The saved entry-wage estimate is <b>'+esc(hourly(Math.abs(delta)))+'</b> '+esc(direction)+' the participant’s saved wage baseline. Confirm current local wages before using this comparison for planning.</div>');}
+ out+=card('What this decision means','<div class="coachNote">'+esc(routeMeaning[route]||'Review the saved evidence with the participant and confirm the direction before planning the next service.')+'</div>');
+ out+=card('Coach action','<div class="coachNote">'+esc(coachAction[route]||'Confirm the participant’s direction, unresolved evidence and next action.')+'</div>');
+ return out+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
+}
 function coachModuleView(id,ev){
  const m=ev&&typeof ev==='object'?ev:{};
  const specs={
@@ -398,7 +445,7 @@ function completionSummary(rows,moduleId){
   const when=latest.completed_at||latest.updated_at;
   return '<div class="completionOk"><strong>Completion verified ✓</strong><span>'+esc(names[moduleId]||label(moduleId))+(when?' completed '+esc(fmt(when)):'')+'. Participant evidence was saved successfully.</span></div>';
 }
-async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):['module1','module4','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
+async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+completionSummary(rows,moduleId)+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':moduleId==='module4'?'Participant Decision Report & Coach Action':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):moduleId==='module4'?module4DecisionView(ev):['module1','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 function intakeRosieAdd(text,who='bot'){const c=$('intakeRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.textContent=String(text||'');c.appendChild(d);c.scrollTop=c.scrollHeight}
 function intakeRosieQuick(){const q=$('intakeRosieQuick');if(!q)return;q.innerHTML='';const items=[['Adult Eligibility','Analyze Adult eligibility separately from Priority of Service. Show supported facts, missing verification, and policy basis.'],['DW Category','Analyze Dislocated Worker eligibility and identify the likely category or competing categories, supported facts, missing verification, and policy basis.'],['Priority of Service','Analyze Adult Priority of Service using only documented facts and identify missing verification.'],["What's Missing?",'List the eligibility facts or documentation still missing before staff can make a determination.'],['Draft Intake Note','Draft a professional intake note using BOOST outcomes and documented eligibility facts. Do not invent anything. Flag pending verification.'],['Prep for Intake','Summarize the BOOST career story and the most important Adult/DW eligibility and Priority of Service questions to resolve at intake.']];items.forEach(([label,prompt])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>intakeRosieAsk(prompt);q.appendChild(b)})}
 function intakeRosieReset(){const c=$('intakeRosieChat');if(!c)return;c.innerHTML='<div class="tsr-msg bot"><strong>Hi, I’m Rosie — Intake & Eligibility.</strong><br>I can help with Pinal Adult/DW eligibility, Priority of Service, missing verification, and intake-note drafting. Staff make the official eligibility determination.<br><br><strong>Privacy:</strong> Do not enter names or other direct identifiers. Provide only the facts needed for the eligibility question.</div><div class="tsr-quick" id="intakeRosieQuick"></div>';intakeRosieQuick()}
