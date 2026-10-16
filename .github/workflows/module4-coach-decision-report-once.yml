@@ -1,0 +1,147 @@
+name: Build Module 4 coach decision report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/module4-coach-decision-report-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Module 4 Coach View safely
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, subprocess, tempfile
+
+          p=Path('staff-dashboard.html')
+          s=p.read_text(encoding='utf-8')
+
+          if 'function module4DecisionView(ev)' in s:
+              print('Module 4 decision report already present')
+              raise SystemExit(0)
+
+          marker='function coachModuleView(id,ev){'
+          if marker not in s:
+              raise SystemExit('coachModuleView anchor not found')
+
+          helper=r'''function module4DecisionView(ev){
+ const m=ev&&typeof ev==='object'?ev:{};
+ const r=m.resultSnapshot&&typeof m.resultSnapshot==='object'?m.resultSnapshot:m;
+ const career=r.career||m.career||{};
+ const soc=String(career.soc||r.selectedSoc||m.selectedSoc||'');
+ const title=career.title||r.careerTitle||m.careerTitle||'Career decision';
+ const route=String(r.participantDirection||m.participantDirection||r.route||m.route||(r.decision&&r.decision.code)||(m.decision&&m.decision.code)||'').toUpperCase();
+ const answers=r.answers||m.answers||{};
+ const prep=r.preparationIntel||m.preparationIntel||{};
+ const entry=r.entryWage||m.entryWage||{};
+ const wage=r.wageComparison||m.wageComparison||{};
+ const alignMap=r.alignmentBySoc||m.alignmentBySoc||{};
+ const alignment=(soc&&alignMap[soc])||{};
+ const signal=r.boostSignal||m.boostSignal||{};
+ const card=(heading,content)=>'<article class="evidenceCard"><h4>'+esc(heading)+'</h4>'+content+'</article>';
+ const item=(heading,value)=>value===undefined||value===null||value===''?'':'<div class="item"><b>'+esc(heading)+'</b>'+esc(String(value))+'</div>';
+ const grid=content=>'<div class="evidenceGrid">'+content+'</div>';
+ const hourly=v=>Number.isFinite(Number(v))?'$'+Number(v).toFixed(2)+'/hr':'';
+ const answer=(key,value)=>{
+  const v=String(value||'').toLowerCase();
+  const maps={
+   wagefit:{yes:'Starting wage works for me',maybe:'Needs a closer look',no:'Starting wage does not work for me'},
+   prepready:{yes:'Ready now',ready:'Ready now',partial:'Some preparation gap',maybe:'Some preparation gap',no:'Not ready yet',not_ready:'Not ready yet'},
+   employer:{yes:'Employer-supported route identified',maybe:'Possible — needs verification',no:'Not identified'},
+   lifefit:{yes:'Works for my life now',maybe:'Needs adjustment or discussion',no:'Does not fit my life right now'},
+   confidence:{high:'High confidence',medium:'Medium confidence',low:'Low confidence'}
+  };
+  return (maps[key]&&maps[key][v])||String(value||'Not recorded');
+ };
+ const routeTitles={READY:'READY — Work Now',BRIDGE:'BRIDGE — Earn While You Learn',BUILD:'BUILD — Build Toward the Career',RECONSIDER:'RECONSIDER — Explore Before Committing'};
+ const routeMeaning={
+  READY:'The evidence points toward an employment-first move. The participant may be positioned to pursue this occupation now, subject to employer-specific verification.',
+  BRIDGE:'The career remains viable, but a short experience, paid training, apprenticeship, OJT, or employer-supported bridge should be confirmed before treating it as an immediate placement.',
+  BUILD:'The career remains a target, but the participant identified a meaningful preparation or credential gap. The next step is to verify the gap and decide whether a training investment makes sense.',
+  RECONSIDER:'The current evidence does not support committing to this target yet. The participant should compare alternatives or revisit the career evidence before investing additional time or funding.'
+ };
+ const coachAction={
+  READY:'Confirm active local openings, employer-specific requirements and the participant’s job-search plan. Move into employment activity unless new evidence shows a barrier.',
+  BRIDGE:'Identify the exact bridge needed and prioritize paid or employer-supported options. Confirm the employer pathway, duration, wage and successful-completion expectations.',
+  BUILD:'Verify the exact credential or preparation requirement. Compare training options, cost, entry wage and expected wage gain. If training remains the right solution, use Module 5 to test the investment.',
+  RECONSIDER:'Return to the strongest alternatives from Career Validation and Career Mobility. Clarify what is driving the mismatch before making a service or training commitment.'
+ };
+ let out='<div class="coachNote"><b>Participant decision report:</b> This view mirrors the evidence the participant used in Decide. The coach layer below focuses on verification and the next service conversation.</div>';
+ out+=card('Decision',grid(item('Career',title)+item('Direction',routeTitles[route]||route||'Not recorded')+(soc?item('SOC',soc):'')));
+ let why='';
+ why+=item('Starting wage fit',answer('wagefit',answers.wagefit));
+ why+=item('Preparation readiness',answer('prepready',answers.prepready));
+ why+=item('Employer-supported route',answer('employer',answers.employer));
+ why+=item('Life fit',answer('lifefit',answers.lifefit));
+ why+=item('Decision confidence',answer('confidence',answers.confidence));
+ out+=card('Why the participant chose this direction',grid(why));
+ let evidence='';
+ const entryHourly=entry.hourly!==undefined?entry.hourly:signal.wage25;
+ const baseline=wage.baselineHourly;
+ if(entryHourly!==undefined&&entryHourly!==null&&entryHourly!=='')evidence+=item('Point-of-entry wage',hourly(entryHourly)||entryHourly);
+ if(baseline!==undefined&&baseline!==null&&baseline!=='')evidence+=item('Participant wage baseline',hourly(baseline)||baseline);
+ const score=alignment.overallAlignmentScore!==undefined?alignment.overallAlignmentScore:signal.overallAlignmentScore;
+ if(score!==undefined&&score!==null&&score!=='')evidence+=item('Overall alignment',Number.isFinite(Number(score))?Number(score).toFixed(1)+'%':score);
+ if(signal.annualOpenings!==undefined&&signal.annualOpenings!==null)evidence+=item('Annual openings',Number(signal.annualOpenings).toLocaleString());
+ if(signal.growthPercent!==undefined&&signal.growthPercent!==null)evidence+=item('Growth',Number(signal.growthPercent).toFixed(1)+'%');
+ if(prep.label)evidence+=item('Preparation signal',prep.label);
+ if(prep.summary)evidence+=item('Preparation context',prep.summary);
+ out+=card('Career evidence used in the decision',evidence?grid(evidence):'<div class="coachNote">No additional decision evidence was saved in this record.</div>');
+ if(Number.isFinite(Number(entryHourly))&&Number.isFinite(Number(baseline))){
+  const delta=Number(entryHourly)-Number(baseline);
+  const direction=delta<0?'below':delta>0?'above':'equal to';
+  out+=card('Wage check','<div class="coachNote">The saved entry-wage estimate is <b>'+esc(hourly(Math.abs(delta)))+'</b> '+esc(direction)+' the participant’s saved wage baseline. Confirm current local wages before using this comparison for planning.</div>');
+ }
+ out+=card('What this decision means','<div class="coachNote">'+esc(routeMeaning[route]||'Review the saved evidence with the participant and confirm the direction before planning the next service.')+'</div>');
+ out+=card('Coach action','<div class="coachNote">'+esc(coachAction[route]||'Confirm the participant’s direction, unresolved evidence and next action.')+'</div>');
+ return out+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
+}
+'''
+          s=s.replace(marker,helper+marker,1)
+
+          old_route="moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):['module1','module4','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev)"
+          new_route="moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):moduleId==='module4'?module4DecisionView(ev):['module1','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev)"
+          if old_route not in s:
+              raise SystemExit('Module detail route anchor not found')
+          s=s.replace(old_route,new_route,1)
+
+          old_heading="(moduleId==='module2'?'Career Validation & Coaching Summary':'Participant Journey Evidence')"
+          new_heading="(moduleId==='module2'?'Career Validation & Coaching Summary':moduleId==='module4'?'Participant Decision Report & Coach Action':'Participant Journey Evidence')"
+          if old_heading not in s:
+              raise SystemExit('Module detail heading anchor not found')
+          s=s.replace(old_heading,new_heading,1)
+
+          if s.lower().count('</html>')!=1 or s[s.lower().index('</html>')+7:].strip():
+              raise SystemExit('HTML document integrity check failed')
+
+          inline=re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>',s,re.I)
+          checked=0
+          for js in inline:
+              if not js.strip():
+                  continue
+              with tempfile.NamedTemporaryFile('w',suffix='.js',delete=False,encoding='utf-8') as f:
+                  f.write(js)
+                  name=f.name
+              subprocess.run(['node','--check',name],check=True)
+              checked+=1
+          if not checked:
+              raise SystemExit('No inline JavaScript found to validate')
+
+          p.write_text(s,encoding='utf-8')
+          print('Module 4 report patched; inline scripts validated:',checked)
+          PY
+      - name: Commit validated Module 4 report
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add staff-dashboard.html
+          git commit -m "Use participant decision report in Module 4 Coach View"
+          git push
