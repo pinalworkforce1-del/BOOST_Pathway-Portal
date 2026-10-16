@@ -403,7 +403,7 @@ function module4DecisionView(ev){
  if(entryHourly!==undefined&&entryHourly!==null&&entryHourly!=='')evidence+=item('Point-of-entry wage',hourly(entryHourly)||entryHourly);
  if(baseline!==undefined&&baseline!==null&&baseline!=='')evidence+=item('Participant wage baseline',hourly(baseline)||baseline);
  const score=alignment.overallAlignmentScore!==undefined?alignment.overallAlignmentScore:signal.overallAlignmentScore;
- if(score!==undefined&&score!==null&&score!=='')evidence+=item('Overall alignment',Number.isFinite(Number(score))?Number(score).toFixed(1)+'%':score);
+ if(score!==undefined&&score!==null&&score!==''&&Number.isFinite(Number(score))){const n=Number(score);const alignmentLabel=n>=75?'Strong Alignment':n>=55?'Promising Alignment':n>=35?'Mixed Alignment':'Limited Alignment';evidence+=item('Career alignment',alignmentLabel);evidence+=item('How alignment was determined','BOOST considered interests, work preferences, career research, preparation, wage fit, life fit and confidence. This is a career-exploration signal, not a prediction of success.');}
  if(signal.annualOpenings!==undefined&&signal.annualOpenings!==null)evidence+=item('Annual openings',Number(signal.annualOpenings).toLocaleString());
  if(signal.growthPercent!==undefined&&signal.growthPercent!==null)evidence+=item('Growth',Number(signal.growthPercent).toFixed(1)+'%');
  if(prep.label)evidence+=item('Preparation signal',prep.label);if(prep.summary)evidence+=item('Preparation context',prep.summary);
