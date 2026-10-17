@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOOST • Career Exploration Complete</title>
+<style>
+:root{--navy:#102b46;--gold:#e3a72f;--green:#157653;--ink:#173042;--muted:#61717e;--line:#d4e0e8;--bg:#eef3f6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}.hero{background:linear-gradient(135deg,#0d314c,#174f77);color:#fff;padding:34px 18px;border-bottom:5px solid var(--gold)}.wrap{max-width:980px;margin:auto}.eyebrow{font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ffd876}.hero h1{margin:.3rem 0 .55rem;font-size:clamp(2rem,5vw,3rem)}.hero p{margin:0;max-width:780px;line-height:1.55;color:#e9f5ff}main{padding:24px 16px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 10px 28px #17304218;margin-bottom:18px}.success{border-top:6px solid var(--green)}h2{margin-top:0}.lead{font-size:1.08rem;line-height:1.65}.callout{margin:18px 0;padding:16px 18px;border-radius:14px;background:#eef8f6;border-left:5px solid #2a9d8f;line-height:1.55}.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:16px 0}.doc{padding:12px 14px;border:1px solid #dbe5eb;border-radius:12px;background:#f9fbfc}.doc b{display:block;margin-bottom:3px}.note{color:var(--muted);line-height:1.5}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 17px;border:0;border-radius:12px;text-decoration:none;font-weight:900;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#f0bd4e;color:#33280f}.small{font-size:.86rem}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><div class="eyebrow">BOOST • Career Exploration</div><h1>Career Exploration Complete</h1><p>You have reached an important BOOST milestone. Your career exploration and Module 4 decision are saved.</p></div></header>
+<main><div class="wrap"><section class="card success">
+<h2>Congratulations — you’ve completed the Career Exploration portion of BOOST.</h2>
+<p class="lead">Your progress has been saved and shared with our team. A member of the team will contact you to discuss next steps, including intake and enrollment.</p>
+<div class="callout"><b>This is a good stopping point for now.</b><br>Your Career Coach will help you decide what comes next after intake and enrollment. You do not need to complete the remaining BOOST activities before speaking with your Career Coach. Your progress is saved, so you can return and continue where you left off. If you choose to continue exploring now, nothing is locked.</div>
+<h2>While you wait, you can begin gathering documents</h2>
+<p class="note">The exact documents needed depend on the program and your circumstances. Your Career Coach will confirm what applies to you. Having common documents available can help make intake easier.</p>
+<div class="docs">
+<div class="doc"><b>Identity</b><span>Government-issued photo identification or other identity documentation you have available.</span></div>
+<div class="doc"><b>Address / Residency</b><span>Recent mail, lease information, utility documentation, or another record showing your current address if requested.</span></div>
+<div class="doc"><b>Employment / Income</b><span>Recent pay information, unemployment documentation, or other employment and income records that may apply.</span></div>
+<div class="doc"><b>Education / Training</b><span>Diploma, transcript, certificates, licenses, or training records you already have.</span></div>
+<div class="doc"><b>Employment Situation</b><span>Layoff, separation, unemployment, or employer documentation if it relates to your situation.</span></div>
+<div class="doc"><b>Other Eligibility Documents</b><span>Veteran documentation or other records may be requested when relevant. Staff will tell you what is needed.</span></div>
+</div>
+<p class="note small">Do not delay meeting with staff because you do not have every document listed above. The team can help identify what is actually required and what alternatives may be accepted.</p>
+<div class="actions"><a class="btn primary" id="pauseBtn" href="index.html">Pause Here &amp; Return to BOOST</a><a class="btn secondary" id="continueBtn" href="index.html">Continue BOOST Now</a></div>
+</section></div></main>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search),raw=q.get('next');
+  let next=new URL('index.html',location.href);
+  if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
+  document.getElementById('pauseBtn').href=next.toString();
+  document.getElementById('continueBtn').href=next.toString();
+})();
+</script>
+</body></html>
