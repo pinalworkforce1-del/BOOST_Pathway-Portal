@@ -1,0 +1,65 @@
+name: Wire TalentSync BOOST Status
+
+on:
+  push:
+    paths:
+      - '.github/workflows/wire-talentsync-boost-status.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wire-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded BOOST status wiring
+        shell: python
+        run: |
+          from pathlib import Path
+
+          helper = Path('assets/js/talentsync-boost-status.js')
+          h = helper.read_text(encoding='utf-8')
+          old_helper = "function install(){addStyles();if(typeof window.renderDrawer!=='function'&&typeof renderDrawer!=='function')return;const original=window.renderDrawer||renderDrawer;if(original.__boostWrapped)return;const wrapped=function(id){const out=original.apply(this,arguments);try{const p=window.state?.participants?.find?.(x=>String(x.id)===String(id))||(typeof state!=='undefined'?state.participants.find(x=>String(x.id)===String(id)):null);if(p)renderBoostStatus(p)}catch(e){console.warn('TalentSync BOOST status unavailable',e)}return out};wrapped.__boostWrapped=true;window.renderDrawer=wrapped;try{renderDrawer=wrapped}catch(_){}}\nif(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);"
+          new_helper = "addStyles();\nwindow.TalentSyncBoostStatus={render:renderBoostStatus};"
+          if h.count(old_helper) != 1:
+              raise SystemExit(f'Helper guard failed: found {h.count(old_helper)} matches')
+          h = h.replace(old_helper, new_helper, 1)
+          helper.write_text(h, encoding='utf-8')
+
+          drawer = Path('assets/js/talentsync-3b.js')
+          d = drawer.read_text(encoding='utf-8')
+          old_drawer = "document.querySelector('#drawerOverlay').classList.add('open');document.querySelector('#drawer').classList.add('open')}function closeDrawer()"
+          new_drawer = "window.TalentSyncBoostStatus?.render?.(p);document.querySelector('#drawerOverlay').classList.add('open');document.querySelector('#drawer').classList.add('open')}function closeDrawer()"
+          if d.count(old_drawer) != 1:
+              raise SystemExit(f'Drawer guard failed: found {d.count(old_drawer)} matches')
+          d = d.replace(old_drawer, new_drawer, 1)
+          drawer.write_text(d, encoding='utf-8')
+
+      - name: Validate integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "window.TalentSyncBoostStatus={render:renderBoostStatus}" assets/js/talentsync-boost-status.js
+          grep -q "window.TalentSyncBoostStatus?.render?.(p)" assets/js/talentsync-3b.js
+          ! grep -q "__boostWrapped" assets/js/talentsync-boost-status.js
+          grep -q "BOOST Development Status" assets/js/talentsync-boost-status.js
+          grep -q "Live, read-only learning evidence from BOOST" assets/js/talentsync-boost-status.js
+
+      - name: Commit guarded wiring
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/js/talentsync-boost-status.js assets/js/talentsync-3b.js; then
+            echo "No TalentSync BOOST status change detected."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/talentsync-boost-status.js assets/js/talentsync-3b.js
+          git commit -m "Wire live BOOST status into TalentSync drawer"
+          git push
