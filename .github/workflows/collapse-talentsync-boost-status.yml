@@ -1,0 +1,85 @@
+name: Collapse TalentSync BOOST Status
+
+on:
+  push:
+    paths:
+      - '.github/workflows/collapse-talentsync-boost-status.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  collapse-boost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded BOOST tile conversion
+        shell: python
+        run: |
+          from pathlib import Path
+
+          helper = Path('assets/js/talentsync-boost-status.js')
+          h = helper.read_text(encoding='utf-8')
+
+          old_host = "function ensureHost(){const body=document.querySelector('#drawer .drawer-body');if(!body)return null;let wrap=document.getElementById('talentSyncBoostStatus');if(!wrap){wrap=document.createElement('section');wrap.id='talentSyncBoostStatus';wrap.className='ts-boost-wrap';body.appendChild(wrap)}return wrap}"
+          new_host = "function ensureHost(){const body=document.querySelector('#modalBody');if(!body)return null;body.innerHTML='<section id=\"talentSyncBoostStatus\" class=\"ts-boost-wrap\"></section>';return document.getElementById('talentSyncBoostStatus')}"
+          if h.count(old_host) != 1:
+              raise SystemExit(f'Host guard failed: found {h.count(old_host)} matches')
+          h = h.replace(old_host, new_host, 1)
+
+          old_render = "async function renderBoostStatus(p){const host=ensureHost();if(!host)return;host.innerHTML='<div class=\"ts-boost-head\"><div><h4>BOOST Development Status</h4><p>Live, read-only learning evidence from BOOST.</p></div><span class=\"ts-boost-live\">LIVE BOOST</span></div><div class=\"ts-boost-loading\">Loading current BOOST progress…</div>';"
+          new_render = "async function renderBoostStatus(p){const title=document.querySelector('#modalTitle'),overlay=document.querySelector('#modalOverlay');if(title)title.textContent='BOOST Development';if(overlay)overlay.classList.add('open');const host=ensureHost();if(!host)return;host.innerHTML='<div class=\"ts-boost-head\"><div><h4>BOOST Development Status</h4><p>Live, read-only learning evidence from BOOST.</p></div><span class=\"ts-boost-live\">LIVE BOOST</span></div><div class=\"ts-boost-loading\">Loading current BOOST progress…</div>';"
+          if h.count(old_render) != 1:
+              raise SystemExit(f'Render guard failed: found {h.count(old_render)} matches')
+          h = h.replace(old_render, new_render, 1)
+
+          old_export = "addStyles();\nwindow.TalentSyncBoostStatus={render:renderBoostStatus};"
+          new_export = "addStyles();\ndocument.addEventListener('click',e=>{const btn=e.target.closest?.('[data-boost-status]');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();renderBoostStatus({sourceJourneyId:btn.dataset.boostJourney||''})},true);\nwindow.TalentSyncBoostStatus={render:renderBoostStatus};"
+          if h.count(old_export) != 1:
+              raise SystemExit(f'Export guard failed: found {h.count(old_export)} matches')
+          h = h.replace(old_export, new_export, 1)
+          helper.write_text(h, encoding='utf-8')
+
+          drawer = Path('assets/js/talentsync-3b.js')
+          d = drawer.read_text(encoding='utf-8')
+          old_tile_anchor = "<button class=\"action-card\" data-modal=\"pipeline\"><strong>Industry Pipeline / Regional Career Rating</strong><span>${escapeHtml((p.industryOverride||p.industry||'Industry not set')+' · '+(p.h3Override||p.boostOutputs?.h3Status||'Rating not set'))}</span></button><button class=\"action-card\" data-modal=\"iep\">"
+          new_tile_anchor = "<button class=\"action-card\" data-modal=\"pipeline\"><strong>Industry Pipeline / Regional Career Rating</strong><span>${escapeHtml((p.industryOverride||p.industry||'Industry not set')+' · '+(p.h3Override||p.boostOutputs?.h3Status||'Rating not set'))}</span></button><button class=\"action-card\" type=\"button\" data-boost-status data-boost-journey=\"${escapeHtml(p.sourceJourneyId||'')}\"><strong>BOOST Development</strong><span>View live BOOST progress, saved results, and certificate status.</span></button><button class=\"action-card\" data-modal=\"iep\">"
+          if d.count(old_tile_anchor) != 1:
+              raise SystemExit(f'Tile anchor guard failed: found {d.count(old_tile_anchor)} matches')
+          d = d.replace(old_tile_anchor, new_tile_anchor, 1)
+
+          old_permanent = "window.TalentSyncBoostStatus?.render?.(p);document.querySelector('#drawerOverlay').classList.add('open');"
+          new_permanent = "document.querySelector('#drawerOverlay').classList.add('open');"
+          if d.count(old_permanent) != 1:
+              raise SystemExit(f'Permanent status guard failed: found {d.count(old_permanent)} matches')
+          d = d.replace(old_permanent, new_permanent, 1)
+          drawer.write_text(d, encoding='utf-8')
+
+      - name: Validate tile behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'data-boost-status' assets/js/talentsync-3b.js
+          grep -q 'BOOST Development</strong><span>View live BOOST progress' assets/js/talentsync-3b.js
+          ! grep -q "window.TalentSyncBoostStatus?.render?.(p)" assets/js/talentsync-3b.js
+          grep -q "document.querySelector('#modalBody')" assets/js/talentsync-boost-status.js
+          grep -q "title.textContent='BOOST Development'" assets/js/talentsync-boost-status.js
+          grep -q "stopImmediatePropagation" assets/js/talentsync-boost-status.js
+
+      - name: Commit tile conversion
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- assets/js/talentsync-boost-status.js assets/js/talentsync-3b.js; then
+            echo "No BOOST tile conversion detected."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/talentsync-boost-status.js assets/js/talentsync-3b.js
+          git commit -m "Move BOOST development into TalentSync action tile"
+          git push
