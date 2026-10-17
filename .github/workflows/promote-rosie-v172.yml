@@ -1,0 +1,46 @@
+name: Promote Pinal Rosie v172
+
+on:
+  push:
+    paths:
+      - '.github/workflows/promote-rosie-v172.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-endpoint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Guarded endpoint swap
+        shell: python
+        run: |
+          from pathlib import Path
+          path=Path('assets/js/pinal-ask-rosie-v1.js')
+          text=path.read_text(encoding='utf-8')
+          old="const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-ask-rosie-v171';"
+          new="const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-ask-rosie-v172';"
+          count=text.count(old)
+          if count != 1:
+              raise SystemExit(f'Guard failed: expected 1 v171 endpoint, found {count}')
+          text=text.replace(old,new,1)
+          if 'boost-ask-rosie-v171' in text:
+              raise SystemExit('Old Rosie endpoint still present after replacement')
+          if 'boost-ask-rosie-v172' not in text:
+              raise SystemExit('New Rosie endpoint missing after replacement')
+          path.write_text(text,encoding='utf-8')
+
+      - name: Commit endpoint swap
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/js/pinal-ask-rosie-v1.js
+          git commit -m "Route participant Rosie through Module 4 intake lifecycle wrapper"
+          git push
