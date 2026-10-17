@@ -38,6 +38,6 @@ async function renderBoostStatus(p){const host=ensureHost();if(!host)return;host
  html+=row('BOOST Certificate',cert?'complete':'',cert?'<div><b>Available:</b> Full BOOST pathway requirements are complete.</div>':'<div>Certificate remains unavailable until the full BOOST pathway is complete and current.</div>');
  html+='</div><div class="ts-boost-actions"><a class="ts-boost-link secondary" href="staff-dashboard.html">Open BOOST Coach View</a>'+(cert?'<a class="ts-boost-link" href="staff-dashboard.html">View / Download Certificate</a>':'')+'</div>';host.innerHTML=html
  }catch(e){host.innerHTML='<div class="ts-boost-head"><div><h4>BOOST Development Status</h4><p>Live, read-only learning evidence from BOOST.</p></div><span class="ts-boost-live">LIVE BOOST</span></div><div class="ts-boost-error">'+esc(e.message||'BOOST status unavailable.')+'</div>'}}
-function install(){addStyles();if(typeof window.renderDrawer!=='function'&&typeof renderDrawer!=='function')return;const original=window.renderDrawer||renderDrawer;if(original.__boostWrapped)return;const wrapped=function(id){const out=original.apply(this,arguments);try{const p=window.state?.participants?.find?.(x=>String(x.id)===String(id))||(typeof state!=='undefined'?state.participants.find(x=>String(x.id)===String(id)):null);if(p)renderBoostStatus(p)}catch(e){console.warn('TalentSync BOOST status unavailable',e)}return out};wrapped.__boostWrapped=true;window.renderDrawer=wrapped;try{renderDrawer=wrapped}catch(_){}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
+addStyles();
+window.TalentSyncBoostStatus={render:renderBoostStatus};
 })();
