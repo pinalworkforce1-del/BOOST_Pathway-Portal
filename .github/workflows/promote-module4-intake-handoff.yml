@@ -1,0 +1,142 @@
+name: Promote Module 4 Intake Handoff
+
+on:
+  push:
+    paths:
+      - '.github/workflows/promote-module4-intake-handoff.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-coach-view:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply guarded intake handoff patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('staff-dashboard.html')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = [
+            (
+              'ROSIE · ENROLLMENT HANDOFF',
+              'ROSIE · INTAKE HANDOFF'
+            ),
+            (
+              'This identifier links the approved BOOST handoff to the correct participant record in TalentSync.',
+              'This identifier links the BOOST intake handoff to the correct participant record in TalentSync.'
+            ),
+            (
+              "rosiePromptMode==='confirm'?'Review the handoff details once more, then I’ll send the approved record to TalentSync.':",
+              "rosiePromptMode==='confirm'?'Review the handoff details once more, then I’ll send this participant to TalentSync for intake.':"
+            ),
+            (
+              "async function api(action,body={},token=localStorage.getItem(TOKEN_KEY)||''){const rosie=action==='intake_rosie',url=rosie?SUPABASE_URL+'/functions/v1/boost-coach-ask-rosie-pinal':ENDPOINT,payload=rosie?body:{action,area:AREA,...body};const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON,'X-BOOST-Staff-Token':token},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok)throw new Error(data?.error||'BOOST staff access unavailable.');return data}",
+              "async function api(action,body={},token=localStorage.getItem(TOKEN_KEY)||''){const rosie=action==='intake_rosie',intake=action==='start_intake',url=rosie?SUPABASE_URL+'/functions/v1/boost-coach-ask-rosie-pinal':intake?SUPABASE_URL+'/functions/v1/boost-start-intake':ENDPOINT,payload=(rosie||intake)?body:{action,area:AREA,...body};const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':ANON,'Authorization':'Bearer '+ANON,'X-BOOST-Staff-Token':token},body:JSON.stringify(payload)});const data=await res.json();if(!res.ok)throw new Error(data?.error||'BOOST staff access unavailable.');return data}"
+            ),
+            (
+              "function enrollmentControl(r,a){const h=handoffs.get(String(r.journey_id));if(h)return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Sent to TalentSync ✓</button><small>Enrollment approved '+esc(fmt(h.enrollment_approved_at))+' • '+esc(h.assigned_coach_email||a?.primary_staff_email||'Coach assigned')+'</small></div>';if(r.participant_status!=='completed')return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Enrollment approval locked</button><small>BOOST must be complete before TalentSync handoff.</small></div>';if(!a?.primary_staff_email)return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Assign coach to approve</button><small>Select a primary career coach first.</small></div>';return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" data-enroll=\"'+esc(r.journey_id)+'\">Approve Enrollment → TalentSync</button><small>Creates the participant\\'s TalentSync operational record.</small></div>'}",
+              "function enrollmentControl(r,a){const h=handoffs.get(String(r.journey_id));if(h)return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Sent to TalentSync ✓</button><small>TalentSync status: '+esc(label(h.operational_status||'record exists'))+' • '+esc(h.assigned_coach_email||a?.primary_staff_email||'Coach assigned')+'</small></div>';const ready=r.selected_pathway==='career'&&validated(r,'module4');if(!ready)return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Intake handoff locked</button><small>Complete and save Module 4 before starting the TalentSync intake handoff.</small></div>';if(!a?.primary_staff_email)return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" disabled>Assign coach to start intake</button><small>Select a primary Career Coach first.</small></div>';return '<div class=\"enrollAction\"><button class=\"btn enroll\" type=\"button\" data-enroll=\"'+esc(r.journey_id)+'\">Send to TalentSync for Intake</button><small>Creates or connects the participant\\'s TalentSync intake record.</small></div>'}"
+            ),
+            (
+              "'<span class=\"tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'\">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.h3_status?'<span class=\"tag\">'+esc(r.h3_status)+'</span>':'')",
+              "'<span class=\"tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'\">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.selected_pathway==='career'&&validated(r,'module4')?'<span class=\"tag good\">Career Exploration Complete</span>':'')+(r.h3_status?'<span class=\"tag\">'+esc(r.h3_status)+'</span>':'')"
+            ),
+            (
+              "message:'Enter the participant’s AJC PID. I’ll keep the BOOST pathway context visible so you can verify you are sending the right person.',",
+              "message:'Enter the participant’s AJC PID. I’ll keep the Module 4 career context visible so you can verify you are sending the right person.',"
+            ),
+            (
+              "guide:'This is the link between the completed BOOST journey and the participant’s AJC/TalentSync record.',",
+              "guide:'This links the participant’s completed Career Exploration milestone to their AJC/TalentSync intake record.',"
+            ),
+            (
+              "title:'Review and send',",
+              "title:'Review and start intake',"
+            ),
+            (
+              "message:'Confirm the participant and PID below. When you approve, BOOST will send the enrollment handoff to TalentSync.',",
+              "message:'Confirm the participant and PID below. When you continue, BOOST will create or connect the participant’s TalentSync intake record.',"
+            ),
+            (
+              "guide:'One final review keeps the handoff intentional and reduces mismatched participant records.',",
+              "guide:'One final review keeps the intake handoff intentional and reduces mismatched participant records.',"
+            ),
+            (
+              "primaryLabel:'Approve & Send',",
+              "primaryLabel:'Send for Intake',"
+            ),
+            (
+              "const out=await api('approve_enrollment',{journey_id:btn.dataset.enroll,ajc_pid:pid});",
+              "const out=await api('start_intake',{journey_id:btn.dataset.enroll,ajc_pid:pid});"
+            ),
+            (
+              "title:out.already_exists?'TalentSync record refreshed':'Enrollment approved',",
+              "title:out.already_exists?'TalentSync record refreshed':'Intake started',"
+            ),
+            (
+              "message:out.already_exists?'The existing TalentSync record has been refreshed with the latest BOOST handoff.':'The approved BOOST handoff is now in TalentSync.',",
+              "message:out.already_exists?'The existing TalentSync record has been refreshed with the latest BOOST intake context.':'The participant is now in TalentSync for intake and enrollment follow-up.',"
+            ),
+            (
+              "guide:'The handoff is complete. You can continue the participant’s workflow in TalentSync.',",
+              "guide:'The intake handoff is complete. BOOST can continue independently while staff manage intake in TalentSync.',"
+            ),
+            (
+              "btn.disabled=false;btn.textContent='Approve Enrollment → TalentSync';",
+              "btn.disabled=false;btn.textContent='Send to TalentSync for Intake';"
+            ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Guard failed: expected exactly 1 match, found {count}: {old[:120]!r}')
+              text = text.replace(old, new, 1)
+
+          # Safety assertions: do not alter full BOOST completion/certificate logic.
+          required = [
+              "function currentComplete(r)",
+              "r.participant_status==='completed'?'<button class=\"btn alt\" type=\"button\" data-path-cert=",
+              "['module1','module2','module3','module4'",
+              "Send to TalentSync for Intake",
+              "api('start_intake'",
+              "Career Exploration Complete"
+          ]
+          for needle in required:
+              if needle not in text:
+                  raise SystemExit(f'Safety assertion failed: {needle}')
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Validate intake semantics
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "Send to TalentSync for Intake" staff-dashboard.html
+          grep -q "boost-start-intake" staff-dashboard.html
+          grep -q "Career Exploration Complete" staff-dashboard.html
+          grep -q "BOOST Certificate" staff-dashboard.html
+          ! grep -q "BOOST must be complete before TalentSync handoff" staff-dashboard.html
+
+      - name: Commit production Coach View update
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- staff-dashboard.html; then
+            echo "No Coach View change detected."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add staff-dashboard.html
+          git commit -m "Promote Module 4 intake handoff to Coach View"
+          git push
