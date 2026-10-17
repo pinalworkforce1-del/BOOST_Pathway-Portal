@@ -1,0 +1,45 @@
+name: Promote Module 4 Participant Pause
+
+on:
+  push:
+    paths:
+      - '.github/workflows/promote-module4-participant-pause.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-activity-return:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch Module 4 post-save return
+        shell: python
+        run: |
+          from pathlib import Path
+          path=Path('activity.html')
+          text=path.read_text(encoding='utf-8')
+          old="""  const target=new URL(returnUrl,location.href);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}\n  target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);\n  finishBtn.textContent='✓ Saved — returning to BOOST…';\n  location.assign(target.toString());"""
+          new="""  const target=new URL(returnUrl,location.href);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}\n  target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);\n  finishBtn.textContent='✓ Saved — returning to BOOST…';\n  if(m==='module4'){\n    const handoff=new URL('module4-intake-handoff.html',location.href);\n    handoff.searchParams.set('next',target.toString());\n    location.assign(handoff.toString());\n    return;\n  }\n  location.assign(target.toString());"""
+          count=text.count(old)
+          if count!=1: raise SystemExit(f'Guard failed: expected one finish-return block, found {count}')
+          text=text.replace(old,new,1)
+          for needle in ["saveEvidence(evidence)","await Promise.race([cloudAttempt,wait(1800)])","target.searchParams.set('boost_complete',requestedModule)","module4-intake-handoff.html","if(m==='module4')"]:
+              if needle not in text: raise SystemExit(f'Safety assertion failed: {needle}')
+          path.write_text(text,encoding='utf-8')
+      - name: Validate and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          grep -q "module4-intake-handoff.html" activity.html
+          grep -q "boost_complete" activity.html
+          grep -q "cloudAttempt" activity.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add activity.html
+          git commit -m "Route saved Module 4 through intake pause screen"
+          git push
