@@ -1,0 +1,22 @@
+name: BOOST guest map safety check
+on:
+  push:
+    branches:
+      - feature/guest-showcase-2026
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify guest map is standalone
+        run: |
+          node --input-type=module <<'EOF'
+          import fs from 'node:fs';
+          const html=fs.readFileSync('guest.html','utf8');
+          if(!html.includes('BOOST/guest.html')) throw Error('Discover guest link missing');
+          if(/<script[^>]+src=/.test(html)) throw Error('Unexpected external guest script');
+          if(/supabase\.from|auth\.signIn/.test(html)) throw Error('Unexpected production data access');
+          EOF
