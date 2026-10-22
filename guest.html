@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pinal BOOST • Guest Showcase</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#f7f7ef;background:#0c283f}*{box-sizing:border-box}body{margin:0}
+header{background:#102e47;padding:1.5rem max(5%,calc((100% - 1100px)/2));border-bottom:2px solid #d6a43b}
+h1{margin:0;font-size:clamp(1.6rem,3vw,2.5rem)}p{line-height:1.55}.tag{font-weight:700;color:#f1c664}
+main{max-width:1100px;margin:auto;padding:2rem 5%}.stage img{width:100%;border-radius:16px;border:1px solid #668396}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:1.5rem}
+button{background:#153c59;border:1px solid #53809d;color:white;text-align:left;border-radius:11px;padding:1rem;cursor:pointer}
+button:hover,button:focus-visible{border-color:#f1c664;background:#24577b}
+button span{display:block;font-weight:700}button small{display:block;margin-top:.5rem;color:#c9d9e9}
+dialog{border:2px solid #c8a14d;border-radius:16px;background:#102e47;color:white;max-width:560px;padding:1.5rem}
+dialog::backdrop{background:#000b}.note{border-left:4px solid #e1ba53;padding:1rem;background:#173952}
+</style></head><body>
+<header><div class="tag">PINAL BOOST • GUEST SHOWCASE (DEVELOPMENT PREVIEW)</div><h1>Explore the BOOST Journey</h1><p>All destinations are visible without login or prerequisites. Guest module interactions are being validated separately, so this preview never writes participant or coach progress.</p></header>
+<main><div class="stage"><img src="assets/images/boost-home-desert-outcomes-v4.webp" alt="BOOST workforce exploration map"></div>
+<h2>Explore the destinations</h2><div class="grid"><button type="button" class="destination" data-destination="0"><span>Open Module 1 Career Direction topic page</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="1"><span>Open Skill Mobility</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="2"><span>Open 48-Hour Job Search Strategy</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="3"><span>Open Build Strong Financial Habits</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="4"><span>Open AI and You topic page</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="5"><span>Open Get 2 Work Ready from Employment Opportunities</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="6"><span>Open Module 2 Career Reality Check</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="7"><span>Open Module 3 Career Mobility Exploration</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="8"><span>Open Module 4 Decide with your Career Coach</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="9"><span>Open Skilled Trades Workplace Skills Challenge</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="10"><span>Open Advanced Manufacturing Workplace Skills Challenge</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="11"><span>Open Healthcare Workplace Skills Challenge</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="12"><span>Open Information Technology Workplace Skills Challenge</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="13"><span>Open Transportation and Logistics CDL Workplace Skills Challenge</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="14"><span>Open Skill Mobility</span><small>Explore destination</small></button>
+<button type="button" class="destination" data-destination="15"><span>Open Skill Investments in the Career Investment Explorer</span><small>Explore destination</small></button></div>
+<p class="note">This is an isolated showcase preview, not a participant account. Links to production learning modules remain disabled until each module has a safe guest-only session.</p></main>
+<dialog id="detail"><h2 id="detailTitle"></h2><p>Coming next: an interactive guest experience with no login, isolated practice state, and no production enrollment or coach reports.</p><button id="close">Return to Guest Map</button></dialog>
+<script>
+const destinations=[{"url":"https://pinalworkforce1-del.github.io/BOOST/","label":"Open Module 1 Career Direction topic page"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/","label":"Open Skill Mobility"},{"url":"https://pinalworkforce1-del.github.io/48_hour_job_search/","label":"Open 48-Hour Job Search Strategy"},{"url":"https://pinalworkforce1-del.github.io/Financial_Assessment/","label":"Open Build Strong Financial Habits"},{"url":"https://pinalworkforce1-del.github.io/AI_Literacy/","label":"Open AI and You topic page"},{"url":"ready-2-work-qa/","label":"Open Get 2 Work Ready from Employment Opportunities"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Career-Validation/","label":"Open Module 2 Career Reality Check"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Career-Mobility/","label":"Open Module 3 Career Mobility Exploration"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Decide/","label":"Open Module 4 Decide with your Career Coach"},{"url":"https://pinalworkforce1-del.github.io/Skilled-Trades/","label":"Open Skilled Trades Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Advanced-Manufacturing/","label":"Open Advanced Manufacturing Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/MedicalSkills/","label":"Open Healthcare Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST_Information_Tech/","label":"Open Information Technology Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOSTCDL/","label":"Open Transportation and Logistics CDL Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/","label":"Open Skill Mobility"},{"url":"activity.html?m=investment","label":"Open Skill Investments in the Career Investment Explorer"}];
+const dialog=document.getElementById("detail");
+document.querySelectorAll("[data-destination]").forEach(button=>button.addEventListener("click",()=>{
+const item=destinations[Number(button.dataset.destination)];
+document.getElementById("detailTitle").textContent=item.label;
+dialog.showModal();
+}));
+document.getElementById("close").addEventListener("click",()=>dialog.close());
+</script></body></html>
