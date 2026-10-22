@@ -11,7 +11,7 @@ button{background:#153c59;border:1px solid #53809d;color:white;text-align:left;b
 button:hover,button:focus-visible{border-color:#f1c664;background:#24577b}
 button span{display:block;font-weight:700}button small{display:block;margin-top:.5rem;color:#c9d9e9}
 dialog{border:2px solid #c8a14d;border-radius:16px;background:#102e47;color:white;max-width:560px;padding:1.5rem}
-dialog::backdrop{background:#000b}.note{border-left:4px solid #e1ba53;padding:1rem;background:#173952}
+dialog::backdrop{background:#000b}.answers{display:grid;gap:9px;margin:14px 0}.answers button{width:100%}.answers button.selected{border-color:#f1c664;background:#326343}.reflection{width:100%;padding:12px;background:#f5f6f9;color:#142e42;border-radius:8px;min-height:90px}.note{border-left:4px solid #e1ba53;padding:1rem;background:#173952}
 </style></head><body>
 <header><div class="tag">PINAL BOOST • GUEST SHOWCASE (DEVELOPMENT PREVIEW)</div><h1>Explore the BOOST Journey</h1><p>All destinations are visible without login or prerequisites. Guest module interactions are being validated separately, so this preview never writes participant or coach progress.</p></header>
 <main><div class="stage"><img src="assets/images/boost-home-desert-outcomes-v4.webp" alt="BOOST workforce exploration map"></div>
@@ -32,14 +32,52 @@ dialog::backdrop{background:#000b}.note{border-left:4px solid #e1ba53;padding:1r
 <button type="button" class="destination" data-destination="14"><span>Open Skill Mobility</span><small>Explore destination</small></button>
 <button type="button" class="destination" data-destination="15"><span>Open Skill Investments in the Career Investment Explorer</span><small>Explore destination</small></button></div>
 <p class="note">This is an isolated showcase preview, not a participant account. Links to production learning modules remain disabled until each module has a safe guest-only session.</p></main>
-<dialog id="detail"><h2 id="detailTitle"></h2><p>Coming next: an interactive guest experience with no login, isolated practice state, and no production enrollment or coach reports.</p><button id="close">Return to Guest Map</button></dialog>
+<dialog id="detail"><div class="tag">OFFLINE-ONLY • GUEST SAMPLE</div><h2 id="detailTitle"></h2><p id="guestPrompt"></p><div class="answers" id="guestAnswers"></div><label for="guestReflection">What would you explore or discuss with a career coach?</label><textarea class="reflection" id="guestReflection" placeholder="Optional reflection — stays in this window"></textarea><p class="note" id="guestFeedback">This is a brief illustrative activity, not the full participant module. Nothing here is sent to production systems or stored.</p><button id="resetGuest">Reset this sample</button> <button id="close">Return to Guest Map</button></dialog>
 <script>
 const destinations=[{"url":"https://pinalworkforce1-del.github.io/BOOST/","label":"Open Module 1 Career Direction topic page"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/","label":"Open Skill Mobility"},{"url":"https://pinalworkforce1-del.github.io/48_hour_job_search/","label":"Open 48-Hour Job Search Strategy"},{"url":"https://pinalworkforce1-del.github.io/Financial_Assessment/","label":"Open Build Strong Financial Habits"},{"url":"https://pinalworkforce1-del.github.io/AI_Literacy/","label":"Open AI and You topic page"},{"url":"ready-2-work-qa/","label":"Open Get 2 Work Ready from Employment Opportunities"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Career-Validation/","label":"Open Module 2 Career Reality Check"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Career-Mobility/","label":"Open Module 3 Career Mobility Exploration"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Decide/","label":"Open Module 4 Decide with your Career Coach"},{"url":"https://pinalworkforce1-del.github.io/Skilled-Trades/","label":"Open Skilled Trades Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Advanced-Manufacturing/","label":"Open Advanced Manufacturing Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/MedicalSkills/","label":"Open Healthcare Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST_Information_Tech/","label":"Open Information Technology Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOSTCDL/","label":"Open Transportation and Logistics CDL Workplace Skills Challenge"},{"url":"https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/","label":"Open Skill Mobility"},{"url":"activity.html?m=investment","label":"Open Skill Investments in the Career Investment Explorer"}];
 const dialog=document.getElementById("detail");
+const activities={
+"Career Direction":{question:"Which type of activity sounds most energizing?",answers:["Solving a hands-on problem","Helping someone solve a challenge","Analyzing information and finding patterns"],feedback:"Your interests are useful clues, not limits. Explore occupations that combine your preferred activities with local opportunities."},
+"Skill Mobility":{question:"Which step could help you move toward a better opportunity now?",answers:["Identify transferable skills","Compare roles at nearby employers","Practice describing achievements"],feedback:"Skills you already use may transfer into new roles without requiring a new credential."},
+"Job Search":{question:"Which first action would strengthen a focused job search?",answers:["Identify target employers and roles","Apply everywhere without tailoring","Wait for the perfect opening"],feedback:"A focused employer list and tailored evidence can make outreach more purposeful."},
+"Financial":{question:"A car repair affects your monthly budget. What would you check first?",answers:["Essential costs and available cushion","Ignore the expense","Cancel all career plans"],feedback:"Financial habits start with understanding priorities, flexibility, and your next practical choice."},
+"AI":{question:"How should you review an AI-written résumé bullet?",answers:["Check accuracy and make it your own","Submit without checking","Add experience you never had"],feedback:"AI can help organize your experience, but claims must remain accurate and personal."},
+"Career Reality":{question:"A career looks interesting but the entry wage is low. What would you do?",answers:["Compare postings, wage growth and living costs","Ignore wages entirely","Assume all employers pay the same"],feedback:"Validate opportunities against local openings, realistic earnings, and life needs."},
+"Career Mobility":{question:"Which evidence best supports your next career move?",answers:["Skills, responsibilities and local opportunities","A job title alone","Only what friends suggest"],feedback:"Compare work activities and transferable skills before selecting a direction."},
+"Decide":{question:"Which direction fits someone ready for work with transferable skills?",answers:["WORK NOW — pursue immediate opportunities","BUILD — assume training is always required","RECONSIDER — stop exploring"],feedback:"The best decision uses evidence about readiness, opportunity, and any genuine training gap."},
+"Industry":{question:"How could a workplace challenge help you explore this industry?",answers:["Practice a realistic decision","Guarantee employment","Replace all occupational research"],feedback:"An industry experience can reveal expectations and help identify skills to build."},
+"Investment":{question:"Before choosing training, which evidence matters?",answers:["Expected earnings, cost, demand and alternatives","Provider marketing alone","Only the length of training"],feedback:"A career investment should be supported by realistic return, labor demand, and an individual plan."}
+};
+function activityFor(label){
+if(/Financial/.test(label))return activities.Financial;
+if(/AI and You/.test(label))return activities.AI;
+if(/Career Reality/.test(label))return activities["Career Reality"];
+if(/Career Mobility/.test(label))return activities["Career Mobility"];
+if(/Decide/.test(label))return activities.Decide;
+if(/Investment/.test(label))return activities.Investment;
+if(/Industry|Trades|Manufacturing|Healthcare|Technology|Logistics|CDL/.test(label))return activities.Industry;
+if(/Job Search/.test(label))return activities["Job Search"];
+if(/Mobility/.test(label))return activities["Skill Mobility"];
+return activities["Career Direction"];
+}
+let activeActivity=null;
+function resetSample(){
+document.getElementById("guestReflection").value="";
+const el=document.getElementById("guestAnswers");el.replaceChildren();
+activeActivity.answers.forEach(answer=>{
+const b=document.createElement("button");b.type="button";b.textContent=answer;
+b.addEventListener("click",()=>{el.querySelectorAll("button").forEach(x=>x.classList.remove("selected"));b.classList.add("selected");document.getElementById("guestFeedback").textContent=activeActivity.feedback+" This sample does not assign scores, award completion, or save a participant record."});
+el.append(b);
+});
+document.getElementById("guestFeedback").textContent="Choose a response to explore a coaching consideration. This sample never saves or submits data.";
+}
 document.querySelectorAll("[data-destination]").forEach(button=>button.addEventListener("click",()=>{
 const item=destinations[Number(button.dataset.destination)];
 document.getElementById("detailTitle").textContent=item.label;
-dialog.showModal();
+activeActivity=activityFor(item.label);
+document.getElementById("guestPrompt").textContent=activeActivity.question;
+resetSample();dialog.showModal();
 }));
-document.getElementById("close").addEventListener("click",()=>dialog.close());
+document.getElementById("resetGuest").addEventListener("click",resetSample);
+document.getElementById("close").addEventListener("click",()=>{dialog.close();document.getElementById("guestReflection").value=""});
 </script></body></html>
