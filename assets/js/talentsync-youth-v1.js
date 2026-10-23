@@ -58,17 +58,41 @@ renderDrawer=function(id){
  const evidenceBtn=document.createElement('button');
  evidenceBtn.className='levelup-results-control';evidenceBtn.type='button';evidenceBtn.textContent='View Level Up Results';evidenceBtn.style.cssText='margin:9px 0;padding:9px 13px;border:1px solid #155e63;border-radius:9px;color:#155e63;background:white;font-weight:700;cursor:pointer';
  evidenceBtn.onclick=()=>{
-  const evidence=p.levelupEvidence;
   const old=document.querySelector('#levelupEvidencePanel');if(old){old.remove();return;}
-  const holder=document.createElement('div');holder.id='levelupEvidencePanel';
-  holder.style.cssText='margin:8px 0 14px;padding:12px;border:1px solid #b7cbd8;background:#f6fafc;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px';
-  if(!evidence){holder.textContent='No verified Level Up evidence is linked to this TalentSync case yet. A participant must be securely linked and transferred before reports appear here.';}
-  else {
-   const heading=document.createElement('strong');heading.textContent='Linked Level Up evidence';holder.append(heading);
-   const groups=[['Career Tree',evidence.career_tree],['Ready 2 Work and interview',evidence.ready_2_work]];
-   for(const [name,data] of groups){const details=document.createElement('details');details.style.marginTop='9px';
-    const summary=document.createElement('summary');summary.textContent=name;details.append(summary);
-    const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px';pre.textContent=data?JSON.stringify(data,null,2):'No transferred evidence';details.append(pre);holder.append(details);}
+  const evidence=p.levelupEvidence,holder=document.createElement('section');holder.id='levelupEvidencePanel';
+  holder.style.cssText='margin:8px 0 14px;padding:14px;border:1px solid #b7cbd8;background:#f6fafc;border-radius:12px;font-size:12px;line-height:1.5';
+  const h=document.createElement('h3');h.textContent='Level Up Participant Results';h.style.margin='0 0 6px';holder.append(h);
+  const intro=document.createElement('p');intro.style.margin='0 0 12px';intro.textContent='Coach evidence · Career Tree · Ready 2 Work · Résumé · Live Interview';holder.append(intro);
+  const escapeValue=v=>String(v??'—');
+  function card(title,data,summary){
+    const d=document.createElement('details');d.style.cssText='background:white;border:1px solid #dce5e8;border-radius:10px;padding:11px;margin:8px 0';
+    const head=document.createElement('summary');head.style.cssText='font-weight:800;cursor:pointer;color:#174d62';head.textContent=title+' — '+summary;d.append(head);
+    const body=document.createElement('div');body.style.cssText='padding-top:8px;color:#294552';
+    const line=(label,value)=>{const row=document.createElement('p');row.style.margin='5px 0';const strong=document.createElement('strong');strong.textContent=label+': ';row.append(strong,document.createTextNode(escapeValue(value)));body.append(row)};
+    if(data&&typeof data==='object'){
+      line('Completion',data.completion_verified===true||data.is_complete===true?'Verified complete':data.status||'Not verified');
+      if(data.updated_at||data.completed_at)line('Last evidence',data.completed_at||data.updated_at);
+      if(Array.isArray(data.top_3)&&data.top_3.length)line('Interest profile',data.top_3.map(x=>typeof x==='string'?x:x.label||x.code||'').join(', '));
+      if(data.completed_scenes!==undefined)line('Scenarios',String(data.completed_scenes)+' / '+String(data.total_scenes||'—'));
+      if(data.occupation_reflections)line('Career reflections',data.occupation_reflections.length);
+      if(data.saved_careers)line('Saved careers',data.saved_careers.map(x=>x.title||x.name||'Career').join(', '));
+      if(data.selected_occupation)line('Selected occupation',data.selected_occupation.title||'Recorded');
+      if(data.conversation_balance)line('Interview speaking balance',String(data.conversation_balance.participant_percent||0)+'% participant / '+String(data.conversation_balance.interviewer_percent||0)+'% interviewer');
+      const pre=document.createElement('details');pre.style.marginTop='9px';const ps=document.createElement('summary');ps.textContent='Full saved evidence';pre.append(ps);const code=document.createElement('pre');code.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;max-height:320px;overflow:auto;background:#f1f5f9;padding:8px;border-radius:6px';code.textContent=JSON.stringify(data,null,2);pre.append(code);body.append(pre);
+    }else line('Status','No cloud evidence supplied');
+    d.append(body);holder.append(d);
+  }
+  if(!evidence){
+    const msg=document.createElement('p');msg.textContent='No verified Level Up evidence is linked to this TalentSync case. Existing Level Up records are not accessed through email matching; a secure participant identity link is required.';holder.append(msg);
+  }else{
+    const ct=evidence.career_tree||{},rw=evidence.ready_2_work||{};
+    card('Discover Me',ct.discover_me,ct.discover_me?.status||'Not available');
+    card('Explore Careers',ct.explore_careers,ct.explore_careers?.status||'Not available');
+    card('Work + Life Plan',ct.work_life_plan,ct.work_life_plan?.status||'Not available');
+    card('Soft Skills Synergy',rw.soft_skills,rw.soft_skills?.status||'Not available');
+    card('Resume Rise',rw.resume,rw.resume?.status||'Not available');
+    card('Interview Intelligence & Nova',rw.interview,rw.interview?.status||'Not available');
+    if(evidence.other_modules)card('Additional Level Up modules',evidence.other_modules,'Saved evidence');
   }
   evidenceBtn.insertAdjacentElement('afterend',holder);
  };
