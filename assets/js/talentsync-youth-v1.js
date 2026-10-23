@@ -36,6 +36,7 @@ renderDrawer=function(id){
  const target=document.querySelector('#drawerSignals');
  const old=document.querySelector('#youthWorkspace');
  if(old)old.remove();
+ document.querySelectorAll('#drawer .levelup-results-control').forEach(x=>x.remove());
  if(!p||p.program!=='Youth'||!target)return;
  const y=ensure(p),panel=document.createElement('section');panel.id='youthWorkspace';
  panel.style.cssText='margin:12px 0;padding:14px;border:1px solid #93c5bd;border-radius:12px;background:#f4faf8';
@@ -53,6 +54,25 @@ renderDrawer=function(id){
  '</div><button id="youthSave" type="button" style="margin-top:12px;padding:9px 14px;background:#155e63;color:white;border:0;border-radius:9px;font-weight:700">Save Youth Review</button>'+
  '<p id="youthSaveStatus" style="font-size:11px" role="status"></p>';
  target.insertAdjacentElement('afterend',panel);
+ const evidenceBtn=document.createElement('button');
+ evidenceBtn.className='levelup-results-control';evidenceBtn.type='button';evidenceBtn.textContent='View Level Up Results';evidenceBtn.style.cssText='margin:9px 0;padding:9px 13px;border:1px solid #155e63;border-radius:9px;color:#155e63;background:white;font-weight:700;cursor:pointer';
+ evidenceBtn.onclick=()=>{
+  const evidence=p.levelupEvidence;
+  const old=document.querySelector('#levelupEvidencePanel');if(old){old.remove();return;}
+  const holder=document.createElement('div');holder.id='levelupEvidencePanel';
+  holder.style.cssText='margin:8px 0 14px;padding:12px;border:1px solid #b7cbd8;background:#f6fafc;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px';
+  if(!evidence){holder.textContent='No verified Level Up evidence is linked to this TalentSync case yet. A participant must be securely linked and transferred before reports appear here.';}
+  else {
+   const heading=document.createElement('strong');heading.textContent='Linked Level Up evidence';holder.append(heading);
+   const groups=[['Career Tree',evidence.career_tree],['Ready 2 Work and interview',evidence.ready_2_work]];
+   for(const [name,data] of groups){const details=document.createElement('details');details.style.marginTop='9px';
+    const summary=document.createElement('summary');summary.textContent=name;details.append(summary);
+    const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px';pre.textContent=data?JSON.stringify(data,null,2):'No transferred evidence';details.append(pre);holder.append(details);}
+  }
+  evidenceBtn.insertAdjacentElement('afterend',holder);
+ };
+ panel.insertAdjacentElement('beforebegin',evidenceBtn);
+ 
  const reviewBody=panel.innerHTML;
  const collapseReview=()=>{
   panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><strong>Youth Review</strong><div style="font-size:12px;color:#466">Changes queued for cloud sync; reopen to review.</div></div><button type="button" id="youthExpand" style="padding:8px;border-radius:8px">Edit Youth Review</button></div>';
