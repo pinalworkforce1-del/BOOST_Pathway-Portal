@@ -28,7 +28,7 @@ function youthTable(rows){
  '<td><button class="participant-link" data-open="'+esc(p.id)+'">Open case</button></td></tr>'}).join('');
 }
 renderTable=function(rows){if(document.querySelector('#programFilter')?.value==='Youth')youthTable(rows);
- else{if(head)head.innerHTML=adultHeaders;originalTable(rows)}};
+ else{if(head)head.innerHTML=adultHeaders;originalTable(rows);if(head&&head.children[5])head.children[5].textContent='IEP / ISS';document.querySelectorAll('#caseloadBody tr').forEach((tr,i)=>{const p=rows[i]?.p;if(p?.program!=='Youth')return;const cell=tr.children[5];if(cell){const status=ensure(p).iss||'Not reviewed';cell.innerHTML='<span class="badge '+(status==='Completed'?'healthy':'due')+'">ISS: '+esc(status)+'</span>'}})}};
 function field(label,key,y,choices){return '<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600">'+esc(label)+'<select data-youth-field="'+key+'" style="padding:8px;width:100%;border:1px solid #cbd5e1;border-radius:7px">'+choices.map(x=>'<option value="'+esc(x)+'"'+((y[key]||'Not reviewed')===x?' selected':'')+'>'+esc(x)+'</option>').join('')+'</select></label>'}
 renderDrawer=function(id){
  originalDrawer(id);
@@ -38,6 +38,7 @@ renderDrawer=function(id){
  if(old)old.remove();
  document.querySelectorAll('#drawer .levelup-results-control').forEach(x=>x.remove());
  if(!p||p.program!=='Youth'||!target)return;
+ const firstSignal=target.querySelector('.signal-card');if(firstSignal){const iss=ensure(p).iss||'Not reviewed';firstSignal.innerHTML='<label>ISS</label><span class="badge '+(iss==='Completed'?'healthy':'due')+'">'+esc(iss)+'</span>';}
  const y=ensure(p),panel=document.createElement('section');panel.id='youthWorkspace';
  panel.style.cssText='margin:12px 0;padding:14px;border:1px solid #93c5bd;border-radius:12px;background:#f4faf8';
  const statuses=['Not reviewed','Needed','Offered','Referred','In progress','Provided','Completed','Declined','Not needed'];
@@ -84,7 +85,7 @@ renderDrawer=function(id){
   panel.querySelectorAll('[data-youth-element]').forEach(el=>saved.elements[el.dataset.youthElement]=el.value);
   const prior=p.youthCase;p.youthCase=saved;
   const msg=panel.querySelector('#youthSaveStatus'),btn=panel.querySelector('#youthSave');btn.disabled=true;
-  try{await saveState();msg.textContent='Youth review queued for cloud sync.';msg.style.color='#166534';collapseReview()}
+  try{await saveState();msg.textContent='Youth review queued for cloud sync.';msg.style.color='#166534';const firstSignal=target.querySelector('.signal-card');if(firstSignal){firstSignal.innerHTML='<label>ISS</label><span class="badge '+(saved.iss==='Completed'?'healthy':'due')+'">'+esc(saved.iss||'Not reviewed')+'</span>';}collapseReview();renderTable(visibleRows())}
   catch(err){p.youthCase=prior;msg.textContent='Save failed. Changes were not confirmed: '+(err?.message||err);msg.style.color='#b91c1c'}
   finally{btn.disabled=false}
  });
