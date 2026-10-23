@@ -45,7 +45,7 @@ renderDrawer=function(id){
  panel.innerHTML='<h3 style="margin:0 0 5px;color:#155e63">Youth Case Management</h3>'+
  '<p style="font-size:12px;margin:0 0 10px">ISY / OSY classification and services must be verified against the AJC record. These are planning notes, not automatic WIOA service reporting.</p>'+
  '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">'+
- field('Individual Service Strategy','iss',y,choices)+field('Work Experience','wex',y,choices)+
+ field('Comprehensive Assessment','assessment',y,choices)+field('Individual Service Strategy','iss',y,choices)+field('Work Experience','wex',y,choices)+
  field('Support Services','support',y,choices)+field('Barriers','barriers',y,choices)+
  field('Education','education',y,choices)+field('Leadership','leadership',y,choices)+field('Mentoring','mentoring',y,choices)+
  '</div><h4>14 Youth Program Elements</h4><div style="display:grid;gap:7px">'+elements.map((label,i)=>{
