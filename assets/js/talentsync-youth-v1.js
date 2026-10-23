@@ -59,7 +59,7 @@ renderDrawer=function(id){
   panel.querySelectorAll('[data-youth-element]').forEach(el=>saved.elements[el.dataset.youthElement]=el.value);
   const prior=p.youthCase;p.youthCase=saved;
   const msg=panel.querySelector('#youthSaveStatus'),btn=panel.querySelector('#youthSave');btn.disabled=true;
-  try{await saveState();msg.textContent='Saved Youth review to the existing case record.';msg.style.color='#166534'}
+  try{await saveState();msg.textContent='Youth review queued for cloud sync. Reopen this case after refresh to verify persistence.';msg.style.color='#166534'}
   catch(err){p.youthCase=prior;msg.textContent='Save failed. Changes were not confirmed: '+(err?.message||err);msg.style.color='#b91c1c'}
   finally{btn.disabled=false}
  });
