@@ -53,13 +53,18 @@ renderDrawer=function(id){
  '</div><button id="youthSave" type="button" style="margin-top:12px;padding:9px 14px;background:#155e63;color:white;border:0;border-radius:9px;font-weight:700">Save Youth Review</button>'+
  '<p id="youthSaveStatus" style="font-size:11px" role="status"></p>';
  target.insertAdjacentElement('afterend',panel);
+ const reviewBody=panel.innerHTML;
+ const collapseReview=()=>{
+  panel.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><strong>Youth Review</strong><div style="font-size:12px;color:#466">Changes queued for cloud sync; reopen to review.</div></div><button type="button" id="youthExpand" style="padding:8px;border-radius:8px">Edit Youth Review</button></div>';
+  panel.querySelector('#youthExpand').onclick=()=>renderDrawer(p.id);
+ };
  panel.querySelector('#youthSave').addEventListener('click',async()=>{
   const saved={...ensure(p),elements:{...(ensure(p).elements||{})}};
   panel.querySelectorAll('[data-youth-field]').forEach(el=>saved[el.dataset.youthField]=el.value);
   panel.querySelectorAll('[data-youth-element]').forEach(el=>saved.elements[el.dataset.youthElement]=el.value);
   const prior=p.youthCase;p.youthCase=saved;
   const msg=panel.querySelector('#youthSaveStatus'),btn=panel.querySelector('#youthSave');btn.disabled=true;
-  try{await saveState();msg.textContent='Youth review queued for cloud sync. Reopen this case after refresh to verify persistence.';msg.style.color='#166534'}
+  try{await saveState();msg.textContent='Youth review queued for cloud sync.';msg.style.color='#166534';collapseReview()}
   catch(err){p.youthCase=prior;msg.textContent='Save failed. Changes were not confirmed: '+(err?.message||err);msg.style.color='#b91c1c'}
   finally{btn.disabled=false}
  });
