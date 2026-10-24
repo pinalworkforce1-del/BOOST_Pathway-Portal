@@ -1,0 +1,26 @@
+name: Validate BOOST Jacqueline Agent
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/boost-live-interview-isolated]
+    paths:
+      - 'experiments/boost-live-interview/**'
+      - '.github/workflows/validate-boost-interview-agent.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile interview Python
+        run: python -m py_compile experiments/boost-live-interview/agent.py
+      - name: Check BOOST-only endpoints
+        run: |
+          ! grep -Ei 'dnijrzotfyvmmnmueknk|levelup-interview-agent-complete|levelup-interview-pilot' experiments/boost-live-interview/agent.py
+      - name: Assert callback configuration names
+        run: |
+          grep -q BOOST_INTERVIEW_CALLBACK_SECRET experiments/boost-live-interview/agent.py
+          grep -q BOOST_INTERVIEW_CALLBACK_URL experiments/boost-live-interview/agent.py
+# Deployment deliberately excluded. Dedicated BOOST LiveKit project and secrets
+# must be provisioned, then deployed through an explicit reviewed workflow.
