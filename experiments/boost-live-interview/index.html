@@ -14,12 +14,26 @@
 <p id="allowance" class="hint">Pilot policy: 8 minutes per session, 2 sessions per 30 days. Quota activation pending.</p><p id="status" role="status" aria-live="polite"><span class="indicator"></span>Ready when you are.</p><p class="hint" id="connection">Tip: Turn off nearby TVs or use headphones to avoid accidental interruptions.</p>
 </section><section class="panel"><div class="stage" id="stage"><video id="avatar" autoplay playsinline aria-label="Live video of your AI practice interviewer"></video><div class="placeholder" id="placeholder"><strong>Interview Intelligence</strong><p>Jacqueline is ready to meet you.</p><p class="muted">Your interviewer's video will appear here when connected.</p></div><div id="remoteAudio"></div></div><div class="row"><span class="indicator" id="indicator"></span><span id="trackState">Not connected</span></div><p class="muted">If video pauses, your audio interview may continue. The session remains open until you end it.</p></section></div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0"></script>
 <script>
-/* Intentionally no LiveKit or Supabase connection yet. The original Level Up
-   implementation is retained as the visual reference in source control.
-   A BOOST-only token service and completion adapter must be installed
-   before this branch can accept interviews. */
-document.querySelectorAll('button').forEach(button=>{
-  button.disabled=true;button.setAttribute('title','BOOST live interview backend not connected');
-});
+const notice=document.createElement('section');
+notice.setAttribute('role','status');
+notice.style.cssText='margin:12px auto;padding:16px;max-width:1100px;border:1px solid #6b869b;background:#12334c;color:white;border-radius:12px';
+document.body.insertBefore(notice,document.body.children[1]||null);
+document.querySelectorAll('button').forEach(b=>{b.disabled=true;b.title='Isolated BOOST interview backend not connected';});
+(async()=>{
+ try{
+  notice.textContent='Checking BOOST participant session and TalentSync transfer…';
+  const cfg={url:'https://dxcajwarqojvmbteroco.supabase.co',key:'sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF'};
+  const client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const {data:{user},error}=await client.auth.getUser();
+  if(error||!user)throw Error('Sign in through BOOST before opening the interview.');
+  const {data:transferred,error:gateError}=await client.rpc('boost_resume_enrollment_approved');
+  if(gateError||transferred!==true)throw Error('Verified transfer into TalentSync is required.');
+  const progress=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');
+  const decisions=progress.sceneSelections||{};
+  const interviewIds=(window.R2W_COURSE?.scenes||[]).filter(s=>s.stage==='Interview Landing').map(s=>s.id);
+  notice.textContent='BOOST identity and TalentSync transfer verified. '+(interviewIds.length?'Interview scenarios: '+interviewIds.filter(id=>decisions[id]).length+' of '+interviewIds.length+' completed. ':'')+'Live avatar interview is not connected in this isolated prototype.';
+ }catch(e){notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
+})();
 </script></body></html>
