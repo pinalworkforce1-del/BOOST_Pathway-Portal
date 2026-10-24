@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOOST 2.0 | Smart Resume Staging</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0a1d32;color:#f1f7ff;font:16px system-ui,sans-serif}header{padding:22px max(16px,calc((100vw - 1100px)/2));background:linear-gradient(110deg,#103754,#164d71);border-bottom:3px solid #e4b64c}h1{margin:4px 0;font-size:clamp(1.4rem,3vw,2rem)}main{max-width:1100px;margin:auto;padding:22px 16px 60px}.muted{color:#b6ccdd}.panel{background:#112b43;border:1px solid #34536b;border-radius:16px;margin:15px 0;padding:18px}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid #e4b64c;border-radius:10px;padding:11px 14px;font-weight:750;cursor:pointer;background:#edc76c;color:#14263a}.btn.secondary{color:white;background:#1b4a6a;border-color:#6d93a9}.btn:disabled{opacity:.55;cursor:not-allowed}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}.tile{border-radius:12px;padding:13px;background:#193a56}.tile strong{display:block;margin-bottom:8px}.status{display:inline-block;border-radius:99px;padding:4px 9px;font-size:12px;font-weight:800}.ok{background:#226548}.warning{background:#85622d}.idle{background:#47596a}.mismatch{border:2px solid #f8ba53}.note{font-size:13px;color:#c2d4e2}.count{font-size:29px;font-weight:800}.small{font-size:13px}a{color:#a9deff}select{font:inherit;border-radius:9px;padding:9px;background:#214764;color:#fff;border:1px solid #7394aa}.check{color:#9be1b8}
+</style><style>
+.smart-banner{background:linear-gradient(110deg,#173f60,#1b5671);border:1px solid #bd9c50;border-radius:16px;padding:20px;margin:16px 0}.smart-banner h2{margin:4px 0 10px}.smart-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.smart-path{font-size:1.25rem;font-weight:800}.smart-count{margin-top:8px;color:#c2dbe8}.smart-hidden{display:none}.tile.current{outline:2px solid #edc76c}
+</style></head><body><header><div class="small">PRIVATE TEST WORKFLOW • HIDDEN STAGING PAGE</div><h1>BOOST 2.0 — Smart Resume & Progress</h1><div class="muted">Authenticated, read-only, same-origin comparison. No participant progress is saved by this page.</div></header>
+<main><section id="smart" class="smart-banner"><div class="small">SMART RESUME • STAGING PREVIEW</div><h2 id="smartTitle">Welcome to BOOST 2.0</h2><div class="smart-path" id="smartPath">Load your saved journey to resume your pathway.</div><p id="smartNext" class="smart-count">Your existing progress will not be changed.</p><div class="smart-actions"><button id="resume" class="btn" disabled>Continue My Journey</button><button id="home" class="btn secondary">All Pathways</button><a class="btn secondary" href="./index.html">Existing BOOST Home</a></div></section><section class="panel"><strong>Safety boundary</strong><p class="muted">Uses the existing Pinal BOOST sign-in from this browser. Loads your own journey only through BOOST's existing authenticated RPC. It does not call save functions, set progress records, or launch modules. If you aren't already signed in on BOOST in this browser, open the live portal and sign in first.</p><div class="actions"><button class="btn" id="load">Compare My Saved Journey</button><button class="btn secondary" id="local">Compare Browser Snapshot Only</button><a class="btn secondary" href="./index.html">Return to Live BOOST</a></div><p id="message" role="status" aria-live="polite" class="muted">No participant record loaded.</p></section>
+<section class="panel"><label for="path">Pathway shown: </label><select id="path"><option value="career">Career Exploration</option><option value="rapid">Rapid Reemployment</option><option value="ready">Employment Ready (new)</option></select><p id="summary" class="muted">Select Compare to display read-only results.</p></section>
+<div class="grid" id="cards"></div><section class="panel"><h2>What this validates</h2><p class="muted">For existing modules, the left column follows the live portal's evidenced-completion rule: <code>progress[id] === "complete"</code> and a nonempty saved module payload, or an existing validated map completion and saved module payload. The right column translates those same records into the illustrated tile states, using ordered prerequisite gates. A completed module is never revoked or rewritten here.</p><p class="muted">The Employment Ready sequence is a proposed mapping only: its new experience IDs and certificate requirements still need confirmation before production activation.</p><p class="small" id="meta"></p></section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="./assets/js/boost-config.js"></script>
+<script>
+(()=>{'use strict';
+const JOURNEY='pinal_boost_journey_v1',MAP='boostPathwaysV29',OLD='boostPathwaysV28',PATH='boostPortalPathway_v2';
+const plans={career:[['module1','Discover'],['module2','Validate'],['module3','Career Mobility'],['module4','Decide'],['industry','Industry Skills (conditional)'],['module5','Skill Investment'],['financial','Financial Habits'],['ai','AI & You']],rapid:[['module1','Discover'],['skillmobility','Skill Mobility'],['jobsearch','Job Search'],['financial','Financial Habits'],['ai','AI & You']],ready:[['financial','Financial Habits'],['ai','AI & You'],['soft_skills','Soft Skills Base Camp'],['resume','Resume Retreat'],['interview','Interview Intelligence']]};
+let snap=null,source='';const $=id=>document.getElementById(id);
+function safe(key,def){try{return JSON.parse(localStorage.getItem(key)||'')||def}catch(e){return def}}
+function nonempty(x){return !!(x&&typeof x==='object'&&Object.keys(x).length)}
+function path(j){const p=j?.portal?.pathway||j?.portal?.map?.pathway||localStorage.getItem(PATH)||safe(MAP,{})?.pathway||'career';return p==='rapid'||p==='career'?p:'career'}
+function evidence(j,k){
+if(k==='industry'){const matches=['industry-healthcare','industry-trades','industry-manufacturing','industry-cdl','industry-it'];return matches.some(n=>evidence(j,n))}
+const m=j?.modules?.[k],v=j?.progress?.[k],map=j?.portal?.map||safe(MAP,safe(OLD,{}));
+const mapKey=k.startsWith('industry-')?'i:'+k.slice(9):'m:'+k;
+return !!(nonempty(m)&&(v==='complete'||map?.complete?.[mapKey]));
+}
+function matchingIndustry(j){const m=j?.modules?.module4||{};const t=String(m.careerTitle||m.career?.title||m.careerTarget?.title||'').toLowerCase(),soc=String(m.selectedSoc||m.career?.soc||m.careerTarget?.soc||'').slice(0,2);
+return ['15','29','31','51','47','49','53'].includes(soc)||/nurs|medical|health|computer|software|manufactur|cnc|electric|plumb|weld|construction|cdl|truck|transport/.test(t)}
+function reviewStatus(j,k){
+ if(!['module2','module3','module4'].includes(k))return null;
+ const freshness=safe('pinal_boost_dependency_freshness_v1',null);
+ const review=freshness&&freshness.review||{};
+ if(review[k]){
+   const blocked=k==='module3'&&!!review.module2||k==='module4'&&(!!review.module2||!!review.module3);
+   return blocked?'Waiting for Earlier Review':'Review Needed';
+ }
+ if(j?.progress?.[k]==='stale'||j?.staleModules?.[k])return 'Review Needed';
+ return freshness?'fresh':'Not Verified';
+}
+function mapStage(j,p,k){
+ if(p==='career'&&k==='industry'&&!matchingIndustry(j))return {state:'not-required',required:false};
+ const review=reviewStatus(j,k);
+ return {state:evidence(j,k)?'completed':'not-complete',required:true,review};
+}
+function draw(){if(!snap)return;const p=$('path').value,list=plans[p],out=$('cards');out.replaceChildren();let blocking=false,completed=0,mismatches=0;
+for(const [k,name] of list){const live=mapStage(snap,p,k),done=live.state==='completed';if(done)completed++;const tile=live.review&&live.review!=='fresh'?(live.review==='Not Verified'?(done?'Completion Recorded • Freshness Unverified':blocking?'Locked • Freshness Unverified':'Available • Freshness Unverified'):live.review):done?'Completed':!live.required?'Not required':blocking?'Locked':'Available';if((!done||['Review Needed','Waiting for Earlier Review','Not Verified'].includes(live.review))&&live.required)blocking=true;
+const card=document.createElement('article');card.className='tile';const title=document.createElement('strong');title.textContent=name;card.append(title);
+const left=document.createElement('p');left.className='small';left.textContent='Existing records: '+(done?'Evidence-backed completion':live.required?'No validated completion':'Conditional requirement');card.append(left);
+const badge=document.createElement('span');badge.className='status '+(tile==='Completed'?'ok':live.required?(tile.startsWith('Locked')?'idle':'warning'):'idle');badge.textContent='Illustrated tile: '+tile;card.append(badge);
+const hint=document.createElement('p');hint.className='note';hint.textContent=live.review==='Not Verified'?'No browser freshness record is available; this test cannot confirm that the prior completion is still current.':live.review&&live.review!=='fresh'?'Saved completion is retained, but BOOST requires the earlier work to be reviewed.':live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);if(tile==='Available')card.classList.add('current');out.append(card);
+}
+$('summary').textContent=completed+' of '+list.length+' illustrated steps completed • '+mismatches+' evidence discrepancies • '+(source||'');$('meta').textContent='Read-only comparison • no participant data uploaded, altered, or exported.';updateResume(p,list);}
+function updateResume(p,list){
+ const names={career:'Career Exploration',rapid:'Rapid Reemployment',ready:'Employment Ready'};
+ const next=list.find(([k])=>{const st=mapStage(snap,p,k);return st.required&&(st.review&&st.review!=='fresh'||!evidence(snap,k))});
+ const completed=list.filter(([k])=>evidence(snap,k)).length;
+ $('smartTitle').textContent='Welcome back to BOOST';
+ $('smartPath').textContent=names[p]||'Your BOOST pathway';
+ $('smartNext').textContent=(next?'Next attention: '+next[1]:'All mapped steps have saved completion evidence')+' • '+completed+' of '+list.length+' steps recorded';
+ $('resume').disabled=false;
+}
+$('resume').addEventListener('click',()=>{if(!snap)return;document.getElementById('cards').scrollIntoView({behavior:'smooth',block:'start'});});
+$('home').addEventListener('click',()=>{document.getElementById('path').focus();document.getElementById('path').scrollIntoView({behavior:'smooth',block:'center'});});
+$('path').addEventListener('change',draw);
+$('local').addEventListener('click',()=>{snap=safe(JOURNEY,{});source='Local browser snapshot';$('path').value=path(snap);$('message').textContent=nonempty(snap)?'Local journey loaded for preview.':'No local journey found. Open BOOST using this browser first.';draw()});
+$('load').addEventListener('click',async()=>{const button=$('load');button.disabled=true;try{const cfg=window.BOOST_CONFIG||{};if(!window.supabase?.createClient||!cfg.supabaseUrl||!cfg.supabaseAnonKey)throw Error('BOOST sign-in configuration could not be loaded.');const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const session=(await client.auth.getSession()).data?.session;if(!session?.user)throw Error('Not signed in on this browser. Sign in to live BOOST first.');const region=cfg.region||'Pinal County';const result=await client.rpc('boost_load_my_journey_for_region',{p_region:region});if(result.error)throw Error(result.error.message);if(!result.data)throw Error('No saved journey was returned for this sign-in.');snap=result.data;source='Authenticated Pinal BOOST cloud journey';$('path').value=path(snap);$('message').textContent='Successfully loaded your existing journey (read-only).';draw()}catch(err){$('message').textContent=err.message||String(err)}finally{button.disabled=false}});
+})();
+</script></body></html>
