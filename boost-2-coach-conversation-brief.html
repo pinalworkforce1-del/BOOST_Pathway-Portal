@@ -26,16 +26,16 @@
 <div class="doc"><b>If applicable: Education / Veteran Records</b><span>Diplomas, transcripts, certificates, licenses, training records, or DD-214 / veteran documentation when relevant.</span></div>
 </div>
 <p class="note small"><b>Don't have everything?</b> You can still meet with your Career Coach. Not every document applies to everyone, and staff can help identify accepted forms of verification or alternatives. Please don't upload sensitive documents through BOOST.</p>
-<div class="actions"><a class="btn primary" id="pauseBtn" href="index.html">Pause Here — Return to BOOST Map</a><a class="btn secondary" id="continueBtn" href="index.html">Continue Exploring BOOST</a></div>
+<div class="actions"><a class="btn primary" id="pauseBtn" href="index.html">Back to Career Exploration</a><a class="btn secondary" id="continueBtn" href="index.html">Explore More BOOST Pathways</a></div>
 <p class="note small">Your Career Coach can review your direction and next BOOST experiences with you.</p>
 </section></div></main>
 <script>
 (function(){
   const q=new URLSearchParams(location.search),raw=q.get('next');
-  let next=new URL('index.html',location.href);
-  if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
+  let next=new URL('boost-2-exploration-appointment-test.html?boost2_path=explore&boost2_from=handoff',location.href);
+  if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin&&u.pathname.startsWith('/BOOST_Pathway-Portal/')&&u.pathname.includes('boost-2-'))next=u}catch(_){}}
   document.getElementById('pauseBtn').href=next.toString();
-  document.getElementById('continueBtn').href=next.toString();
+  const all=new URL(next.toString());all.searchParams.delete('boost2_path');all.searchParams.delete('boost2_from');all.hash='choices';document.getElementById('continueBtn').href=all.toString();
 
   const brief=document.getElementById('conversationBrief');
   function val(o,path){return path.split('.').reduce((x,k)=>x?.[k],o)}
