@@ -41,7 +41,7 @@ function openModule(moduleId,tile){
  const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:'+id,nonce);
  const activity=new URL('activity.html',portalBase);
  activity.searchParams.set('m',id.startsWith('industry-')?id.slice(9):id);
- const returnPage=new URL(location.origin+location.pathname);returnPage.searchParams.set('boost2_path','explore');returnPage.searchParams.set('boost2_from',id);activity.searchParams.set('boost_return',returnPage.toString());
+ const returnPage=new URL(location.origin+location.pathname);returnPage.searchParams.set('boost2_path',document.querySelector('.path-card.boost2-selected')?.dataset.key||'explore');returnPage.searchParams.set('boost2_from',id);activity.searchParams.set('boost_return',returnPage.toString());
  activity.searchParams.set('boost_module',id);
  activity.searchParams.set('boost_nonce',nonce);
  location.assign(activity.toString());
