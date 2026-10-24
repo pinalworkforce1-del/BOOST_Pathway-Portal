@@ -30,10 +30,16 @@ document.querySelectorAll('button').forEach(b=>{b.disabled=true;b.title='Isolate
   if(error||!user)throw Error('Sign in through BOOST before opening the interview.');
   const {data:transferred,error:gateError}=await client.rpc('boost_resume_enrollment_approved');
   if(gateError||transferred!==true)throw Error('Verified transfer into TalentSync is required.');
+  const {data:{session}}=await client.auth.getSession();
+  if(!session)throw Error('BOOST authentication session is unavailable.');
+  const check=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{'authorization':'Bearer '+session.access_token,'apikey':cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'readiness'})});
+  const readiness=await check.json();
+  if(!check.ok)throw Error(readiness.error||'Interview readiness check failed.');
+  if(readiness.livekit_enabled)throw Error('LiveKit readiness unexpected: interface must be independently validated first.');
   const progress=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');
   const decisions=progress.sceneSelections||{};
   const interviewIds=(window.R2W_COURSE?.scenes||[]).filter(s=>s.stage==='Interview Landing').map(s=>s.id);
-  notice.textContent='BOOST identity and TalentSync transfer verified. '+(interviewIds.length?'Interview scenarios: '+interviewIds.filter(id=>decisions[id]).length+' of '+interviewIds.length+' completed. ':'')+'Live avatar interview is not connected in this isolated prototype.';
+  notice.textContent='BOOST identity and TalentSync transfer verified. '+(interviewIds.length?'Interview scenarios: '+interviewIds.filter(id=>decisions[id]).length+' of '+interviewIds.length+' completed. ':'')+'BOOST gateway authenticated. Live avatar interview remains disabled until isolated LiveKit sessions are available.';
  }catch(e){notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
 })();
 </script></body></html>
