@@ -63,7 +63,7 @@ const left=document.createElement('p');left.className='small';left.textContent='
 const badge=document.createElement('span');badge.className='status '+(tile==='Completed'?'ok':live.required?(tile.startsWith('Locked')?'idle':'warning'):'idle');badge.textContent='Illustrated tile: '+tile;card.append(badge);
 const hint=document.createElement('p');hint.className='note';hint.textContent=live.review==='Not Verified'?'No browser freshness record is available; this test cannot confirm that the prior completion is still current.':live.review&&live.review!=='fresh'?'Saved completion is retained, but BOOST requires the earlier work to be reviewed.':live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);if(tile==='Available')card.classList.add('current');out.append(card);
 }
-$('summary').textContent=completed+' historically completed • '+reviews+' requiring review • '+unverified+' freshness unverified • '+(source||'');$('meta').textContent='Read-only comparison • no participant data uploaded, altered, or exported.';updateResume(p,list);}
+$('summary').textContent=completed+' historically completed • '+reviews+' requiring review'+(unverified?' • '+unverified+' status'+(unverified===1?'':'es')+' not verified':'')+' • '+(source||'');$('meta').textContent='Read-only comparison • no participant data uploaded, altered, or exported.';updateResume(p,list);}
 function updateResume(p,list){
  const names={career:'Career Exploration',rapid:'Rapid Reemployment',ready:'Employment Ready'};
  const next=list.find(([k])=>{const st=mapStage(snap,p,k);return st.required&&(st.review&&st.review!=='fresh'||!evidence(snap,k))});
