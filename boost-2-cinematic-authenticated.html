@@ -147,7 +147,6 @@ document.querySelector('#back').addEventListener('click',()=>{pane.classList.rem
 const mount=document.createElement('section');mount.id='boost2-live';mount.innerHTML='<h2>Welcome to BOOST 2.0</h2><p id="b2message">Select Load My Journey to view your existing BOOST progression on these graphic-novel tiles.</p><div id="b2identity" class="boost2-identity" hidden></div><div id="b2summary" aria-live="polite"></div><button id="b2load">Load My Saved Journey</button><button id="b2continue" disabled>Continue My Journey →</button><button id="b2all" class="secondary">All Pathways</button><p style="font-size:12px">Illustrated staging • Module activity saves through existing BOOST • Return to your selected pathway</p>';
 document.querySelector('.choices').before(mount);
 const el=id=>document.getElementById(id);let snapshot=null,chosen=null,authUser=null;
-let chosen=null;
 const sequences={explore:['module1','module2','module3','module4','industry','module5','optional','handoff','financial_ai'],rapid:['module1','skillmobility','financial','ai','jobsearch'],ready:['financial','ai','softskills','resume','interview','certificate']};
 const parse=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
 const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
