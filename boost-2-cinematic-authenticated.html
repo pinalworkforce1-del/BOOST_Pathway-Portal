@@ -28,16 +28,14 @@ const industryRoutes = Object.freeze({
 });
 const portalBase='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
 function freshNonce(){const b=new Uint8Array(24);crypto.getRandomValues(b);return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')}
-function openModule(moduleId){
- if(!snapshot||!authUser){alert('Your signed-in BOOST journey must load before opening a module.');return}
+function openModule(moduleId,tile){
+ const identity=document.getElementById('b2identity');
+ if(!identity||identity.hidden){alert('Load your authenticated BOOST journey before opening a module.');return}
  const id=moduleId==='investment'?'module5':industryId(moduleId);
- const step=sequences[chosen]?.find(x=>x===id||(x==='industry'&&id.startsWith('industry-')));
- if(!step){alert('This module is not part of the selected pathway.');return}
- const stepIndex=sequences[chosen].indexOf(step);
- const displayedTile=document.querySelectorAll('#stages .stage')[stepIndex];
- const shownStatus=displayedTile?.dataset.b2status||'';
- const actionable=['Review Needed','Available','Completed'].includes(shownStatus);
- if(!actionable){alert('This step is locked until required earlier steps are current.');return}
+ const shownStatus=tile?.dataset.b2status||'';
+ if(!['Review Needed','Available','Completed'].includes(shownStatus)){
+   alert('This step is locked until required earlier reviews are complete.');return;
+ }
  const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:'+id,nonce);
  const activity=new URL('activity.html',portalBase);
  activity.searchParams.set('m',id.startsWith('industry-')?id.slice(9):id);
@@ -95,11 +93,11 @@ function show(key){
     Object.entries(industryRoutes).forEach(([label,id])=>{const op=document.createElement('option');op.value=id;op.textContent=label;select.append(op)});
     const b=document.createElement('button');b.type='button';b.className='test-launch';b.textContent='Open industry activity ↗';b.disabled=true;
     select.addEventListener('change',()=>b.disabled=!select.value);
-    b.addEventListener('click',()=>select.value&&openModule(select.value));body.append(select,b);
+    b.addEventListener('click',()=>select.value&&openModule(select.value,el));body.append(select,b);
   } else if(moduleId){
     const b=document.createElement('button');b.type='button';b.className='test-launch';
     b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
-    b.addEventListener('click',()=>openModule(moduleId));body.append(b);
+    b.addEventListener('click',()=>openModule(moduleId,el));body.append(b);
   } else {
     const notice=document.createElement('div');notice.className='pending-wire';notice.textContent='Integration pending · Preview only';body.append(notice);
   }
