@@ -1,4 +1,4 @@
-"""Isolated Level Up / Synthesia Interactive Avatar voice interview pilot.
+"""Independent BOOST / Synthesia Interactive Avatar voice interview.
 
 Run as a LiveKit worker after configuring secrets in the worker environment.
 Does not alter the production Rosie mock-interview module.
@@ -161,6 +161,8 @@ server = AgentServer()
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def interview(ctx: agents.JobContext):
+    if not ctx.room.name.startswith("boost-interview-"):
+        raise RuntimeError("Refusing room outside BOOST interview namespace")
     session = AgentSession(
         stt="cartesia/ink-2",
         llm="openai/gpt-4.1-mini",
