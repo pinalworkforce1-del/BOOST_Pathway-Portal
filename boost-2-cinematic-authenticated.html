@@ -105,7 +105,7 @@ function show(key){
   }
   el.append(bg,body);tiles.append(el);
  });
- pane.classList.add('active');pane.scrollIntoView({behavior:'smooth',block:'start'});
+ pane.classList.add('active');if(!new URLSearchParams(location.search).has('boost2_path'))pane.scrollIntoView({behavior:'smooth',block:'start'});
 }
 document.querySelectorAll('.path-card').forEach(b=>b.addEventListener('click',()=>show(b.dataset.key)));
 document.querySelector('#back').addEventListener('click',()=>{pane.classList.remove('active');document.querySelector('#choices').scrollIntoView({behavior:'smooth',block:'start'})});</script><style>
@@ -177,22 +177,36 @@ function paint(){if(!snapshot||!chosen)return;const seq=sequences[chosen],tiles=
  el('b2continue').disabled=false;el('b2continue').onclick=()=>{(next?.tile||tiles[0])?.scrollIntoView({behavior:'smooth',block:'center'});};
  document.querySelectorAll('.path-card').forEach(c=>{const yes=c.dataset.key===chosen;c.classList.toggle('boost2-selected',yes);c.querySelector('.boost2-pill')?.remove();if(yes){const pill=document.createElement('span');pill.className='boost2-pill';pill.textContent='IN PROGRESS';c.append(pill)}});
 }
-function activate(key,returning=false){chosen=key;const card=document.querySelector('.path-card[data-key="'+key+'"]');card?.click();setTimeout(()=>{
- paint();
- if(returning){
+function activate(key,returning=false){
+ chosen=key;
+ const card=document.querySelector('.path-card[data-key="'+key+'"]');
+ // Open the actual pathway directly; do not rely on the card's smooth-scroll click.
+ show(key);
+ const focusReturned=()=>{
+   paint();
+   if(!returning)return;
    const stages=[...document.querySelectorAll('#stages .stage')];
+   const q=new URLSearchParams(location.search);
+   const origin=q.get('boost2_from')||sessionStorage.getItem('boost2_return_module');
    const next=stages.find(x=>['Review Needed','Available'].includes(x.dataset.b2status));
-   const origin=sessionStorage.getItem('boost2_return_module');
    const prior=stages[sequences[key]?.indexOf(origin)];
    const target=next||prior||stages[0];
-   document.querySelector('#path')?.classList.add('active');target?.scrollIntoView({behavior:'auto',block:'center'});
-   sessionStorage.removeItem('boost2_return_module');
-   sessionStorage.removeItem('boost2_return_pathway');
+   document.querySelector('#path')?.classList.add('active');
+   if(target)target.scrollIntoView({behavior:'instant',block:'center'});
+ };
+ setTimeout(focusReturned,200);
+ if(returning){
+   setTimeout(focusReturned,850);
+   setTimeout(()=>{
+     focusReturned();
+     sessionStorage.removeItem('boost2_return_module');
+     sessionStorage.removeItem('boost2_return_pathway');
+   },1400);
  }
-},160)}
+}
 document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{if(snapshot){chosen=c.dataset.key;setTimeout(paint,60)}}));
 el('b2all').onclick=()=>document.querySelector('#choices').scrollIntoView({behavior:'smooth'});
-el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!location.pathname.startsWith('/BOOST_Pathway-Portal/'))throw Error('Sign-in preview requires the page to be hosted within BOOST.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const result=await client.auth.getSession();authUser=result.data?.session?.user;if(!authUser)throw Error('Sign in to BOOST first, then open this test page.');const receiptMessage=await acceptCompletionReceipt(client,cfg.region||'Pinal County');const loaded=await client.rpc('boost_load_my_journey_for_region',{p_region:cfg.region||'Pinal County'});if(loaded.error)throw loaded.error;if(!loaded.data)throw Error('No saved journey was found for this sign-in.');snapshot=loaded.data;document.querySelectorAll('.demo-mark').forEach(b=>b.disabled=true);const pp=snapshot.participant||{},name=String(pp.name||snapshot.participant_name||'').trim(),email=String(pp.email||snapshot.participant_email||'').trim(),meta=authUser.user_metadata||{},profileName=[meta.first_name,meta.last_name].filter(Boolean).join(' ')||meta.full_name||'';const mismatch=email&&authUser.email&&norm(email)!==norm(authUser.email)||name&&profileName&&norm(name)!==norm(profileName);el('b2identity').hidden=false;el('b2identity').textContent='Progress belongs to: '+(name||'Name unavailable')+' • '+(mismatch?'⚠ Identity details do not match sign-in':email&&authUser.email?'✓ Signed-in email matches saved journey':'Identity match not fully verified');el('b2message').textContent=receiptMessage||'Authenticated Pinal BOOST journey loaded. Module results are saved by BOOST; this page displays them.';const params=new URLSearchParams(location.search);const urlPath=params.get('boost2_path');const savedPath=urlPath==='explore'||urlPath==='rapid'||urlPath==='ready'?urlPath:sessionStorage.getItem('boost2_return_pathway');const returning=!!savedPath;activate(savedPath||selected(snapshot)||'explore',returning);if(urlPath){const clean=new URL(location.href);clean.searchParams.delete('boost2_path');clean.searchParams.delete('boost2_from');history.replaceState({},'',clean.toString())}}catch(err){el('b2message').textContent=err.message||String(err);}finally{button.disabled=false}};
+el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!location.pathname.startsWith('/BOOST_Pathway-Portal/'))throw Error('Sign-in preview requires the page to be hosted within BOOST.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const result=await client.auth.getSession();authUser=result.data?.session?.user;if(!authUser)throw Error('Sign in to BOOST first, then open this test page.');const receiptMessage=await acceptCompletionReceipt(client,cfg.region||'Pinal County');const loaded=await client.rpc('boost_load_my_journey_for_region',{p_region:cfg.region||'Pinal County'});if(loaded.error)throw loaded.error;if(!loaded.data)throw Error('No saved journey was found for this sign-in.');snapshot=loaded.data;document.querySelectorAll('.demo-mark').forEach(b=>b.disabled=true);const pp=snapshot.participant||{},name=String(pp.name||snapshot.participant_name||'').trim(),email=String(pp.email||snapshot.participant_email||'').trim(),meta=authUser.user_metadata||{},profileName=[meta.first_name,meta.last_name].filter(Boolean).join(' ')||meta.full_name||'';const mismatch=email&&authUser.email&&norm(email)!==norm(authUser.email)||name&&profileName&&norm(name)!==norm(profileName);el('b2identity').hidden=false;el('b2identity').textContent='Progress belongs to: '+(name||'Name unavailable')+' • '+(mismatch?'⚠ Identity details do not match sign-in':email&&authUser.email?'✓ Signed-in email matches saved journey':'Identity match not fully verified');el('b2message').textContent=receiptMessage||'Authenticated Pinal BOOST journey loaded. Module results are saved by BOOST; this page displays them.';const params=new URLSearchParams(location.search);const urlPath=params.get('boost2_path');const savedPath=urlPath==='explore'||urlPath==='rapid'||urlPath==='ready'?urlPath:sessionStorage.getItem('boost2_return_pathway');const returning=!!savedPath;activate(savedPath||selected(snapshot)||'explore',returning);// Preserve return context in the URL until the participant leaves the page.}catch(err){el('b2message').textContent=err.message||String(err);}finally{button.disabled=false}};
 window.addEventListener('load',()=>{setTimeout(()=>el('b2load')?.click(),250)});
 })();
 </script>
