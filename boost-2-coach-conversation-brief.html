@@ -59,11 +59,26 @@
     const scores=m1.interestScores||{};
     const topScores=Object.entries(scores).filter(pair=>/^[RIASEC]$/.test(pair[0])&&Number.isFinite(Number(pair[1]))).sort((a,b)=>Number(b[1])-Number(a[1]));
     const candidate=[...(m3.careers||[]),...(m2.careers||[]),...(m1.selected||[])].find(x=>String(x?.soc||'')===soc)||{};
-    const numericMatch=first(candidate,['interestMatchScore','interestScore','onetScore','fitScore']);
-    const alignment=para('Selected occupation and O*NET alignment','Your choice of '+title+' can be discussed alongside your highest-scoring work interests. O*NET interests are not an eligibility test.');
-    if(topScores.length)item(alignment,'Your O*NET interest scores',topScores.slice(0,3).map(pair=>(names[pair[0]]||pair[0])+': '+pair[1]).join(' / '));
-    if(numericMatch!==null)item(alignment,'Recorded occupation match',words(numericMatch));
-    else item(alignment,'Occupation match','An occupation-specific match score was not found, so no percentage is assumed.');
+    const occupationalCode=String(first(candidate,['onetInterestCode','interestCode','riasecCode'])||'').toUpperCase().replace(/[^RIASEC]/g,'');
+    // Verified O*NET occupation profile for Heavy and Tractor-Trailer Truck Drivers (53-3032.00).
+    // Never generalize this profile to other jobs without sourced occupation-level data.
+    const verifiedRC=soc==='53-3032.00'||soc==='53-3032'||(soc.startsWith('53-3032')&&/truck|tractor/i.test(title));
+    const occupationProfile=verifiedRC?'RC':occupationalCode;
+    const alignment=para('Your interests compared with the selected occupation','You chose '+title+'. Here is how your reported work interests compare with the interest themes associated with this occupation.');
+    if(topScores.length)item(alignment,'Your highest interest scores',topScores.slice(0,3).map(([key,value])=>(names[key]||key)+' '+value).join(' / '));
+    if(occupationProfile){
+      const labels=occupationProfile.slice(0,3).split('').map(key=>names[key]||key);
+      item(alignment,'Occupation interest profile',labels.join(' / '));
+      const rank=topScores.map(([key])=>key);
+      const overlap=occupationProfile.slice(0,2).split('').filter(key=>rank.slice(0,3).includes(key));
+      const finding=overlap.length?'Some of your strongest interests overlap with the occupation profile. Explore how those interests appear in the daily tasks.':'Your top three interests differ from the occupation’s primary interest themes. This is a difference worth exploring, not a reason to rule out the career.';
+      item(alignment,'What this comparison means',finding);
+      if(verifiedRC){
+        item(alignment,'What the work emphasizes','Driving and operating vehicles (Realistic), plus following safety procedures, keeping records, and managing required documentation (Conventional).');
+        const link=document.createElement('a');link.href='https://www.onetonline.org/link/summary/53-3032.00';link.target='_blank';link.rel='noopener noreferrer';link.textContent='View the O*NET occupation interest profile ↗';alignment.append(link);
+      }
+      item(alignment,'Ask your coach','Which parts of the occupation appeal to you beyond the interest ranking? Could its daily schedule, equipment operation, independence, and documentation responsibilities fit your preferences?');
+    }else item(alignment,'Occupation comparison','The saved occupation does not have a verified interest profile in BOOST yet. Your scores are shown, but no unsupported match percentage is calculated.');
     const fit=para('What you discovered about yourself',interestText?'Your strongest O*NET interests include '+interestText+'. Discuss how these interests connect with the daily work in '+title+'.':'Your interest results are available in Discover. Use them to discuss how this occupation fits the work you enjoy.');
     const strengths=[...(m3.selfAssessment||[]).filter(x=>/Used Regularly|Used Sometimes/i.test(x?.use||'')).map(x=>words(x.skill||x.name||x.activity)),...(m3.skillEvidence||[]).map(words)].filter(Boolean);
     if(strengths.length)item(fit,'Experience and strengths you can bring',Array.from(new Set(strengths)).slice(0,6).join(', '));
