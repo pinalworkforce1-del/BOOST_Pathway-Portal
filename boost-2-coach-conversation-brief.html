@@ -58,27 +58,22 @@
     const interestText=top.map(x=>names[x]||x).join(', ')||Object.entries(m1.interestScores||{}).sort((x,y)=>Number(y[1])-Number(x[1])).slice(0,3).map(([key])=>names[key]||key).join(', ');
     const scores=m1.interestScores||{};
     const topScores=Object.entries(scores).filter(pair=>/^[RIASEC]$/.test(pair[0])&&Number.isFinite(Number(pair[1]))).sort((a,b)=>Number(b[1])-Number(a[1]));
-    const candidate=[...(m3.careers||[]),...(m2.careers||[]),...(m1.selected||[])].find(x=>String(x?.soc||'')===soc)||{};
-    const occupationalCode=String(first(candidate,['onetInterestCode','interestCode','riasecCode'])||'').toUpperCase().replace(/[^RIASEC]/g,'');
-    // Verified O*NET occupation profile for Heavy and Tractor-Trailer Truck Drivers (53-3032.00).
-    // Never generalize this profile to other jobs without sourced occupation-level data.
-    const verifiedRC=soc==='53-3032.00'||soc==='53-3032'||(soc.startsWith('53-3032')&&/truck|tractor/i.test(title));
-    const occupationProfile=verifiedRC?'RC':occupationalCode;
-    const alignment=para('Your interests compared with the selected occupation','You chose '+title+'. Here is how your reported work interests compare with the interest themes associated with this occupation.');
-    if(topScores.length)item(alignment,'Your highest interest scores',topScores.slice(0,3).map(([key,value])=>(names[key]||key)+' '+value).join(' / '));
-    if(occupationProfile){
-      const labels=occupationProfile.slice(0,3).split('').map(key=>names[key]||key);
-      item(alignment,'Occupation interest profile',labels.join(' / '));
-      const rank=topScores.map(([key])=>key);
-      const overlap=occupationProfile.slice(0,2).split('').filter(key=>rank.slice(0,3).includes(key));
-      const finding=overlap.length?'Some of your strongest interests overlap with the occupation profile. Explore how those interests appear in the daily tasks.':'Your top three interests differ from the occupation’s primary interest themes. This is a difference worth exploring, not a reason to rule out the career.';
-      item(alignment,'What this comparison means',finding);
-      if(verifiedRC){
-        item(alignment,'What the work emphasizes','Driving and operating vehicles (Realistic), plus following safety procedures, keeping records, and managing required documentation (Conventional).');
-        const link=document.createElement('a');link.href='https://www.onetonline.org/link/summary/53-3032.00';link.target='_blank';link.rel='noopener noreferrer';link.textContent='View the O*NET occupation interest profile ↗';alignment.append(link);
-      }
-      item(alignment,'Ask your coach','Which parts of the occupation appeal to you beyond the interest ranking? Could its daily schedule, equipment operation, independence, and documentation responsibilities fit your preferences?');
-    }else item(alignment,'Occupation comparison','The saved occupation does not have a verified interest profile in BOOST yet. Your scores are shown, but no unsupported match percentage is calculated.');
+    const candidates=[...(m1.selected||[]),...(m1.careers||[]),...(m3.careers||[]),...(m2.careers||[])];
+    const candidate=candidates.find(x=>soc&&String(x?.soc||'')===soc)||candidates.find(x=>String(x?.title||'').toLowerCase()===title.toLowerCase())||{};
+    const alignment=para('Selected occupation and Module 1 interest alignment','BOOST already compared your interests and work drivers with '+title+' during Discover. These alignment scores describe fit with your preferences, not ability, eligibility, or a guaranteed outcome.');
+    if(topScores.length)item(alignment,'Your top interest scores',topScores.slice(0,3).map(([key,value])=>(names[key]||key)+': '+value).join(' / '));
+    function validScore(v){if(v===null||v===undefined||v==='')return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&n<=100?n:null}
+    const interest=validScore(candidate.interestAlignmentScore);
+    const driver=validScore(candidate.workDriverAlignmentScore);
+    const overall=validScore(candidate.overallAlignmentScore);
+    if(interest!==null)item(alignment,'O*NET interest alignment',interest.toFixed(1)+' / 100');
+    if(driver!==null)item(alignment,'Work-driver alignment',driver.toFixed(1)+' / 100');
+    if(overall!==null)item(alignment,'Overall alignment',overall.toFixed(1)+' / 100');
+    if(overall!==null)item(alignment,'How BOOST calculated this','60% O*NET interests and 40% validated work-driver alignment, when both are available.');
+    const matched=Array.isArray(candidate.matchedWorkDrivers)?candidate.matchedWorkDrivers.map(x=>words(x.label||x.key)).filter(Boolean):[];
+    if(matched.length)item(alignment,'Work priorities that connect',matched.slice(0,3).join(', '));
+    if(interest===null&&overall===null)item(alignment,'Saved alignment unavailable','This record contains the interest scores but not the occupation-level Module 1 alignment evidence. The briefing will not substitute a new or assumed match value.');
+    item(alignment,'What to discuss','Which daily activities in '+title+' connect with what motivates you? Which aspects may take adjustment, and how could the work fit your life and goals?');
     const fit=para('What you discovered about yourself',interestText?'Your strongest O*NET interests include '+interestText+'. Discuss how these interests connect with the daily work in '+title+'.':'Your interest results are available in Discover. Use them to discuss how this occupation fits the work you enjoy.');
     const strengths=[...(m3.selfAssessment||[]).filter(x=>/Used Regularly|Used Sometimes/i.test(x?.use||'')).map(x=>words(x.skill||x.name||x.activity)),...(m3.skillEvidence||[]).map(words)].filter(Boolean);
     if(strengths.length)item(fit,'Experience and strengths you can bring',Array.from(new Set(strengths)).slice(0,6).join(', '));
