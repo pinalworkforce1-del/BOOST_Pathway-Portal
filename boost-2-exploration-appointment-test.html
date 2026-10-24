@@ -182,6 +182,8 @@ function industryComplete(j){const id=alignedIndustry(j);return id?hasEvidence(j
 function state(j,id,blocked){
  if(id==='optional')return {label:'Explore More',cls:'ok',block:false,canLaunch:true};
  if(id==='handoff')return {label:'Prepare for Your Appointment',cls:'ok',block:false,canLaunch:true};
+ if(['softskills','resume','interview'].includes(id))return {label:'Later — Ready 2 Work',cls:'unknown',block:false,canLaunch:false};
+ if(id==='financial')return {label:hasEvidence(j,'financial')?'Completed':'Later — Financial Habits',cls:hasEvidence(j,'financial')?'ok':'unknown',block:false,canLaunch:false};
  if(id==='certificate')return {label:'Pending Integration',cls:'unknown',block:false,canLaunch:false};
  if(id==='industry'){
    const aligned=alignedIndustry(j);
