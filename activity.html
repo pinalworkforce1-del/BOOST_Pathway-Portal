@@ -333,7 +333,7 @@ async function finish(){
   const target=new URL(safeReturn);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}
   target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);
   finishBtn.textContent='✓ Saved — returning to BOOST…';
-  if(m==='module4'){
+  if(m==='module4'&&!target.pathname.endsWith('/boost-2-cinematic-authenticated.html')){
     const handoff=new URL('module4-intake-handoff.html',location.href);
     handoff.searchParams.set('next',target.toString());
     location.assign(handoff.toString());
