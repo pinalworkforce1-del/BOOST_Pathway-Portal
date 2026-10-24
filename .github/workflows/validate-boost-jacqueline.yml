@@ -1,0 +1,8 @@
+name: Validate BOOST Jacqueline
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m py_compile experiments/boost-live-interview/agent.py
