@@ -66,10 +66,18 @@
     const interest=validScore(candidate.interestAlignmentScore);
     const driver=validScore(candidate.workDriverAlignmentScore);
     const overall=validScore(candidate.overallAlignmentScore);
-    if(interest!==null)item(alignment,'O*NET interest alignment',interest.toFixed(1)+' / 100');
-    if(driver!==null)item(alignment,'Work-driver alignment',driver.toFixed(1)+' / 100');
-    if(overall!==null)item(alignment,'Overall alignment',overall.toFixed(1)+' / 100');
-    if(overall!==null)item(alignment,'How BOOST calculated this','60% O*NET interests and 40% validated work-driver alignment, when both are available.');
+    const rating=score=>score>=75?'Strong Alignment':score>=50?'Some Alignment':'Limited Alignment';
+    function explain(label,score,meaning){
+      if(score===null)return;
+      item(alignment,label,rating(score)+' — '+score.toFixed(1)+' / 100. '+meaning);
+    }
+    explain('O*NET Interest Alignment',interest,'How closely this career resembles the kinds of work you enjoy.');
+    explain('Work Priorities Alignment',driver,'How the career connects with what matters to you at work, such as independence, stability, teamwork, or variety.');
+    explain('Overall Career Alignment',overall,'Combined picture of interests and work priorities.');
+    if(overall!==null){
+      item(alignment,'How BOOST combines results','60% O*NET interests and 40% work priorities when both are available. Ratings are BOOST interpretation labels, not official O*NET ratings.');
+      item(alignment,'What this means',overall<50?'Limited alignment invites a closer look at the daily work and what attracts you to this occupation. It is not a reason to rule out the career.':overall<75?'Some alignment suggests connections along with differences worth exploring.':'Strong alignment suggests your preferences connect well with this occupation; local opportunities and preparation still matter.');
+    }
     const matched=Array.isArray(candidate.matchedWorkDrivers)?candidate.matchedWorkDrivers.map(x=>words(x.label||x.key)).filter(Boolean):[];
     if(matched.length)item(alignment,'Work priorities that connect',matched.slice(0,3).join(', '));
     if(interest===null&&overall===null)item(alignment,'Saved alignment unavailable','This record contains the interest scores but not the occupation-level Module 1 alignment evidence. The briefing will not substitute a new or assumed match value.');
