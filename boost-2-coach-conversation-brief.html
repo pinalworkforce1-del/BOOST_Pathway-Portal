@@ -8,7 +8,7 @@
 :root{--navy:#102b46;--gold:#e3a72f;--green:#157653;--ink:#173042;--muted:#61717e;--line:#d4e0e8;--bg:#eef3f6}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}.hero{background:linear-gradient(135deg,#0d314c,#174f77);color:#fff;padding:34px 18px;border-bottom:5px solid var(--gold)}.wrap{max-width:980px;margin:auto}.eyebrow{font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ffd876}.hero h1{margin:.3rem 0 .55rem;font-size:clamp(2rem,5vw,3rem)}.hero p{margin:0;max-width:780px;line-height:1.55;color:#e9f5ff}main{padding:24px 16px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 10px 28px #17304218;margin-bottom:18px}.success{border-top:6px solid var(--green)}h2{margin-top:0}.lead{font-size:1.08rem;line-height:1.65}.callout{margin:18px 0;padding:16px 18px;border-radius:14px;background:#eef8f6;border-left:5px solid #2a9d8f;line-height:1.55}.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:16px 0}.doc{padding:12px 14px;border:1px solid #dbe5eb;border-radius:12px;background:#f9fbfc}.doc b{display:block;margin-bottom:3px}.note{color:var(--muted);line-height:1.5}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 17px;border:0;border-radius:12px;text-decoration:none;font-weight:900;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#f0bd4e;color:#33280f}.small{font-size:.86rem}
 </style>
-</head>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/boost-config.js"></script><style>#conversationBrief{display:block}.conversation-section{margin:12px 0;padding:18px;background:#f5f9fc;border:1px solid #d7e2e9;border-radius:13px}.conversation-section h3{margin:0 0 8px;color:#103a56}.conversation-section p{margin:8px 0;line-height:1.65}</style></head>
 <body>
 <header class="hero"><div class="wrap"><div class="eyebrow">BOOST • Career Exploration</div><h1>Career Investment Explorer Complete</h1><p>You have completed the Career Investment Explorer. Your Career Investment Explorer (Module 5) results are saved.</p></div></header>
 <main><div class="wrap"><section class="card success">
@@ -36,24 +36,75 @@
   if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
   document.getElementById('pauseBtn').href=next.toString();
   document.getElementById('continueBtn').href=next.toString();
-  function add(label,value){const d=document.createElement('div');d.className='doc';const b=document.createElement('b');b.textContent=label;const t=document.createElement('span');t.textContent=value||'Not available in the saved BOOST record; review this detail with your coach.';d.append(b,t);document.getElementById('conversationBrief').append(d)}
-  function format(v){if(v==null)return '';if(Array.isArray(v))return v.map(format).filter(Boolean).join(' · ');if(typeof v==='object'){for(const k of ['label','name','title','code','type','value','summary','description']){if(v[k]!=null&&typeof v[k]!=='object')return String(v[k])}return Object.entries(v).slice(0,9).map(([k,x])=>k+': '+format(x)).join('; ')}return String(v)}
-  function pick(o,paths){for(const path of paths){const v=path.split('.').reduce((x,k)=>x?.[k],o);if(v!=null&&v!==''){const result=format(v);if(result)return result}}return ''}
-  try{
-    const raw=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
-    const j=raw.journey_data||raw,m=j.modules||{},a=m.module1||{},b=m.module2||{},c=m.module3||{},d=m.module4||{},e=m.module5||{};
-    const career=pick(d,['careerTitle','career.title','careerTarget.title','selectedCareer.title'])||pick(e,['careerTitle']);
-    const interest=a.topThreeRIASEC||a.topInterests||a.interestCodes||'';
-    add('Selected career',career);
-    add('O*NET interests',format(interest));
-    add('Module 4 decision',pick(d,['participantDirection','decision.code','direction','route']));
-    add('Local job opportunities',pick(b,['jobsInterpretation','validationBySoc','careers','jobsSummary','lmiSummary','laborMarketSummary','localDemand']));
-    add('Wages and lifestyle fit',pick(b,['wagesInterpretation','lifeInterpretation','validationBySoc','careers','wageSummary','wageComparison','wagesSummary']));
-    add('Transferable skills',pick(c,['mobilityPath','careers','summary','skillMobilitySummary','mobilitySummary']));
-    add('Career investment',pick(e,['recommendation','investmentRecommendation','programName','trainingProgram']));
-    add('Training/funding status','A training recommendation or provider acceptance is not formal program funding approval. Ask your coach to confirm eligibility and authorization.');
-    add('Questions for your coach','What can I do now? What evidence supports my career goal? Are training and supportive services appropriate, and what approvals would be required?');
-  }catch(_){add('Saved results unavailable','Open BOOST in the same browser as your saved journey and bring your Module 4 and Module 5 reports.')}
+
+  const brief=document.getElementById('conversationBrief');
+  function val(o,path){return path.split('.').reduce((x,k)=>x?.[k],o)}
+  function first(o,paths){for(const k of paths){const v=val(o,k);if(v!==undefined&&v!==null&&v!=='')return v}return null}
+  function words(v){if(v==null)return '';if(typeof v==='string'||typeof v==='number')return String(v);if(Array.isArray(v))return v.map(words).filter(Boolean).join(', ');if(typeof v==='object')return String(v.label||v.name||v.title||v.code||v.skill||v.activity||v.text||v.value||'');return ''}
+  function para(label,text){const box=document.createElement('section');box.className='conversation-section';const h=document.createElement('h3');h.textContent=label;const p=document.createElement('p');p.textContent=text;box.append(h,p);brief.append(box);return box}
+  function item(box,label,value){if(!value)return;const p=document.createElement('p');const b=document.createElement('b');b.textContent=label+': ';p.append(b,document.createTextNode(String(value)));box.append(p)}
+  function money(v){const n=Number(v);return Number.isFinite(n)&&n>0?'$'+n.toFixed(2)+'/hour':''}
+  function render(j,shared){
+    brief.replaceChildren();
+    const m=j.modules||{},m1={...(m.module1||{}),...(shared.module1||{})},m2={...(m.module2||{}),...(shared.module2||{})},m3={...(m.module3||{}),...(shared.module3||{})},m4={...(m.module4||{}),...(shared.module4||{})},m5={...(m.module5||{}),...(shared.module5||{})};
+    const soc=words(first(m4,['selectedSoc','career.soc','careerTarget.soc']))||words(first(m5,['selectedSoc']))||'';
+    const title=words(first(m4,['careerTitle','career.title','careerTarget.title','selectedCareer.title']))||words(first(m5,['careerTitle']))||'your selected career';
+    const route=words(first(m4,['route','participantDirection','decision.code','direction'])).toUpperCase();
+    const why={READY:'Your evidence points toward competing for employment now. Ask your coach which openings best match your experience.',BRIDGE:'Your direction may benefit from employer-supported learning or a bridge into the occupation.',BUILD:'Your direction may require a deliberate skill or training investment before you compete for the target role.',RECONSIDER:'You may need to revisit the career fit or local opportunity before making an investment.'};
+    para('Your career story','You explored your options and selected '+title+(soc?' ('+soc+')':'')+'. The purpose of this meeting is to turn that research into a practical next step.');
+    const interests=first(m1,['topInterests','topThreeRIASEC','interestCodes','riasecTop3']);
+    const top=Array.isArray(interests)?interests.slice(0,3).map(words).filter(Boolean):[];
+    const names={R:'Realistic',I:'Investigative',A:'Artistic',S:'Social',E:'Enterprising',C:'Conventional'};
+    const interestText=top.map(x=>names[x]||x).join(', ')||Object.entries(m1.interestScores||{}).sort((x,y)=>Number(y[1])-Number(x[1])).slice(0,3).map(([key])=>names[key]||key).join(', ');
+    const fit=para('What you discovered about yourself',interestText?'Your strongest O*NET interests include '+interestText+'. Discuss how these interests connect with the daily work in '+title+'.':'Your interest results are available in Discover. Use them to discuss how this occupation fits the work you enjoy.');
+    const strengths=[...(m3.selfAssessment||[]).filter(x=>/Used Regularly|Used Sometimes/i.test(x?.use||'')).map(x=>words(x.skill||x.name||x.activity)),...(m3.skillEvidence||[]).map(words)].filter(Boolean);
+    if(strengths.length)item(fit,'Experience and strengths you can bring',Array.from(new Set(strengths)).slice(0,6).join(', '));
+    const labor=(m2.validationBySoc||shared.module2?.validationBySoc||{});
+    const chosen=labor[soc]||Object.values(labor).find(x=>x&&typeof x==='object'&&(x.soc===soc||x.careerSoc===soc))||{};
+    const careers=Array.isArray(m2.careers)?m2.careers:[];
+    const picked=careers.find(x=>x?.soc===soc)||careers[0]||{};
+    const lmi=para('What the labor market is telling you','Your career decision should be supported by local openings, entry wages, preparation requirements and the lifestyle you want to support. Review the evidence below with your coach before committing to a direction.');
+    const jobs=first(chosen,['jobs','jobsInterpretation','employerSupport'])||first(picked,['jobsInterpretation','jobs','employerSupport'])||m2.jobsInterpretation;
+    item(lmi,'Local jobs and employer demand',words(jobs));
+    const future=first(chosen,['future','outlook'])||first(picked,['future','outlook'])||m2.futureInterpretation;
+    item(lmi,'Future outlook',words(future));
+    const entry=money(first(m4,['entryWage.hourly'])||first(chosen,['entryWage.hourly','p25Hourly'])||first(picked,['entryWage.hourly','regional.p25Hourly']));
+    const median=money(first(chosen,['medianHourly','regional.medianHourly'])||first(picked,['regional.medianHourly']));
+    item(lmi,'Typical entry wage',entry);
+    item(lmi,'Experienced or median wage',median);
+    item(lmi,'Your wage analysis',words(first(chosen,['wages','wagesInterpretation'])||first(picked,['wagesInterpretation'])||m2.wagesInterpretation));
+    item(lmi,'Work–life considerations',words(first(chosen,['life','lifeInterpretation'])||first(picked,['lifeInterpretation'])||m2.lifeInterpretation));
+    const decision=para('How you reached your direction',(route?route+' — ':'')+(why[route]||'Your Module 4 decision connects career fit, market demand, skills and preparation. Bring any concerns or competing priorities into the conversation.'));
+    item(decision,'Your Module 4 reasoning',words(first(m4,['why','rationale','decisionReason','recommendation','reasoning'])));
+    const investment=para('What your career investment could look like',m5.programName?'You explored '+m5.programName+(m5.provider?' with '+m5.provider:'')+'. This is a potential pathway to discuss—not an authorization to enroll or spend program funds.':'If your selected direction requires additional preparation, your coach can help distinguish immediate work options from training that may require approval.');
+    item(investment,'Credential',words(m5.credentials));
+    item(investment,'Skills or preparation gap',words(m5.specificGap));
+    item(investment,'Listed program cost',m5.listedCost!=null?'$'+Number(m5.listedCost).toLocaleString():null);
+    item(investment,'Current wage',money(m5.currentHourlyWage));
+    item(investment,'Target wage reference',money(m5.targetHourlyReference));
+    item(investment,'Investment-to-wage comparison',Number.isFinite(Number(m5.roiRatio))&&Number(m5.roiRatio)>0?Math.round(Number(m5.roiRatio)*100)+'% of current wage':null);
+    para('Training approval is a separate decision','A training recommendation, provider acceptance, or estimated investment is not formal training approval. Your Career Coach must verify eligibility, local demand, program policy, available funds and any required authorization.');
+    para('Your conversation with your coach','Start by explaining why '+title+' interests you. Ask what you can pursue now, which local wages are realistic, what gaps remain, and what evidence would be needed for an employment, work-based learning, or training plan. Confirm your next action and who is responsible for it.');
+    if(!jobs&&!entry&&!median)item(lmi,'Additional evidence','The detailed validation report may be stored in another module. This briefing will not substitute assumptions for missing labor-market data.');
+  }
+  async function loadBrief(){
+    let local={};let shared={};try{local=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{};shared=JSON.parse(localStorage.getItem('pinal_boost_career_exploration_v1')||'{}')||{}}catch(_){}
+    let journey=local.journey_data||local;
+    try{
+      if(window.supabase?.createClient&&window.BOOST_CONFIG){
+        const cfg=window.BOOST_CONFIG;
+        const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+        const session=await client.auth.getSession();
+        if(session.data?.session?.user){
+          const result=await client.rpc('boost_load_my_journey_for_region',{p_region:cfg.region||'Pinal County'});
+          if(!result.error&&result.data)journey=result.data.journey_data||result.data;
+        }
+      }
+    }catch(e){console.warn('Brief uses locally saved results',e)}
+    render(journey,shared);
+  }
+  loadBrief();
+
 })();
 </script>
 </body></html>
