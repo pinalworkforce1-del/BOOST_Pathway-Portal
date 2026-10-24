@@ -56,6 +56,14 @@
     const top=Array.isArray(interests)?interests.slice(0,3).map(words).filter(Boolean):[];
     const names={R:'Realistic',I:'Investigative',A:'Artistic',S:'Social',E:'Enterprising',C:'Conventional'};
     const interestText=top.map(x=>names[x]||x).join(', ')||Object.entries(m1.interestScores||{}).sort((x,y)=>Number(y[1])-Number(x[1])).slice(0,3).map(([key])=>names[key]||key).join(', ');
+    const scores=m1.interestScores||{};
+    const topScores=Object.entries(scores).filter(pair=>/^[RIASEC]$/.test(pair[0])&&Number.isFinite(Number(pair[1]))).sort((a,b)=>Number(b[1])-Number(a[1]));
+    const candidate=[...(m3.careers||[]),...(m2.careers||[]),...(m1.selected||[])].find(x=>String(x?.soc||'')===soc)||{};
+    const numericMatch=first(candidate,['interestMatchScore','interestScore','onetScore','fitScore']);
+    const alignment=para('Selected occupation and O*NET alignment','Your choice of '+title+' can be discussed alongside your highest-scoring work interests. O*NET interests are not an eligibility test.');
+    if(topScores.length)item(alignment,'Your O*NET interest scores',topScores.slice(0,3).map(pair=>(names[pair[0]]||pair[0])+': '+pair[1]).join(' / '));
+    if(numericMatch!==null)item(alignment,'Recorded occupation match',words(numericMatch));
+    else item(alignment,'Occupation match','An occupation-specific match score was not found, so no percentage is assumed.');
     const fit=para('What you discovered about yourself',interestText?'Your strongest O*NET interests include '+interestText+'. Discuss how these interests connect with the daily work in '+title+'.':'Your interest results are available in Discover. Use them to discuss how this occupation fits the work you enjoy.');
     const strengths=[...(m3.selfAssessment||[]).filter(x=>/Used Regularly|Used Sometimes/i.test(x?.use||'')).map(x=>words(x.skill||x.name||x.activity)),...(m3.skillEvidence||[]).map(words)].filter(Boolean);
     if(strengths.length)item(fit,'Experience and strengths you can bring',Array.from(new Set(strengths)).slice(0,6).join(', '));
