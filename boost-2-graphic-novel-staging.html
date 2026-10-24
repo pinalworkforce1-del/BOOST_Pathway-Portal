@@ -26,6 +26,27 @@
 <script>
 (()=>{'use strict';
 const JOURNEY='pinal_boost_journey_v1',MAP='boostPathwaysV29',OLD='boostPathwaysV28',PATH='boostPortalPathway_v2';
+const MODULE_LAUNCH={module1:'module1',module2:'module2',module3:'module3',module4:'module4',module5:'module5'};
+const INDUSTRIES=['healthcare','trades','manufacturing','it','cdl'];
+const NONCE_PREFIX='boost_completion_nonce:';
+function nonce(){const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
+function launchFromStaging(key,selected){
+ if(!snap||source!=='Authenticated Pinal BOOST cloud journey'){alert('Load your authenticated BOOST journey first.');return}
+ if(selected==='ready'){alert('Employment Ready is not yet connected to the existing progression engine.');return}
+ if(key==='industry'){
+  const industry=String(snap?.selected_industry||snap?.modules?.module4?.selectedIndustry||'').toLowerCase();
+  const matched=INDUSTRIES.find(x=>industry.includes(x));
+  if(!matched){alert('Your aligned industry experience must be confirmed on the existing BOOST map before launching.');return}
+  key='industry-'+matched;
+ }
+ const wrapped=key.startsWith('industry-')?key.slice(9):MODULE_LAUNCH[key];
+ if(!wrapped){alert('This experience currently launches from the existing BOOST map.');return}
+ const receipt=nonce();sessionStorage.setItem(NONCE_PREFIX+key,receipt);
+ const target=new URL('./activity.html',location.href);target.searchParams.set('m',wrapped);
+ target.searchParams.set('boost_return',new URL('./index.html',location.href).toString());
+ target.searchParams.set('boost_module',key);target.searchParams.set('boost_nonce',receipt);
+ location.assign(target.toString());
+}
 const plans={career:[['module1','Discover'],['module2','Validate'],['module3','Career Mobility'],['module4','Decide'],['industry','Industry Skills (conditional)'],['module5','Skill Investment'],['financial','Financial Habits'],['ai','AI & You']],rapid:[['module1','Discover'],['skillmobility','Skill Mobility'],['jobsearch','Job Search'],['financial','Financial Habits'],['ai','AI & You']],ready:[['financial','Financial Habits'],['ai','AI & You'],['soft_skills','Soft Skills Base Camp'],['resume','Resume Retreat'],['interview','Interview Intelligence']]};
 let snap=null,source='',currentUser=null,resumeTarget=null;const $=id=>document.getElementById(id);
 function norm(x){return String(x||'').trim().replace(/\s+/g,' ').toLowerCase()}
@@ -74,9 +95,14 @@ for(const [k,name] of list){const live=mapStage(snap,p,k),done=live.state==='com
 const card=document.createElement('article');card.className='tile';card.dataset.module=k;const title=document.createElement('strong');title.textContent=name;card.append(title);
 const left=document.createElement('p');left.className='small';left.textContent='Existing records: '+(done?'Evidence-backed completion':live.required?'No validated completion':'Conditional requirement');card.append(left);
 const badge=document.createElement('span');badge.className='status '+(tile==='Completed'?'ok':live.required?(tile.startsWith('Locked')?'idle':'warning'):'idle');badge.textContent='Illustrated tile: '+tile;card.append(badge);
-const hint=document.createElement('p');hint.className='note';hint.textContent=live.review==='Not Verified'?'No browser freshness record is available; this test cannot confirm that the prior completion is still current.':live.review&&live.review!=='fresh'?'Saved completion is retained, but BOOST requires the earlier work to be reviewed.':live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);if(tile==='Available')card.classList.add('current');out.append(card);
+const hint=document.createElement('p');hint.className='note';hint.textContent=live.review==='Not Verified'?'No browser freshness record is available; this test cannot confirm that the prior completion is still current.':live.review&&live.review!=='fresh'?'Saved completion is retained, but BOOST requires the earlier work to be reviewed.':live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);if(tile==='Available')card.classList.add('current');
+ if((tile==='Available'||tile==='Review Needed'||tile==='Completed')&&source==='Authenticated Pinal BOOST cloud journey'&&p!=='ready'){
+  const button=document.createElement('button');button.type='button';button.className='btn secondary';button.style.marginTop='13px';button.textContent=tile==='Review Needed'?'Revisit in BOOST':tile==='Completed'?'Review Module':'Launch Module';
+  button.addEventListener('click',()=>launchFromStaging(k,p));card.append(button);
+ }
+ out.append(card);
 }
-$('summary').textContent=completed+' historically completed • '+reviews+' requiring review'+(unverified?' • '+unverified+' status'+(unverified===1?'':'es')+' not verified':'')+' • '+(source||'');$('meta').textContent='Read-only comparison • no participant data uploaded, altered, or exported.';updateResume(p,list);}
+$('summary').textContent=completed+' historically completed • '+reviews+' requiring review'+(unverified?' • '+unverified+' status'+(unverified===1?'':'es')+' not verified':'')+' • '+(source||'');$('meta').textContent='Journey display is read-only. Module launches use existing BOOST activity and completion return to the live map.';updateResume(p,list);}
 function updateResume(p,list){document.querySelectorAll('[data-visual-path]').forEach(el=>{const active=el.dataset.visualPath===p;el.classList.toggle('selected',active);el.querySelector('.choice-state').textContent=active?'IN PROGRESS':'Explore Pathway';});document.getElementById('stepTitle').textContent=p==='career'?'Career Exploration':p==='rapid'?'Rapid Reemployment':'Employment Ready';
  const names={career:'Career Exploration',rapid:'Rapid Reemployment',ready:'Employment Ready'};
  const next=list.find(([k])=>{const st=mapStage(snap,p,k);return st.required&&(st.review&&st.review!=='fresh'||!evidence(snap,k))});
