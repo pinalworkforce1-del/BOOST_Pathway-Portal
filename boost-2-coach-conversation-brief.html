@@ -124,7 +124,7 @@
     const savedGap=m5.potentialRemainingCost==null?null:Number(m5.potentialRemainingCost);
     const dollars=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
     const tier=first(m5,['fundingTier','potentialFundingTier','tier']);
-    item(investment,'Potential funding tier',tier?words(tier)+' — subject to coach confirmation':cost>0&&cost<=10000?'Potential Tier 1 (training cost within the $10,000 Tier 1 ceiling; eligibility and policy verification required)':'Funding tier not yet confirmed by a Career Coach.');
+    item(investment,'Potential funding tier',tier?words(tier)+' — recorded in Module 5; subject to policy verification':'Not recorded in saved Module 5 evidence. Review the actual Gold/Silver/Bronze classification with your Career Coach; training cost alone does not determine eligibility.');
     item(investment,'Estimated AZ@WORK contribution',funded!==null&&Number.isFinite(funded)&&funded>=0?dollars(funded)+' — potential only, not approved':'Not established in saved funding results; coach must confirm.');
     const estimatedGap=savedGap!==null&&Number.isFinite(savedGap)&&savedGap>=0?savedGap:funded!==null&&Number.isFinite(funded)&&cost>0?Math.max(0,cost-funded):null;
     item(investment,'Potential remaining training cost',estimatedGap!==null?dollars(estimatedGap):'To be determined after confirming the potential program contribution.');
