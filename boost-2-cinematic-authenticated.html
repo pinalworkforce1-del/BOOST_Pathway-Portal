@@ -33,8 +33,11 @@ function openModule(moduleId){
  const id=moduleId==='investment'?'module5':industryId(moduleId);
  const step=sequences[chosen]?.find(x=>x===id||(x==='industry'&&id.startsWith('industry-')));
  if(!step){alert('This module is not part of the selected pathway.');return}
- const index=sequences[chosen].indexOf(step),blocked=sequences[chosen].slice(0,index).some(key=>state(snapshot,key,false).block);
- if(blocked||!state(snapshot,step,false).canLaunch){alert('This step is locked until required earlier steps are current.');return}
+ const stepIndex=sequences[chosen].indexOf(step);
+ const displayedTile=document.querySelectorAll('#stages .stage')[stepIndex];
+ const shownStatus=displayedTile?.dataset.b2status||'';
+ const actionable=['Review Needed','Available','Completed'].includes(shownStatus);
+ if(!actionable){alert('This step is locked until required earlier steps are current.');return}
  const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:'+id,nonce);
  const activity=new URL('activity.html',portalBase);
  activity.searchParams.set('m',id.startsWith('industry-')?id.slice(9):id);
