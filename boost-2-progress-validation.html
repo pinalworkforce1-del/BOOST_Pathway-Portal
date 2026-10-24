@@ -24,13 +24,28 @@ return !!(nonempty(m)&&(v==='complete'||map?.complete?.[mapKey]));
 }
 function matchingIndustry(j){const m=j?.modules?.module4||{};const t=String(m.careerTitle||m.career?.title||m.careerTarget?.title||'').toLowerCase(),soc=String(m.selectedSoc||m.career?.soc||m.careerTarget?.soc||'').slice(0,2);
 return ['15','29','31','51','47','49','53'].includes(soc)||/nurs|medical|health|computer|software|manufactur|cnc|electric|plumb|weld|construction|cdl|truck|transport/.test(t)}
-function mapStage(j,p,k){if(p==='career'&&k==='industry'&&!matchingIndustry(j))return {state:'not-required',required:false};return {state:evidence(j,k)?'completed':'not-complete',required:true}}
+function reviewStatus(j,k){
+ if(!['module2','module3','module4'].includes(k))return null;
+ const freshness=safe('pinal_boost_dependency_freshness_v1',null);
+ const review=freshness&&freshness.review||{};
+ if(review[k]){
+   const blocked=k==='module3'&&!!review.module2||k==='module4'&&(!!review.module2||!!review.module3);
+   return blocked?'Waiting for Earlier Review':'Review Needed';
+ }
+ if(j?.progress?.[k]==='stale'||j?.staleModules?.[k])return 'Review Needed';
+ return freshness?'fresh':'Not Verified';
+}
+function mapStage(j,p,k){
+ if(p==='career'&&k==='industry'&&!matchingIndustry(j))return {state:'not-required',required:false};
+ const review=reviewStatus(j,k);
+ return {state:evidence(j,k)?'completed':'not-complete',required:true,review};
+}
 function draw(){if(!snap)return;const p=$('path').value,list=plans[p],out=$('cards');out.replaceChildren();let blocking=false,completed=0,mismatches=0;
-for(const [k,name] of list){const live=mapStage(snap,p,k),done=live.state==='completed';if(done)completed++;const tile=done?'Completed':!live.required?'Not required':blocking?'Locked':'Available';if(!done&&live.required)blocking=true;
+for(const [k,name] of list){const live=mapStage(snap,p,k),done=live.state==='completed';if(done)completed++;const tile=live.review&&live.review!=='fresh'?(live.review==='Not Verified'?(done?'Completion Recorded • Freshness Unverified':blocking?'Locked • Freshness Unverified':'Available • Freshness Unverified'):live.review):done?'Completed':!live.required?'Not required':blocking?'Locked':'Available';if((!done||['Review Needed','Waiting for Earlier Review','Not Verified'].includes(live.review))&&live.required)blocking=true;
 const card=document.createElement('article');card.className='tile';const title=document.createElement('strong');title.textContent=name;card.append(title);
 const left=document.createElement('p');left.className='small';left.textContent='Existing records: '+(done?'Evidence-backed completion':live.required?'No validated completion':'Conditional requirement');card.append(left);
-const badge=document.createElement('span');badge.className='status '+(done?'ok':live.required?(tile==='Locked'?'idle':'warning'):'idle');badge.textContent='Illustrated tile: '+tile;card.append(badge);
-const hint=document.createElement('p');hint.className='note';hint.textContent=live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);out.append(card);
+const badge=document.createElement('span');badge.className='status '+(tile==='Completed'?'ok':live.required?(tile.startsWith('Locked')?'idle':'warning'):'idle');badge.textContent='Illustrated tile: '+tile;card.append(badge);
+const hint=document.createElement('p');hint.className='note';hint.textContent=live.review==='Not Verified'?'No browser freshness record is available; this test cannot confirm that the prior completion is still current.':live.review&&live.review!=='fresh'?'Saved completion is retained, but BOOST requires the earlier work to be reviewed.':live.required?'Same saved evidence drives both displays.':'Industry mapping requires career-direction review.';card.append(hint);out.append(card);
 }
 $('summary').textContent=completed+' of '+list.length+' illustrated steps completed • '+mismatches+' evidence discrepancies • '+(source||'');$('meta').textContent='Read-only comparison • no participant data uploaded, altered, or exported.';}
 $('path').addEventListener('change',draw);
