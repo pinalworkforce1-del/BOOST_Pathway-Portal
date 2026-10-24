@@ -333,13 +333,13 @@ async function finish(){
   const target=new URL(safeReturn);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}
   target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);
   finishBtn.textContent='✓ Saved — returning to BOOST…';
-  if(m==='module4'&&!['/boost-2-cinematic-authenticated.html','/boost-2-post-module4-validation.html'].some(name=>target.pathname.endsWith(name))){
+  if(m==='module4'&&!['/boost-2-cinematic-authenticated.html','/boost-2-post-module4-validation.html','/boost-2-pathways-polish.html'].some(name=>target.pathname.endsWith(name))){
     const handoff=new URL('module4-intake-handoff.html',location.href);
     handoff.searchParams.set('next',target.toString());
     location.assign(handoff.toString());
     return;
   }
-  if(m==='module5'&&target.pathname.endsWith('/boost-2-post-module4-validation.html')){
+  if(m==='module5'&&['/boost-2-post-module4-validation.html','/boost-2-pathways-polish.html'].some(name=>target.pathname.endsWith(name))){
     const appointment=new URL('boost-2-module5-appointment.html',location.href);
     appointment.searchParams.set('next',target.toString());
     location.assign(appointment.toString());
