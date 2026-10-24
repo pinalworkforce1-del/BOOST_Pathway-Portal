@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOOST • Career Investment Explorer Complete</title>
+<style>
+:root{--navy:#102b46;--gold:#e3a72f;--green:#157653;--ink:#173042;--muted:#61717e;--line:#d4e0e8;--bg:#eef3f6}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}.hero{background:linear-gradient(135deg,#0d314c,#174f77);color:#fff;padding:34px 18px;border-bottom:5px solid var(--gold)}.wrap{max-width:980px;margin:auto}.eyebrow{font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#ffd876}.hero h1{margin:.3rem 0 .55rem;font-size:clamp(2rem,5vw,3rem)}.hero p{margin:0;max-width:780px;line-height:1.55;color:#e9f5ff}main{padding:24px 16px 60px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 10px 28px #17304218;margin-bottom:18px}.success{border-top:6px solid var(--green)}h2{margin-top:0}.lead{font-size:1.08rem;line-height:1.65}.callout{margin:18px 0;padding:16px 18px;border-radius:14px;background:#eef8f6;border-left:5px solid #2a9d8f;line-height:1.55}.docs{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin:16px 0}.doc{padding:12px 14px;border:1px solid #dbe5eb;border-radius:12px;background:#f9fbfc}.doc b{display:block;margin-bottom:3px}.note{color:var(--muted);line-height:1.5}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:12px 17px;border:0;border-radius:12px;text-decoration:none;font-weight:900;cursor:pointer}.primary{background:var(--navy);color:#fff}.secondary{background:#f0bd4e;color:#33280f}.small{font-size:.86rem}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap"><div class="eyebrow">BOOST • Career Exploration</div><h1>Career Investment Explorer Complete</h1><p>You have completed the Career Investment Explorer. Your Career Investment Explorer (Module 5) results are saved.</p></div></header>
+<main><div class="wrap"><section class="card success">
+<h2>You're ready for the next step!</h2>
+<p class="lead">Congratulations! You've completed the Career Exploration portion of BOOST. Your results are saved and available to your Career Coach to guide your next conversation about your goals, intake, and enrollment.</p>
+<div class="callout"><b>Recommended: pause here and speak with your Career Coach.</b><br>Together, you'll review your career direction and decide what comes next. If your career path changes, you may need to repeat Industry Skills and the Career Investment Explorer (Skill Investment) for your new direction. After preparing for your appointment, you can continue with Financial Habits and AI & You.</div>
+<h2>Your Career Coach Conversation Brief</h2><p class="note">Review your saved BOOST results before meeting your coach. Recommendations and training-provider options do not constitute enrollment or funding approval.</p><div id="conversationBrief" class="docs"></div><button type="button" class="btn secondary" onclick="window.print()">Print This Brief</button><h2>Getting ready for your appointment</h2>
+<p class="note">Having a few items available can make your conversation easier. Your Career Coach will confirm which information is needed for your circumstances.</p>
+<div class="docs">
+<div class="doc"><b>Have available: Photo ID</b><span>Government-issued photo identification, if you have it.</span></div>
+<div class="doc"><b>Have available: Social Security card</b><span>Staff will need to view and verify your card and document that verification in a case note. The card will not be collected or copied.</span></div>
+<div class="doc"><b>If applicable: Address / Residency</b><span>Recent mail, lease information, or a utility record showing your current address, if requested.</span></div>
+<div class="doc"><b>If applicable: Income / Benefits</b><span>Recent pay stubs, income records, or SNAP, TANF, or other benefit information, particularly if you report low income.</span></div>
+<div class="doc"><b>If applicable: Employment Situation</b><span>Unemployment, layoff, or separation information related to your situation.</span></div>
+<div class="doc"><b>If applicable: Education / Veteran Records</b><span>Diplomas, transcripts, certificates, licenses, training records, or DD-214 / veteran documentation when relevant.</span></div>
+</div>
+<p class="note small"><b>Don't have everything?</b> You can still meet with your Career Coach. Not every document applies to everyone, and staff can help identify accepted forms of verification or alternatives. Please don't upload sensitive documents through BOOST.</p>
+<div class="actions"><a class="btn primary" id="pauseBtn" href="index.html">Pause Here — Return to BOOST Map</a><a class="btn secondary" id="continueBtn" href="index.html">Continue Exploring BOOST</a></div>
+<p class="note small">Your Career Coach can review your direction and next BOOST experiences with you.</p>
+</section></div></main>
+<script>
+(function(){
+  const q=new URLSearchParams(location.search),raw=q.get('next');
+  let next=new URL('index.html',location.href);
+  if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
+  document.getElementById('pauseBtn').href=next.toString();
+  document.getElementById('continueBtn').href=next.toString();
+  function add(label,value){const d=document.createElement('div');d.className='doc';const b=document.createElement('b');b.textContent=label;const t=document.createElement('span');t.textContent=value||'Bring your saved BOOST report and discuss this with your coach.';d.append(b,t);document.getElementById('conversationBrief').append(d)}
+  function pick(o,paths){for(const path of paths){const v=path.split('.').reduce((x,k)=>x?.[k],o);if(typeof v==='string'&&v.trim())return v.trim();if(typeof v==='number')return String(v)}return ''}
+  try{
+    const raw=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
+    const j=raw.journey_data||raw,m=j.modules||{},a=m.module1||{},b=m.module2||{},c=m.module3||{},d=m.module4||{},e=m.module5||{};
+    const career=pick(d,['careerTitle','career.title','careerTarget.title','selectedCareer.title'])||pick(e,['careerTitle']);
+    const interest=a.topThreeRIASEC||a.topInterests||a.interestCodes||'';
+    add('Selected career',career);
+    add('O*NET interests',Array.isArray(interest)?interest.join(' · '):typeof interest==='string'?interest:'');
+    add('Module 4 decision',pick(d,['participantDirection','decision.code','direction','route']));
+    add('Local job opportunities',pick(b,['jobsSummary','lmiSummary','laborMarketSummary','localDemand']));
+    add('Wages and lifestyle fit',pick(b,['wageSummary','wageComparison','wagesSummary']));
+    add('Transferable skills',pick(c,['summary','skillMobilitySummary','mobilitySummary']));
+    add('Career investment',pick(e,['recommendation','investmentRecommendation','programName','trainingProgram']));
+    add('Training/funding status','A training recommendation or provider acceptance is not formal program funding approval. Ask your coach to confirm eligibility and authorization.');
+    add('Questions for your coach','What can I do now? What evidence supports my career goal? Are training and supportive services appropriate, and what approvals would be required?');
+  }catch(_){add('Saved results unavailable','Open BOOST in the same browser as your saved journey and bring your Module 4 and Module 5 reports.')}
+})();
+</script>
+</body></html>
