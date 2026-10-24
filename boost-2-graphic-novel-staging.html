@@ -117,5 +117,11 @@ $('home').addEventListener('click',()=>{document.getElementById('path').focus();
 document.querySelectorAll('[data-visual-path]').forEach(el=>el.addEventListener('click',()=>{$('path').value=el.dataset.visualPath;draw();document.querySelector('.path-stage').scrollIntoView({behavior:'smooth',block:'start'});}));$('path').addEventListener('change',draw);
 $('local').addEventListener('click',()=>{snap=safe(JOURNEY,{});source='Local browser snapshot';currentUser=null;identity(snap,null);$('path').value=path(snap);$('message').textContent=nonempty(snap)?'Local journey loaded for preview.':'No local journey found. Open BOOST using this browser first.';draw()});
 $('load').addEventListener('click',async()=>{const button=$('load');button.disabled=true;try{const cfg=window.BOOST_CONFIG||{};if(!window.supabase?.createClient||!cfg.supabaseUrl||!cfg.supabaseAnonKey)throw Error('BOOST sign-in configuration could not be loaded.');const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const session=(await client.auth.getSession()).data?.session;if(!session?.user)throw Error('Not signed in on this browser. Sign in to live BOOST first.');const region=cfg.region||'Pinal County';const result=await client.rpc('boost_load_my_journey_for_region',{p_region:region});if(result.error)throw Error(result.error.message);if(!result.data)throw Error('No saved journey was returned for this sign-in.');snap=result.data;source='Authenticated Pinal BOOST cloud journey';currentUser=session.user;identity(snap,currentUser);$('path').value=path(snap);$('message').textContent='Successfully loaded your existing journey (read-only).';draw()}catch(err){$('message').textContent=err.message||String(err)}finally{button.disabled=false}});
+// Reuse the existing authenticated BOOST journey immediately on arrival.
+// The same explicit Compare button remains available to refresh manually.
+window.addEventListener('load',()=>{
+ const button=document.getElementById('load');
+ if(button&&!window.location.search.includes('manual=1'))button.click();
+});
 })();
 </script></body></html>
