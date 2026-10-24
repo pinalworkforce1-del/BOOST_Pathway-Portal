@@ -143,10 +143,17 @@ document.querySelector('#back').addEventListener('click',()=>{pane.classList.rem
 .stage.boost2-review{outline:3px solid #f4b94e}.stage.boost2-done{outline:2px solid #5ecd8d}.stage.boost2-locked{opacity:.71}.stage .boost2-state{display:inline-block;margin:8px 0 0;padding:5px 10px;border-radius:40px;background:#325574;color:#fff;font-weight:800;font-size:12px}.stage .boost2-state.ok{background:#287044}.stage .boost2-state.warn{background:#936622}.stage .boost2-state.lock{background:#47596a}.stage .boost2-state.unknown{background:#805b3a}
 #boost2-live button:focus-visible,.path-card:focus-visible{outline:3px solid #fff;outline-offset:3px}
 </style>
-<style>.welcome,.top .tag{display:none!important}#b2load{display:none!important}.boost2-optional-actions{display:flex;flex-direction:column;gap:9px;margin-top:10px}.boost2-optional-actions select,.boost2-optional-actions button{min-height:43px;border-radius:9px;padding:9px;font-weight:750}.boost2-optional-actions p{font-size:.85rem;margin:0 0 5px}</style>
+<style>.welcome,.top .tag{display:none!important}#b2load{display:none!important}.boost2-optional-actions{display:flex;flex-direction:column;gap:9px;margin-top:10px}.boost2-optional-actions select,.boost2-optional-actions button{min-height:43px;border-radius:9px;padding:9px;font-weight:750}.boost2-optional-actions p{font-size:.85rem;margin:0 0 5px}</style><style>
+.boost2-progress{margin:14px 0 18px;padding:16px;border:1px solid #497b96;background:#09263aa8;border-radius:14px}
+.boost2-progress-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+#b2progress-label{font-size:1.08rem;color:#fff}#b2progress-percent{font-size:1.55rem;color:#fbd072}
+.boost2-progress-track{height:17px;border-radius:99px;background:#25485f;overflow:hidden;border:1px solid #64849a}
+#b2progress-fill{height:100%;width:0;background:linear-gradient(90deg,#1fbae0,#f5c85e);border-radius:99px;transition:width .35s ease}
+#b2progress-detail{margin:9px 0 0;font-size:.84rem;color:#cee0e9}
+</style>
 <script>
 (()=>{'use strict';
-const mount=document.createElement('section');mount.id='boost2-live';mount.innerHTML='<h2>Your BOOST Journey</h2><p id="b2message">Select Load My Journey to view your existing BOOST progression on these graphic-novel tiles.</p><div id="b2identity" class="boost2-identity" hidden></div><div id="b2summary" aria-live="polite"></div><button id="b2load">Load My Saved Journey</button><button id="b2continue" disabled>Continue My Journey →</button><button id="b2all" class="secondary">All Pathways</button><p style="font-size:12px">Your results are saved as you complete each experience</p>';
+const mount=document.createElement('section');mount.id='boost2-live';mount.innerHTML='<h2>Your BOOST Journey</h2><p id="b2message">Select Load My Journey to view your existing BOOST progression on these graphic-novel tiles.</p><div id="b2identity" class="boost2-identity" hidden></div><div id="b2summary" aria-live="polite"></div><div class="boost2-progress" id="b2progress" hidden><div class="boost2-progress-top"><strong id="b2progress-label">Pathway progress</strong><strong id="b2progress-percent">0%</strong></div><div class="boost2-progress-track" role="progressbar" aria-label="Pathway completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="b2progress-track"><div id="b2progress-fill"></div></div><p id="b2progress-detail"></p></div><button id="b2load">Load My Saved Journey</button><button id="b2continue" disabled>Continue My Journey →</button><button id="b2all" class="secondary">All Pathways</button><p style="font-size:12px">Your results are saved as you complete each experience</p>';
 document.querySelector('.choices').before(mount);
 const el=id=>document.getElementById(id);let snapshot=null,chosen=null,authUser=null;
 const sequences={explore:['module1','module2','module3','module4','industry','module5','optional','handoff','financial_ai'],rapid:['module1','skillmobility','financial','ai','jobsearch'],ready:['financial','ai','softskills','resume','interview','certificate']};
@@ -188,7 +195,28 @@ function state(j,id,blocked){
  if(done)return {label:'Completed',cls:'ok',block:false,canLaunch:true};
  return {label:'Available',cls:'warn',block:true,canLaunch:true};
 }
-function paint(){if(!snapshot||!chosen)return;const seq=sequences[chosen],tiles=[...document.querySelectorAll('#stages .stage')];let block=false,history=0,reviews=0,next=null;tiles.forEach((tile,i)=>{const id=seq[i];if(!id)return;const status=state(snapshot,id,block);if(id==='industry'?industryComplete(snapshot)&&mapped(snapshot):hasEvidence(snapshot,id))history++;if(['Review Needed','Waiting for Earlier Review','Locked — Earlier Review Required'].includes(status.label))reviews++;if(!next&&status.block&&status.label!=='Pending Integration')next={id,tile};block ||= status.block;tile.classList.remove('boost2-review','boost2-done','boost2-locked');tile.classList.add(status.cls==='ok'?'boost2-done':status.cls==='warn'?'boost2-review':status.cls==='lock'?'boost2-locked':'boost2-review');let b=tile.querySelector('.boost2-state');if(!b){b=document.createElement('span');b.className='boost2-state';tile.querySelector('.stage-body')?.appendChild(b)}b.className='boost2-state '+status.cls;b.textContent=status.label;tile.dataset.b2status=status.label;
+function updatePathwayProgress(j,path){
+ const required=path==='explore'
+  ? ['module1','module2','module3','module4',...(alignedIndustry(j)?['industry']:[]),'module5','financial','ai']
+  : path==='rapid'?['module1','skillmobility','financial','ai','jobsearch']
+  : ['financial','ai','softskills','resume','interview'];
+ const current=required.filter(id=>{
+  if(id==='industry')return industryComplete(j);
+  if(['softskills','resume','interview'].includes(id))return false; // Not integrated
+  if(!hasEvidence(j,id))return false;
+  const status=fresh(j,id);
+  return status===null||status==='fresh';
+ }).length;
+ const percent=Math.round(current/required.length*100);
+ const names={explore:'Career Exploration',rapid:'Rapid Reemployment',ready:'Employment Ready'};
+ el('b2progress').hidden=false;
+ el('b2progress-label').textContent=names[path]+' Progress';
+ el('b2progress-percent').textContent=percent+'%';
+ el('b2progress-fill').style.width=percent+'%';
+ el('b2progress-track').setAttribute('aria-valuenow',String(percent));
+ el('b2progress-detail').textContent=current+' of '+required.length+' required experiences current'+(path==='ready'?' • Some experiences are not integrated yet':'')+'. Optional exploration is not counted.';
+}
+function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,chosen);const seq=sequences[chosen],tiles=[...document.querySelectorAll('#stages .stage')];let block=false,history=0,reviews=0,next=null;tiles.forEach((tile,i)=>{const id=seq[i];if(!id)return;const status=state(snapshot,id,block);if(id==='industry'?industryComplete(snapshot)&&mapped(snapshot):hasEvidence(snapshot,id))history++;if(['Review Needed','Waiting for Earlier Review','Locked — Earlier Review Required'].includes(status.label))reviews++;if(!next&&status.block&&status.label!=='Pending Integration')next={id,tile};block ||= status.block;tile.classList.remove('boost2-review','boost2-done','boost2-locked');tile.classList.add(status.cls==='ok'?'boost2-done':status.cls==='warn'?'boost2-review':status.cls==='lock'?'boost2-locked':'boost2-review');let b=tile.querySelector('.boost2-state');if(!b){b=document.createElement('span');b.className='boost2-state';tile.querySelector('.stage-body')?.appendChild(b)}b.className='boost2-state '+status.cls;b.textContent=status.label;tile.dataset.b2status=status.label;
  if(id==='optional'&&chosen==='explore'){
   let extras=tile.querySelector('.boost2-optional-actions');
   if(!extras){extras=document.createElement('div');extras.className='boost2-optional-actions';tile.querySelector('.stage-body')?.append(extras)}
