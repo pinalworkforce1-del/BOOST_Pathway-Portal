@@ -339,6 +339,12 @@ async function finish(){
     location.assign(handoff.toString());
     return;
   }
+  if(m==='module5'&&target.pathname.endsWith('/boost-2-post-module4-validation.html')){
+    const appointment=new URL('boost-2-module5-appointment.html',location.href);
+    appointment.searchParams.set('next',target.toString());
+    location.assign(appointment.toString());
+    return;
+  }
   location.assign(target.toString());
 }
 
