@@ -1,0 +1,24 @@
+name: Deploy BOOST Jacqueline
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/boost-live-interview-isolated
+      - name: Validate agent source
+        run: python -m py_compile experiments/boost-live-interview/agent.py
+      - name: Deploy independent BOOST worker
+        uses: livekit/deploy-action@v2.12.2
+        env:
+          LIVEKIT_URL: ${{ secrets.BOOST_LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.BOOST_LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.BOOST_LIVEKIT_API_SECRET }}
+          SECRET_LIST: ${{ format('SYNTHESIA_API_KEY={0},BOOST_INTERVIEW_CALLBACK_SECRET={1},BOOST_INTERVIEW_CALLBACK_URL=https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-live-interview-callback', secrets.BOOST_SYNTHESIA_API_KEY, secrets.BOOST_INTERVIEW_CALLBACK_SECRET) }}
+        with:
+          OPERATION: create
+          WORKING_DIRECTORY: experiments/boost-live-interview
