@@ -1,0 +1,16 @@
+name: Validate BOOST Jacqueline Agent
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/boost-live-interview-isolated
+      - name: Check Python source
+        run: python -m py_compile experiments/boost-live-interview/agent.py
+      - name: Verify isolated agent identifier
+        run: grep -q 'boost-jacqueline-interview' experiments/boost-live-interview/agent.py
