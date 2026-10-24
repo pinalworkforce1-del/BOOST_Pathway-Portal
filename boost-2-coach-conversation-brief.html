@@ -78,6 +78,17 @@
     item(lmi,'Future outlook',words(future));
     const entry=money(first(m4,['entryWage.hourly'])||first(chosen,['entryWage.hourly','p25Hourly'])||first(picked,['entryWage.hourly','regional.p25Hourly']));
     const median=money(first(chosen,['medianHourly','regional.medianHourly'])||first(picked,['regional.medianHourly']));
+    const oldWage=Number(first(m4,['wageComparison.baselineHourly'])||first(m2,['wageBaseline.hourly','currentHourlyWage'])||first(shared,['participant.currentHourlyWage'])||0);
+    const newWage=Number(first(m4,['wageComparison.entryHourly','entryWage.hourly'])||first(chosen,['entryWage.hourly'])||0);
+    const wageNote=para('Prior earnings and potential entry earnings','This comparison is for planning and is not a pass or fail decision.');
+    if(oldWage>0&&newWage>0){
+      const gap=newWage-oldWage;
+      item(wageNote,'Prior hourly wage',money(oldWage));
+      item(wageNote,'Entry hourly wage',money(newWage));
+      item(wageNote,'Hourly change',String(gap>=0?'+':'')+gap.toFixed(2)+' dollars per hour');
+      item(wageNote,'Annualized change',String(gap>=0?'+':'')+(gap*2080).toFixed(0)+' dollars at 2080 hours');
+      item(wageNote,'Coach discussion',gap<0?'A lower entry wage does not rule out the path. Discuss timing, household needs and future growth.':'Consider local openings, benefits and earnings growth.');
+    }else item(wageNote,'Wage comparison','One or both saved hourly wage values are unavailable.');
     item(lmi,'Typical entry wage',entry);
     item(lmi,'Experienced or median wage',median);
     item(lmi,'Your wage analysis',words(first(chosen,['wages','wagesInterpretation'])||first(picked,['wagesInterpretation'])||m2.wagesInterpretation));
