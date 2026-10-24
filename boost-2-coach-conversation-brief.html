@@ -36,19 +36,20 @@
   if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
   document.getElementById('pauseBtn').href=next.toString();
   document.getElementById('continueBtn').href=next.toString();
-  function add(label,value){const d=document.createElement('div');d.className='doc';const b=document.createElement('b');b.textContent=label;const t=document.createElement('span');t.textContent=value||'Bring your saved BOOST report and discuss this with your coach.';d.append(b,t);document.getElementById('conversationBrief').append(d)}
-  function pick(o,paths){for(const path of paths){const v=path.split('.').reduce((x,k)=>x?.[k],o);if(typeof v==='string'&&v.trim())return v.trim();if(typeof v==='number')return String(v)}return ''}
+  function add(label,value){const d=document.createElement('div');d.className='doc';const b=document.createElement('b');b.textContent=label;const t=document.createElement('span');t.textContent=value||'Not available in the saved BOOST record; review this detail with your coach.';d.append(b,t);document.getElementById('conversationBrief').append(d)}
+  function format(v){if(v==null)return '';if(Array.isArray(v))return v.map(format).filter(Boolean).join(' · ');if(typeof v==='object'){for(const k of ['label','name','title','code','type','value','summary','description']){if(v[k]!=null&&typeof v[k]!=='object')return String(v[k])}return Object.entries(v).slice(0,9).map(([k,x])=>k+': '+format(x)).join('; ')}return String(v)}
+  function pick(o,paths){for(const path of paths){const v=path.split('.').reduce((x,k)=>x?.[k],o);if(v!=null&&v!==''){const result=format(v);if(result)return result}}return ''}
   try{
     const raw=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
     const j=raw.journey_data||raw,m=j.modules||{},a=m.module1||{},b=m.module2||{},c=m.module3||{},d=m.module4||{},e=m.module5||{};
     const career=pick(d,['careerTitle','career.title','careerTarget.title','selectedCareer.title'])||pick(e,['careerTitle']);
     const interest=a.topThreeRIASEC||a.topInterests||a.interestCodes||'';
     add('Selected career',career);
-    add('O*NET interests',Array.isArray(interest)?interest.join(' · '):typeof interest==='string'?interest:'');
+    add('O*NET interests',format(interest));
     add('Module 4 decision',pick(d,['participantDirection','decision.code','direction','route']));
-    add('Local job opportunities',pick(b,['jobsSummary','lmiSummary','laborMarketSummary','localDemand']));
-    add('Wages and lifestyle fit',pick(b,['wageSummary','wageComparison','wagesSummary']));
-    add('Transferable skills',pick(c,['summary','skillMobilitySummary','mobilitySummary']));
+    add('Local job opportunities',pick(b,['jobsInterpretation','validationBySoc','careers','jobsSummary','lmiSummary','laborMarketSummary','localDemand']));
+    add('Wages and lifestyle fit',pick(b,['wagesInterpretation','lifeInterpretation','validationBySoc','careers','wageSummary','wageComparison','wagesSummary']));
+    add('Transferable skills',pick(c,['mobilityPath','careers','summary','skillMobilitySummary','mobilitySummary']));
     add('Career investment',pick(e,['recommendation','investmentRecommendation','programName','trainingProgram']));
     add('Training/funding status','A training recommendation or provider acceptance is not formal program funding approval. Ask your coach to confirm eligibility and authorization.');
     add('Questions for your coach','What can I do now? What evidence supports my career goal? Are training and supportive services appropriate, and what approvals would be required?');
