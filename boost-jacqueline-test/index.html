@@ -64,6 +64,18 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       let result=await call('latest');
       if(result.latest&&!result.latest.evaluation)result=await call('evaluate');
       const evaluation=result.latest?.evaluation;
+      if(result.latest?.status==='completed'&&evaluation){
+        const {data:{user:verifiedUser}}=await client.auth.getUser();
+        if(verifiedUser){
+          const {data:row,error:readError}=await client.from('boost_ready2work_progress').select('progress_json').eq('participant_id',verifiedUser.id).maybeSingle();
+          if(!readError){
+            const progress=row?.progress_json||{};
+            progress.jacquelineInterview={...(progress.jacquelineInterview||{}),verifiedComplete:true,completedAt:new Date().toISOString()};
+            const {error:writeError}=await client.from('boost_ready2work_progress').upsert({participant_id:verifiedUser.id,progress_json:progress,updated_at:new Date().toISOString()},{onConflict:'participant_id'});
+            if(!writeError){try{const local=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');local.jacquelineInterview=progress.jacquelineInterview;localStorage.setItem('boost-r2w-integrated-v1',JSON.stringify(local));}catch(_){}}
+          }
+        }
+      }
       report.replaceChildren();
       if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}
       const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');if(typeof parent==='string'){node.className=parent;report.appendChild(node);}else{parent.appendChild(node);}return node;};
