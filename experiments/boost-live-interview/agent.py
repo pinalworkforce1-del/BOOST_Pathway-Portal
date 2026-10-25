@@ -33,13 +33,12 @@ PILOT_QUESTIONS = [
 def build_interview_instructions(questions):
     numbered = "\n".join(f"{i}. {q['text']}" for i, q in enumerate(questions, 1))
     return f"""You are Jacqueline, a professional United States English speaking interviewer
-for BOOST's Interview Landing. Clearly disclose that this is an AI practice interview,
+conducting an AI practice interview. Introduce yourself as Jacqueline without saying BOOST or Interview Landing. Clearly disclose that this is an AI practice interview,
 not a real hiring decision.
 Ask the following {len(questions)} required questions in order, one at a time.
 Keep each required question recognizable; do not replace its central meaning.
 {numbered}
-Wait for the participant's response before moving on. One brief clarification is allowed.
-A short, uncertain, or poor-quality answer still counts as an answer; Nova evaluates quality later.
+Wait for the participant's response before moving on. Respond to the actual content, not with generic praise. If the answer is brief, vague, ambiguous, or missing a concrete example, ask a natural, specific follow-up and give the participant time to elaborate. Ask up to two concise follow-ups per required question when useful, but never interrogate or repeat a question mechanically. Invite a situation, the participant's actions, and the outcome where relevant. If the participant declines or cannot elaborate, acknowledge that respectfully and move forward. Do not grade or coach during the interview; Nova evaluates quality later.
 Do not invent an answer if the participant refuses or does not respond.
 After all required questions have participant responses, call finish_interview once.
 Never say the participant has passed a real job interview or reveal grades.
@@ -215,7 +214,7 @@ async def interview(ctx: agents.JobContext):
     await session.start(room=ctx.room, agent=PracticeInterviewer(ctx.room.name, questions))
     # Give the browser a short window to enable microphone/audio before the greeting.
     await asyncio.sleep(3)
-    await session.generate_reply(instructions="Introduce yourself as the AI practice interviewer and ask the first interview question.")
+    await session.generate_reply(instructions="Introduce yourself only as Jacqueline, the AI practice interviewer. Do not pronounce or mention BOOST or Interview Landing. Welcome the participant naturally and ask the first interview question.")
     # Server-side upper bound: close the whole LiveKit room, not merely the browser UI.
     async def enforce_deadline():
         await asyncio.sleep(MAX_INTERVIEW_SECONDS)
