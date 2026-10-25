@@ -34,7 +34,7 @@ jobs:
               raise SystemExit('BOOST LiveKit URL is invalid')
           subdomain = host.removesuffix('.livekit.cloud')
           Path('experiments/boost-live-interview/livekit.toml').write_text(
-              f'[project]\\nsubdomain = "{subdomain}"\\n\\n[agent]\\nid = "{agent_id}"\\n'
+              f'[project]\nsubdomain = "{subdomain}"\n\n[agent]\nid = "{agent_id}"\n'
           )
           PY
       - name: Deploy independent BOOST worker
