@@ -100,8 +100,8 @@
   function answeredCount(){ return Object.keys(state.sceneSelections).filter(id=>scenes.some(s=>String(s.id)===String(id))).length; }
   function stageScenes(stage){ return scenes.filter(s=>s.stage===stage); }
   function stageAnswered(stage){ return stageScenes(stage).filter(s=>state.sceneSelections[s.id]).length; }
-  function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; if(stage==='Interview Landing') return scenariosDone && !!state.mockInterview?.complete; return scenariosDone; }
-  function allComplete(){ return answeredCount()===scenes.length && !!state.resumeBuilder?.complete && !!state.mockInterview?.complete; }
+  function stageComplete(stage){ const list=stageScenes(stage); const scenariosDone=list.length>0 && stageAnswered(stage)===list.length; if(stage==='Resume Retreat') return scenariosDone && !!state.resumeBuilder?.complete; if(stage==='Interview Landing') return scenariosDone && !!state.jacquelineInterview?.verifiedComplete; return scenariosDone; }
+  function allComplete(){ return answeredCount()===scenes.length && !!state.resumeBuilder?.complete && !!state.jacquelineInterview?.verifiedComplete; }
   function stageUnlocked(stage){
     const i=stageOrder.indexOf(stage);
     return i<=0 || stageComplete(stageOrder[i-1]);
@@ -159,7 +159,7 @@
     stageOrder.forEach((stage,i)=>{
       const def=stageDefs[stage], done=stageAnswered(stage), total=stageScenes(stage).length, complete=stageComplete(stage), unlocked=stageUnlocked(stage);
       const b=document.createElement('button'); b.className=`stage-card ${unlocked?'':'locked'}`; b.disabled=!unlocked;
-      let status=complete?'Complete':unlocked?`${done} of ${total} scenarios complete`:'Locked'; if(stage==='Resume Retreat'&&done===total&&!state.resumeBuilder?.complete) status='Résumé Builder required'; if(stage==='Interview Landing'&&done===total&&!state.mockInterview?.complete) status='Mock Interview required';
+      let status=complete?'Complete':unlocked?`${done} of ${total} scenarios complete`:'Locked'; if(stage==='Resume Retreat'&&done===total&&!state.resumeBuilder?.complete) status='Résumé Builder required'; if(stage==='Interview Landing'&&done===total&&!state.jacquelineInterview?.verifiedComplete) status='Jacqueline Interview required';
       const action=complete?'Review →':unlocked?'Continue →':'Complete prior stage';
       b.innerHTML=`<img src="${def.home}" alt=""><div class="stage-card-copy"><span>STAGE ${i+1}</span><h2>${stage}</h2><p>${def.description}</p><div class="stage-card-foot"><span class="status-pill ${complete?'complete':''}">${status}</span><strong>${action}</strong></div></div>`;
       if(unlocked) b.onclick=()=>route('stage',{stage}); cards.appendChild(b);
