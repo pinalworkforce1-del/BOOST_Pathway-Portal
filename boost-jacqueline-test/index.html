@@ -23,7 +23,8 @@ notice.setAttribute('role','status');
 notice.style.cssText='margin:12px auto;padding:16px;max-width:1100px;border:1px solid #6b869b;background:#12334c;color:white;border-radius:12px';
 document.body.insertBefore(notice,document.querySelector('main'));
 document.querySelectorAll('button').forEach(b=>{b.disabled=true;});
-let room=null;
+let room=null,activeRoomName=null,closing=false;
+async function closeInterview(client,cfg){if(closing||!activeRoomName)return;closing=true;try{const {data:{session}}=await client.auth.getSession();if(!session)return;const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+session.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'client_ended',room_name:activeRoomName})});const result=await response.json();if(!response.ok)throw Error(result.error||'Session close failed');notice.textContent='Interview ended and saved. Evaluation pending.';}catch(e){notice.textContent='Interview transcript saved; completion synchronization pending: '+e.message;}finally{closing=false;}}
 const startButton=document.getElementById('start'),endButton=document.getElementById('end');
 const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Rosie Interview Feedback';
 const saveRosiePdf=document.getElementById('saveRosiePdf');saveRosiePdf.disabled=true;saveRosiePdf.onclick=()=>{notice.textContent='Opening print dialog. Choose Save as PDF as your destination.';window.print();};
@@ -111,12 +112,13 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
         if(!current)throw Error('BOOST sign-in expired');
         const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+current.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'start'})});
         const result=await response.json();if(!response.ok)throw Error(result.error||'Interview reservation failed');
+        activeRoomName=result.room_name;
         room=new LivekitClient.Room({adaptiveStream:true,dynacast:true});
         room.on(LivekitClient.RoomEvent.TrackSubscribed,(track,publication,participant)=>{
           if(track.kind==='video'){const element=track.attach();document.getElementById('stage').appendChild(element);document.querySelector('.placeholder').hidden=true;}
           if(track.kind==='audio')document.getElementById('remoteAudio').appendChild(track.attach());
         });
-        room.on(LivekitClient.RoomEvent.Disconnected,()=>{notice.textContent='Interview disconnected.';endButton.disabled=true;});
+        room.on(LivekitClient.RoomEvent.Disconnected,()=>{endButton.disabled=true;void closeInterview(client,cfg);});
         await room.connect(result.url,result.token);
         await room.localParticipant.setMicrophoneEnabled(true);
         endButton.disabled=false;
@@ -124,7 +126,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
         notice.textContent='BOOST live interview connected. Speak naturally to Jacqueline.';
       }catch(e){notice.textContent='Interview connection: '+e.message;startButton.disabled=false;}
     };
-    endButton.onclick=async()=>{if(room)await room.disconnect();endButton.disabled=true;startButton.disabled=false;notice.textContent='Interview ended. Transcript processing may take a moment.';};
+    endButton.onclick=async()=>{if(room)await room.disconnect();endButton.disabled=true;startButton.disabled=false;await closeInterview(client,cfg);};
   }
 
  }catch(e){notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
