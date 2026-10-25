@@ -1,43 +1,63 @@
-/* BOOST Ready 2 Work: opt-in-by-existing-auth, non-destructive authenticated sync. */
+/* BOOST Ready 2 Work cloud sync — conservative merge, authenticated users only. */
 (()=>{'use strict';
-const KEY='boost-r2w-integrated-v1';
-const area=document.createElement('small');area.id='r2wCloudStatus';area.style.cssText='display:block;text-align:center;font:12px system-ui;padding:5px;color:#547080';area.textContent='Progress is saved on this device. Checking cloud sign-in…';document.body.append(area);
-if(!window.supabase||!window.PINAL_BOOST_CONFIG){area.textContent='Device save active. Cloud sync unavailable.';return}
-const cfg=window.PINAL_BOOST_CONFIG;
+const KEY='boost-r2w-integrated-v1', cfg=window.PINAL_BOOST_CONFIG;
+if(!window.supabase||!cfg)return;
 const client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
-let userId=null, timer=null, busy=false, pending=false;
-const snapshot=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch{return null}};
-const count=p=>Object.keys(p?.sceneSelections||{}).length;
-async function flush(){
- if(!userId||busy)return;
- const local=snapshot();if(!local)return;
- busy=true;
- try{
-   const {error}=await client.from('boost_ready2work_progress').upsert({participant_id:userId,progress_json:local,updated_at:new Date().toISOString()},{onConflict:'participant_id'});
-   if(error)throw error;
-   area.textContent='Cloud backup saved • '+count(local)+' scenario decisions.';
- }catch(e){area.textContent='Device progress retained • cloud sync pending ('+String(e.message||'unavailable')+').';}
- finally{busy=false;if(pending){pending=false;queue();}}
+let userId=null,ready=false,busy=false,queued=false,timer=0,lastSynced='';
+const status=document.createElement('span');
+status.id='r2wSaveStatus';status.setAttribute('role','status');
+status.style.cssText='font:12px system-ui;color:#d9e8f2;margin-left:8px';
+document.querySelector('.top-actions')?.prepend(status);
+const say=s=>{status.textContent=s;};
+const read=()=>{for(const store of [localStorage,sessionStorage])try{const raw=store.getItem(KEY);if(raw)return JSON.parse(raw)}catch(e){}return null;};
+const count=x=>Object.keys(x?.sceneSelections||{}).length;
+function combine(remote,local){
+ remote=remote&&typeof remote==='object'?remote:{};
+ local=local&&typeof local==='object'?local:{};
+ return {...remote,...local,
+  sceneSelections:{...(remote.sceneSelections||{}),...(local.sceneSelections||{})},
+  resumeBuilder:local.resumeBuilder?.complete?local.resumeBuilder:(remote.resumeBuilder?.complete?remote.resumeBuilder:(local.resumeBuilder||remote.resumeBuilder||{})),
+  jacquelineInterview:remote.jacquelineInterview?.verifiedComplete?remote.jacquelineInterview:(local.jacquelineInterview||remote.jacquelineInterview||{})
+ };
 }
-function queue(){if(!userId)return;if(busy){pending=true;return}clearTimeout(timer);timer=setTimeout(flush,600);}
+async function cloudRow(){
+ const {data,error}=await client.from('boost_ready2work_progress').select('progress_json').eq('participant_id',userId).maybeSingle();
+ if(error)throw error;return data?.progress_json||null;
+}
+function schedule(){queued=true;clearTimeout(timer);timer=setTimeout(flush,750)}
+async function flush(){
+ if(!ready||busy||!queued)return;
+ busy=true;queued=false;
+ try{
+  const remote=await cloudRow(),local=read();if(!local){say('No local changes');return;}
+  const merged=combine(remote,local);
+  const serialized=JSON.stringify(merged);
+  if(serialized===lastSynced){say('Saved');return}
+  const {error}=await client.from('boost_ready2work_progress').upsert({participant_id:userId,progress_json:merged,updated_at:new Date().toISOString()},{onConflict:'participant_id'});
+  if(error)throw error;
+  lastSynced=serialized;say('Saved to BOOST cloud');
+ }catch(e){queued=true;say('Cloud sync pending — saved on device');}
+ finally{busy=false;if(queued)timer=setTimeout(flush,4500);}
+}
+window.addEventListener('boost-r2w-saved',()=>{if(ready)schedule()});
+window.addEventListener('online',()=>{if(ready)schedule()});
 (async()=>{
  try{
-   const {data,error}=await client.auth.getSession();if(error)throw error;
-   const session=data?.session;
-   if(!session){area.textContent='Device progress only • sign in to BOOST for cloud backup.';return}
-   const {data:auth,error:identityError}=await client.auth.getUser();if(identityError||!auth?.user)throw identityError||Error('No verified user');
-   userId=auth.user.id;
-   const {data:row,error:readError}=await client.from('boost_ready2work_progress').select('progress_json').eq('participant_id',userId).maybeSingle();
-   if(readError)throw readError;
-   const local=snapshot(), remote=row?.progress_json;
-   if(!local&&remote&&typeof remote==='object'){
-     try{localStorage.setItem(KEY,JSON.stringify(remote));area.textContent='Cloud progress recovered • '+count(remote)+' decisions. Reload to display it.';}
-     catch(e){area.textContent='Cloud progress found, but device storage is unavailable: '+e.message}
-   }else if(local&&remote&&count(remote)>count(local)){
-     area.textContent='Cloud has '+count(remote)+' decisions vs device '+count(local)+'. No automatic overwrite performed.';
-   }else if(local){queue();}
-   else area.textContent='Cloud backup connected. Your first answer will be saved.';
- }catch(e){area.textContent='Device progress retained • cloud connection unavailable ('+String(e.message||'unknown')+').';}
+  const {data,error}=await client.auth.getSession();if(error)throw error;
+  if(!data?.session){say('Saved on this device • sign in to BOOST for cloud sync');return}
+  const {data:identity,error:ie}=await client.auth.getUser();if(ie||!identity?.user)throw ie||Error('Identity unavailable');
+  userId=identity.user.id;
+  const remote=await cloudRow(),local=read();
+  if(remote&&typeof remote==='object'){
+   const merged=combine(remote,local);
+   const differs=JSON.stringify(merged)!==JSON.stringify(local);
+   if(differs){
+    try{localStorage.setItem(KEY,JSON.stringify(merged));}catch(e){sessionStorage.setItem(KEY,JSON.stringify(merged))}
+    window.dispatchEvent(new CustomEvent('boost-r2w-cloud-restored',{detail:{progress:merged}}));
+   }
+  }
+  ready=true; say('BOOST cloud connected');
+  if(local||remote)schedule();
+ }catch(e){say('Cloud unavailable — saved on this device');}
 })();
-window.addEventListener('boost-r2w-saved',e=>{if(e.detail?.verified)queue();});
 })();
