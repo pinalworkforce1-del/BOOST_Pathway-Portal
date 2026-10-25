@@ -392,7 +392,9 @@
   }
   function renderCertificate(){
     updateOverall(); recalcScores();
-    $('participantName').value=state.participantName||'';
+    const certificateName=(state.participantName||state.resumeBuilder?.contact?.name||'').trim();
+    if(certificateName&&!state.participantName){state.participantName=certificateName;saveState();}
+    $('participantName').value=certificateName;
     const earned=allComplete(), n=answeredCount(), total=scenes.length;
     $('readinessProgressTitle').textContent=earned?'Work Ready Certificate earned':'Your progress so far';
     $('readinessProgressMeta').textContent=earned?`${total} of ${total} scenarios complete • all Ready 2 Work areas complete`:`${n} of ${total} scenarios complete • your skill profile updates with every decision`;
