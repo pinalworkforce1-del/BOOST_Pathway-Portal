@@ -1,18 +1,14 @@
-/* Ready 2 Work progress integration: non-destructive read-only probe. */
+/* BOOST Ready 2 Work: read-only legacy progress diagnostic. */
 (()=>{'use strict';
-const KEY='boost-r2w-integrated-v1';
-const status=document.createElement('small');
-status.id='ready2work-sync-status';
-status.setAttribute('aria-live','polite');
-status.style.cssText='display:block;text-align:center;font:12px system-ui;padding:5px;color:#547080';
-status.textContent='Ready 2 Work progress remains saved on this device.';
-document.body.appendChild(status);
-const raw=localStorage.getItem(KEY);
-if(raw){
- try{
-  const data=JSON.parse(raw);
-  const count=Object.keys(data.sceneSelections||{}).length;
-  status.textContent='Ready 2 Work: '+count+' scenario decisions saved on this device.';
- }catch(_){status.textContent='Ready 2 Work: saved progress found on this device.'}
-}
+const modern='boost-r2w-integrated-v1',legacy='boost_r2w_v1';
+const indicator=document.createElement('small');
+indicator.id='ready2work-sync-status';
+indicator.setAttribute('role','status');
+indicator.style.cssText='display:block;text-align:center;font:12px system-ui;padding:7px;color:#547080';
+document.body.append(indicator);
+const read=key=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
+const current=read(modern),old=read(legacy);
+const currentCount=Object.keys(current?.sceneSelections||{}).length;
+const oldCount=Object.keys(old?.answers||{}).length;
+indicator.textContent='Ready 2 Work progress check: current '+currentCount+' decisions; earlier version '+oldCount+' decisions'+(oldCount?' (recovery may be possible)':'')+'. No progress has been changed.';
 })();
