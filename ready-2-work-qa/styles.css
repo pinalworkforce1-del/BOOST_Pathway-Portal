@@ -126,3 +126,11 @@
 .certificate-content .cert-brand-row{display:flex;justify-content:flex-start;align-items:center;min-height:100px}
 .certificate-content .cert-aw-logo{display:block;width:clamp(310px,36vw,485px);max-width:46%;height:auto;object-fit:contain;background:rgba(255,251,242,.92);padding:7px 11px;border-radius:8px;image-rendering:auto}
 @media(max-width:900px){.certificate-content .cert-brand-row{min-height:72px}.certificate-content .cert-aw-logo{width:clamp(200px,38vw,360px);max-width:60%;padding:5px 7px}}
+
+/* EPS-derived Pinal logo: centered without plaque, with readable certificate heading. */
+.certificate-content .cert-brand-row{display:flex;justify-content:center;align-items:center;min-height:0;margin:0 auto 4px;width:100%}
+.certificate-content .cert-aw-logo{display:block;width:clamp(200px,25vw,335px);max-width:38%;height:auto;object-fit:contain;background:transparent;padding:0;border:0;border-radius:0;box-shadow:none}
+.certificate-content .cert-title{width:min(1040px,88%);max-width:88%;margin-inline:auto;text-align:center}
+.certificate-content .cert-title h1{font-size:clamp(1.7rem,3vw,3.3rem);line-height:1.06;margin:5px auto 8px;max-width:100%;text-wrap:balance}
+.certificate-content .cert-title p{max-width:780px;margin-inline:auto}
+@media(max-width:900px){.certificate-content .cert-aw-logo{width:clamp(185px,40vw,265px);max-width:65%}.certificate-content .cert-title{width:94%;max-width:94%}.certificate-content .cert-title h1{font-size:clamp(1.4rem,4.1vw,2.25rem)}}
