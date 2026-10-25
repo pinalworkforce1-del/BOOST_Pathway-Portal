@@ -54,9 +54,9 @@
     if(el){el.textContent=message;el.style.display=message?'block':'none';}
   }
   function loadState(){
-    for(const store of [localStorage,sessionStorage]){
+    for(const [store,key] of [[localStorage,STORAGE_KEY],[sessionStorage,STORAGE_KEY],[sessionStorage,BACKUP_KEY]]){
       try{
-        const raw=store.getItem(STORAGE_KEY);
+        const raw=store.getItem(key);
         if(!raw)continue;
         const loaded=JSON.parse(raw);
         if(!loaded || typeof loaded!=='object')continue;
@@ -450,7 +450,16 @@
   $('printCertificateBtn').onclick=()=>window.print();
   $('resetBtn').onclick=()=>{ if(confirm('Start Ready 2 Work over on this device? This clears decisions, skill evidence, and certificate progress.')){ localStorage.removeItem(STORAGE_KEY); location.hash='#map'; location.reload(); } };
 
-  loadState(); recalcScores(); updateOverall();
+  // Recovery safeguard: export current decisions without modifying storage or cloud data.
+  const exportBtn=document.createElement('button');
+  exportBtn.type='button';exportBtn.className='top-link button-link';exportBtn.textContent='Backup progress';
+  exportBtn.title='Save a copy of your Ready 2 Work progress';
+  document.querySelector('.top-actions')?.insertBefore(exportBtn,$('resetBtn'));
+  exportBtn.onclick=()=>{
+    const blob=new Blob([JSON.stringify({format:'BOOST-R2W-BACKUP-1',exportedAt:new Date().toISOString(),progress:state},null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BOOST-ready2work-progress-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+  };
+    loadState(); recalcScores(); updateOverall();
   const hash=location.hash||'#map';
   if(hash.startsWith('#scene-')){ const id=Number(hash.split('-')[1]); const idx=scenes.findIndex(s=>s.id===id); route('scene',{index:idx>=0?idx:0}); }
   else if(hash==='#certificate') route('certificate');
