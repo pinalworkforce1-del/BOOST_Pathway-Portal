@@ -1,7 +1,8 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOOST • Live Interview Isolated Prototype</title>
 <style>
-:root{color-scheme:dark;--ink:#e8f5ff;--muted:#aec5da;--cyan:#61e2ff;--gold:#f7ce72}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0,#194871,#070e22 66%);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.top a{color:#b6e9ff}.label{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--gold)}h1{font-size:clamp(30px,5vw,54px);margin:12px 0}h2{margin:0 0 8px}.lead,.muted{color:var(--muted)}.layout{display:grid;grid-template-columns:330px 1fr;gap:20px}.panel{background:#102641e8;border:1px solid #3a668b;border-radius:20px;padding:21px;box-shadow:0 18px 48px #0005}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0}label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}select{width:100%;padding:12px;border-radius:9px;background:#092038;border:1px solid #6085a8;color:white;font-size:16px}button{font:inherit;font-weight:750;border-radius:100px;border:1px solid #61caed;background:#116187;color:white;padding:11px 18px;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#1b3049;border-color:#6085a8}.stage{position:relative;min-height:390px;border:1px solid #3a668b;border-radius:18px;overflow:hidden;background:radial-gradient(circle at center,#234968,#091428 70%);display:grid;place-items:center}.stage video{width:100%;height:100%;min-height:390px;max-height:65vh;object-fit:contain}.placeholder{position:absolute;text-align:center;pointer-events:none;max-width:320px;padding:16px}.placeholder strong{display:block;font-size:23px}.placeholder[hidden]{display:none}.indicator{display:inline-block;width:11px;height:11px;background:#f7ce72;border-radius:100%;margin-right:8px}.indicator.live{background:#3adea7}.indicator.warn{background:#ffae77}.notice{background:#1b334b;border-left:3px solid #edc26b;padding:10px 13px;color:#e6f0fc}.hint{font-size:13px;color:#bbd6e9}#status{min-height:44px}#remoteAudio{position:absolute;width:0;height:0;overflow:hidden}@media(max-width:760px){.layout{grid-template-columns:1fr}.stage,.stage video{min-height:300px}}</style></head>
+:root{color-scheme:dark;--ink:#e8f5ff;--muted:#aec5da;--cyan:#61e2ff;--gold:#f7ce72}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 0,#194871,#070e22 66%);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;gap:12px}.top a{color:#b6e9ff}.label{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--gold)}h1{font-size:clamp(30px,5vw,54px);margin:12px 0}h2{margin:0 0 8px}.lead,.muted{color:var(--muted)}.layout{display:grid;grid-template-columns:330px 1fr;gap:20px}.panel{background:#102641e8;border:1px solid #3a668b;border-radius:20px;padding:21px;box-shadow:0 18px 48px #0005}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0}label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}select{width:100%;padding:12px;border-radius:9px;background:#092038;border:1px solid #6085a8;color:white;font-size:16px}button{font:inherit;font-weight:750;border-radius:100px;border:1px solid #61caed;background:#116187;color:white;padding:11px 18px;cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}.secondary{background:#1b3049;border-color:#6085a8}.stage{position:relative;min-height:390px;border:1px solid #3a668b;border-radius:18px;overflow:hidden;background:radial-gradient(circle at center,#234968,#091428 70%);display:grid;place-items:center}.stage video{width:100%;height:100%;min-height:390px;max-height:65vh;object-fit:contain}.placeholder{position:absolute;text-align:center;pointer-events:none;max-width:320px;padding:16px}.placeholder strong{display:block;font-size:23px}.placeholder[hidden]{display:none}.indicator{display:inline-block;width:11px;height:11px;background:#f7ce72;border-radius:100%;margin-right:8px}.indicator.live{background:#3adea7}.indicator.warn{background:#ffae77}.notice{background:#1b334b;border-left:3px solid #edc26b;padding:10px 13px;color:#e6f0fc}.hint{font-size:13px;color:#bbd6e9}#status{min-height:44px}#remoteAudio{position:absolute;width:0;height:0;overflow:hidden}@media(max-width:760px){.layout{grid-template-columns:1fr}.stage,.stage video{min-height:300px}}#feedbackActions{margin:24px auto;max-width:950px;padding:20px;background:#102641;border:1px solid #3a668b;border-radius:16px}#feedbackReport{background:#fff;color:#162a3e;border:0;border-radius:10px;padding:25px;margin-top:12px}#feedbackReport h2{color:#103b62;font-size:24px}#feedbackReport h3{color:#16476c;margin:22px 0 7px}#feedbackReport p{margin:6px 0 12px}#feedbackReport ul{padding-left:22px}#feedbackReport li{margin-bottom:7px}#feedbackReport .report-meta{color:#566578;font-size:13px}#feedbackReport .report-note{font-size:13px;color:#526477;border-top:1px solid #d3dbe2;padding-top:12px}#feedbackReport .competency{display:inline-block;padding:4px 9px;margin:3px;border-radius:20px;background:#e9f4fa;color:#124769;font-size:13px}#feedbackReport article{break-inside:avoid;border-top:1px solid #d7e0e8;margin-top:14px;padding-top:10px}@media print{@page{size:letter;margin:0.65in}body{background:white!important;color:black!important}body *{visibility:hidden!important}#feedbackActions,#feedbackActions #feedbackReport,#feedbackActions #feedbackReport *{visibility:visible!important}#feedbackActions{position:absolute!important;top:0!important;left:0!important;width:100%!important;max-width:none!important;border:0!important;background:white!important;padding:0!important;margin:0!important}#feedbackActions>button{display:none!important}#feedbackReport{display:block!important;padding:0!important;margin:0!important;color:#111!important;font-size:11pt!important}#feedbackReport article{break-inside:avoid}#feedbackReport h2{font-size:19pt}#feedbackReport h3{font-size:13pt}}
+</style></head>
 <body><div role="status" style="padding:13px;background:#482f12;color:#fff;font-weight:700;text-align:center">BOOST ISOLATED PROTOTYPE • Interface review only — LiveKit is intentionally disabled until BOOST authentication and session storage are configured.</div><main>
 <header class="top"><span class="label">BOOST / READY 2 WORK / INTERVIEW LANDING</span><a href="../ready-2-work-qa/index.html">← Back to Interview Intelligence</a></header>
 <h1>Practice with a live interviewer.</h1><p class="lead">A private, real-time AI interview simulation. Choose a career focus, enable your microphone, and speak naturally. Camera access isn't needed.</p>
@@ -10,7 +11,7 @@
 <p class="hint">Career focus is for a future live interview test; the interview is not yet enabled.</p>
 <p class="notice">Pilot session: not yet counted toward course completion or Coach View. A signed-in BOOST account and verified TalentSync transfer are required. Live sessions may incur usage charges.</p>
 <div class="row"><button id="start" type="button">Begin live interview</button><button id="end" class="secondary" type="button" disabled>End interview</button><button id="enableAudio" class="secondary" type="button" hidden>Enable Audio</button></div>
-<button id="pastFeedback" type="button" class="secondary" hidden>View My Previous Interview Feedback</button><div id="feedbackActions" hidden><button id="viewFeedback" type="button">View Interview Feedback from Rosie</button><div id="feedbackReport" class="notice" hidden></div></div>
+<button id="pastFeedback" type="button" class="secondary" hidden>View My Previous Interview Feedback</button><div id="feedbackActions" hidden><button id="saveRosiePdf" type="button" class="secondary" disabled>Save Report as PDF</button><div id="feedbackReport" class="notice" hidden></div></div>
 <p id="allowance" class="hint">Test environment: LiveKit interview launch is disabled until scenario and session checks pass.</p><p id="status" role="status" aria-live="polite"><span class="indicator"></span>Awaiting BOOST verification.</p><p class="hint" id="connection">Tip: Turn off nearby TVs or use headphones to avoid accidental interruptions.</p>
 </section><section class="panel"><div class="stage" id="stage"><video id="avatar" autoplay playsinline aria-label="Live video of your AI practice interviewer"></video><div class="placeholder" id="placeholder"><strong>Interview Intelligence</strong><p>Jacqueline's BOOST agent is deployed.</p><p class="muted">Your interviewer's video will appear here when connected.</p></div><div id="remoteAudio"></div></div><div class="row"><span class="indicator" id="indicator"></span><span id="trackState">Not connected</span></div><p class="muted">If video pauses, your audio interview may continue. The session remains open until you end it.</p></section></div>
 </main>
@@ -25,12 +26,59 @@ document.querySelectorAll('button').forEach(b=>{b.disabled=true;});
 let room=null;
 const startButton=document.getElementById('start'),endButton=document.getElementById('end');
 const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Rosie Interview Feedback';
+const saveRosiePdf=document.getElementById('saveRosiePdf');saveRosiePdf.disabled=true;saveRosiePdf.onclick=()=>window.print();
+document.querySelector('main').appendChild(document.getElementById('feedbackActions'));
 (async()=>{
  try{
   notice.textContent='Checking BOOST participant session and TalentSync transfer…';
   const cfg={url:'https://dxcajwarqojvmbteroco.supabase.co',key:'sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF'};
   const client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
-  rosieButton.onclick=async()=>{rosieButton.disabled=true;notice.textContent='Rosie is retrieving and evaluating your interview…';document.getElementById('feedbackActions').hidden=false;const report=document.getElementById('feedbackReport');report.hidden=false;report.textContent='Loading Rosie interview feedback…';try{const {data:{session:auth}}=await client.auth.getSession();if(!auth)throw Error('Sign in to BOOST again.');const call=async(mode)=>{const response=await fetch(cfg.url+'/functions/v1/boost-rosie-live-evaluation',{method:'POST',headers:{authorization:'Bearer '+auth.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode})});const result=await response.json();if(!response.ok)throw Error(result.error||'Evaluation unavailable');return result;};let result=await call('latest');if(result.latest&&!result.latest.evaluation)result=await call('evaluate');report.replaceChildren();const evaluation=result.latest?.evaluation;if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}const section=(title,body)=>{const heading=document.createElement('h3');heading.textContent=title;const paragraph=document.createElement('p');paragraph.textContent=Array.isArray(body)?body.join(' • '):String(body||'');report.append(heading,paragraph);};section('Rosie summary',evaluation.summary);section('Strengths',evaluation.strengths);section('Development priorities',evaluation.development_priorities);section('Next steps',evaluation.next_steps);(evaluation.question_feedback||[]).forEach((item,index)=>section('Question '+(index+1),(item.strengths||[]).join(' ')+' '+(item.development||'')));section('Career coach notes',evaluation.coach_notes);}catch(error){const message='Rosie evaluation: '+error.message;notice.textContent=message;report.textContent=message;}finally{rosieButton.disabled=false;}};
+  rosieButton.onclick=async()=>{
+    rosieButton.disabled=true;saveRosiePdf.disabled=true;
+    notice.textContent='Rosie is retrieving and evaluating your interview…';
+    const actions=document.getElementById('feedbackActions'),report=document.getElementById('feedbackReport');
+    actions.hidden=false;report.hidden=false;report.textContent='Loading Rosie interview feedback…';
+    try{
+      const {data:{session:auth}}=await client.auth.getSession();
+      if(!auth)throw Error('Sign in to BOOST again.');
+      const call=async(mode)=>{
+        const response=await fetch(cfg.url+'/functions/v1/boost-rosie-live-evaluation',{method:'POST',headers:{authorization:'Bearer '+auth.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode})});
+        const result=await response.json();if(!response.ok)throw Error(result.error||'Evaluation unavailable');return result;
+      };
+      let result=await call('latest');
+      if(result.latest&&!result.latest.evaluation)result=await call('evaluate');
+      const evaluation=result.latest?.evaluation;
+      report.replaceChildren();
+      if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}
+      const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');parent.appendChild(node);return node;};
+      const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',item,list));}else el('p',items);};
+      el('h2','Rosie | Interview Readiness Report');
+      el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
+      el('p','Evaluation date: '+new Date(evaluation.evaluated_at||Date.now()).toLocaleDateString()+' • Status: '+(result.latest.status==='completed'?'Completed':'Coaching review'),'report-meta');
+      section('Your interview summary',evaluation.summary);
+      section('80/20 coaching approach','This report emphasizes your demonstrated strengths and practical next steps. The 80/20 approach is a coaching balance, not a numerical interview grade.');
+      section('Strengths demonstrated',evaluation.strengths||[]);
+      section('Development priorities',evaluation.development_priorities||[]);
+      section('Recommended next steps',evaluation.next_steps||[]);
+      el('h3','Question-by-question feedback');
+      (evaluation.question_feedback||[]).forEach((item,index)=>{
+        const article=document.createElement('article');report.appendChild(article);
+        el('h3','Question '+(index+1),article);
+        const strengths=Array.isArray(item.strengths)?item.strengths.join(' '):'';
+        el('p','What you demonstrated: '+(strengths||'Not enough evidence recorded.'),article);
+        el('p','Development opportunity: '+(item.development||'Continue practicing with specific examples.'),article);
+        if(item.practice_prompt)el('p','Practice prompt: '+item.practice_prompt,article);
+        if(Array.isArray(item.competencies)&&item.competencies.length){
+          el('p','Employability skills demonstrated:',article);
+          item.competencies.forEach(c=>el('span',c,article).className='competency');
+        }
+      });
+      el('p','This is AI-generated practice feedback for career development, not an employment or hiring decision.','report-note');
+      saveRosiePdf.disabled=false;notice.textContent='Rosie report ready. Use Save Report as PDF to print or save a PDF copy.';
+      actions.scrollIntoView({behavior:'smooth',block:'start'});
+    }catch(error){const message='Rosie evaluation: '+error.message;notice.textContent=message;report.textContent=message;}
+    finally{rosieButton.disabled=false;}
+  };
   const {data:{user},error}=await client.auth.getUser();
   if(error||!user)throw Error('Sign in through BOOST before opening the interview.');
   const {data:transferred,error:gateError}=await client.rpc('boost_resume_enrollment_approved');
