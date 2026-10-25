@@ -265,7 +265,20 @@
     });
   }
 
-  function promptText(s){ return `${s.title}. ${s.setup} What do you do? A. ${s.choices.A} B. ${s.choices.B} C. ${s.choices.C} D. ${s.choices.D}`; }
+  // Fixed balanced presentation order: keeps canonical stored A/B/C/D evidence, audio impacts, and cloud history unchanged.
+  // Each entry gives the display letter that should contain the canonical strongest C response.
+  const strongestDisplay=['B','D','A','C','D','B','A','C','B','D','C','A','D','B','C','A','D','B','A','C','D','A'];
+  const letters=['A','B','C','D'];
+  function optionOrder(s){
+    const i=scenes.findIndex(x=>x.id===s.id), target=strongestDisplay[i]||'C';
+    const remaining=letters.filter(x=>x!==target);
+    const canonicalOther=['A','B','D'];
+    const mapping={C:target};
+    canonicalOther.forEach((k,n)=>mapping[k]=remaining[(n+i)%3]);
+    return letters.map(label=>({label,key:Object.keys(mapping).find(key=>mapping[key]===label)}));
+  }
+  function displayLetter(s,k){return optionOrder(s).find(x=>x.key===k)?.label||k;}
+  function promptText(s){return `${s.title}. ${s.setup} What do you do? ${optionOrder(s).map(o=>`${o.label}. ${s.choices[o.key]}`).join(' ')}`;}
   function stopAudio(){
     if('speechSynthesis' in window) speechSynthesis.cancel();
     [promptAudio,impactAudio].forEach(a=>{ if(a){a.pause(); try{a.currentTime=0}catch(e){}} });
@@ -304,9 +317,9 @@
     renderSkillHud();
     const box=$('choices'); box.innerHTML='';
     const previous=state.sceneSelections[s.id];
-    for(const k of ['A','B','C','D']){
-      const b=document.createElement('button'); b.className=`choice ${previous===k?'selected':''}`;
-      b.innerHTML=`<strong>${k}</strong>${s.choices[k]}`; b.onclick=()=>choose(s,k,b); box.appendChild(b);
+    for(const {label,key} of optionOrder(s)){
+      const b=document.createElement('button'); b.className=`choice ${previous===key?'selected':''}`;
+      b.innerHTML=`<strong>${label}</strong>${s.choices[key]}`; b.onclick=()=>choose(s,key,b); box.appendChild(b);
     }
     if(previous){ showInline(s,previous); }
     $('prevSceneBtn').disabled=state.currentScene===0;
@@ -319,7 +332,7 @@
     if(state.audioOn) setTimeout(()=>playPrompt(s),120);
   }
 
-  function showInline(s,k){ const im=s.impact[k]; lastImpact={s,k,im}; $('inlineFeedback').hidden=false; $('inlineFeedbackTitle').textContent=`You chose ${k}`; $('inlineFeedbackText').textContent=im.feedback||im.narration||''; $('impactCaption').textContent=im.narration||''; $('impactCaption').classList.toggle('show',state.ccOn); }
+  function showInline(s,k){ const im=s.impact[k]; lastImpact={s,k,im}; $('inlineFeedback').hidden=false; $('inlineFeedbackTitle').textContent=`You chose ${displayLetter(s,k)}`; $('inlineFeedbackText').textContent=im.feedback||im.narration||''; $('impactCaption').textContent=im.narration||''; $('impactCaption').classList.toggle('show',state.ccOn); }
 
   function choose(s,k,b){
     document.querySelectorAll('.choice').forEach(x=>x.classList.remove('selected')); b.classList.add('selected');
@@ -327,7 +340,7 @@
   }
 
   function showImpactDialog(s,k){
-    const im=s.impact[k]; $('impactDialogTitle').textContent=`You chose ${k}`; $('impactDialogText').textContent=im.feedback||im.narration||'';
+    const im=s.impact[k]; $('impactDialogTitle').textContent=`You chose ${displayLetter(s,k)}`; $('impactDialogText').textContent=im.feedback||im.narration||'';
     const grid=$('impactSkillGrid'); grid.innerHTML=''; const delta=weights[s.id]?.[k]||{};
     skillOrder.forEach(skill=>{
       const m=mastery(skill); const d=Number(delta[skill]||0); const el=document.createElement('div'); el.className=`impact-skill ${d!==0?'changed':''} ${d<0?'risk':''}`;
