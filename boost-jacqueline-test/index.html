@@ -26,7 +26,7 @@ document.querySelectorAll('button').forEach(b=>{b.disabled=true;});
 let room=null;
 const startButton=document.getElementById('start'),endButton=document.getElementById('end');
 const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Rosie Interview Feedback';
-const saveRosiePdf=document.getElementById('saveRosiePdf');saveRosiePdf.disabled=true;saveRosiePdf.onclick=()=>window.print();
+const saveRosiePdf=document.getElementById('saveRosiePdf');saveRosiePdf.disabled=true;saveRosiePdf.onclick=()=>{notice.textContent='Opening print dialog. Choose Save as PDF as your destination.';window.print();};
 document.querySelector('main').appendChild(document.getElementById('feedbackActions'));
 (async()=>{
  try{
@@ -50,7 +50,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       const evaluation=result.latest?.evaluation;
       report.replaceChildren();
       if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}
-      const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');parent.appendChild(node);return node;};
+      const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');if(typeof parent==='string'){node.className=parent;report.appendChild(node);}else{parent.appendChild(node);}return node;};
       const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',item,list));}else el('p',items);};
       el('h2','Rosie | Interview Readiness Report');
       el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
