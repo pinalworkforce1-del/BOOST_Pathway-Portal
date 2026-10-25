@@ -121,3 +121,8 @@
 
 .cert-brand-row{justify-content:flex-start;align-items:flex-start}.cert-aw-logo{width:min(390px,34%);height:auto;object-fit:contain;display:block}
 @media(max-width:900px){.cert-aw-logo{width:min(250px,45%)}}
+
+/* Certificate header: readable regional logo on warm parchment */
+.certificate-content .cert-brand-row{display:flex;justify-content:flex-start;align-items:center;min-height:100px}
+.certificate-content .cert-aw-logo{display:block;width:clamp(310px,36vw,485px);max-width:46%;height:auto;object-fit:contain;background:rgba(255,251,242,.92);padding:7px 11px;border-radius:8px;image-rendering:auto}
+@media(max-width:900px){.certificate-content .cert-brand-row{min-height:72px}.certificate-content .cert-aw-logo{width:clamp(200px,38vw,360px);max-width:60%;padding:5px 7px}}
