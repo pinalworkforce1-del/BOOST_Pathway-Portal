@@ -88,7 +88,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
   const check=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{'authorization':'Bearer '+session.access_token,'apikey':cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'readiness'})});
   const readiness=await check.json();
   if(!check.ok)throw Error(readiness.error||'Interview readiness check failed.');
-  if(!readiness.livekit_enabled)throw Error('BOOST Jacqueline is not currently enabled by the interview gateway.');
+  if(!readiness.livekit_enabled)throw Error('BOOST Jacqueline gateway: '+(readiness.reason||'not ready')+'. Credentials configured: '+String(!!readiness.livekit_credentials_configured)+'. Agent ready: '+String(!!readiness.agent_reported_ready)+'.');
   const progress=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');
   const decisions=progress.sceneSelections||{};
   const answers=Object.fromEntries(['31','32','33','34','35'].filter(id=>['A','B','C','D'].includes(decisions[id])).map(id=>[id,decisions[id]]));
