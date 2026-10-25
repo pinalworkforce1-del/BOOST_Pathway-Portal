@@ -10,7 +10,7 @@
 <p class="hint">Career focus is for a future live interview test; the interview is not yet enabled.</p>
 <p class="notice">Pilot session: not yet counted toward course completion or Coach View. A signed-in BOOST account and verified TalentSync transfer are required. Live sessions may incur usage charges.</p>
 <div class="row"><button id="start" type="button">Begin live interview</button><button id="end" class="secondary" type="button" disabled>End interview</button><button id="enableAudio" class="secondary" type="button" hidden>Enable Audio</button></div>
-<button id="pastFeedback" type="button" class="secondary" hidden>View My Previous Interview Feedback</button><div id="feedbackActions" hidden><button id="viewFeedback" type="button">View Interview Feedback from Nova</button><div id="feedbackReport" class="notice" hidden></div></div>
+<button id="pastFeedback" type="button" class="secondary" hidden>View My Previous Interview Feedback</button><div id="feedbackActions" hidden><button id="viewFeedback" type="button">View Interview Feedback from Rosie</button><div id="feedbackReport" class="notice" hidden></div></div>
 <p id="allowance" class="hint">Test environment: LiveKit interview launch is disabled until scenario and session checks pass.</p><p id="status" role="status" aria-live="polite"><span class="indicator"></span>Awaiting BOOST verification.</p><p class="hint" id="connection">Tip: Turn off nearby TVs or use headphones to avoid accidental interruptions.</p>
 </section><section class="panel"><div class="stage" id="stage"><video id="avatar" autoplay playsinline aria-label="Live video of your AI practice interviewer"></video><div class="placeholder" id="placeholder"><strong>Interview Intelligence</strong><p>Jacqueline's BOOST agent is deployed.</p><p class="muted">Your interviewer's video will appear here when connected.</p></div><div id="remoteAudio"></div></div><div class="row"><span class="indicator" id="indicator"></span><span id="trackState">Not connected</span></div><p class="muted">If video pauses, your audio interview may continue. The session remains open until you end it.</p></section></div>
 </main>
@@ -24,6 +24,7 @@ document.body.insertBefore(notice,document.querySelector('main'));
 document.querySelectorAll('button').forEach(b=>{b.disabled=true;});
 let room=null;
 const startButton=document.getElementById('start'),endButton=document.getElementById('end');
+const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Rosie Interview Feedback';
 (async()=>{
  try{
   notice.textContent='Checking BOOST participant session and TalentSync transfer…';
