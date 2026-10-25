@@ -450,6 +450,19 @@
   $('printCertificateBtn').onclick=()=>window.print();
   $('resetBtn').onclick=()=>{ if(confirm('Start Ready 2 Work over on this device? This clears decisions, skill evidence, and certificate progress.')){ localStorage.removeItem(STORAGE_KEY); location.hash='#map'; location.reload(); } };
 
+  window.addEventListener('boost-r2w-cloud-restored',event=>{
+    const incoming=event.detail?.progress;
+    if(!incoming||typeof incoming!=='object')return;
+    const current=state;
+    state={...current,...incoming,sceneSelections:{...(current.sceneSelections||{}),...(incoming.sceneSelections||{})}};
+    recalcScores();updateOverall();
+    const hash=location.hash||'#map';
+    if(hash.startsWith('#scene-'))renderScene();
+    else if(hash==='#certificate')renderCertificate();
+    else if(hash.startsWith('#stage-'))route('stage',{stage:stageOrder.find(s=>slug(s)===hash.slice(7))||stageOrder[0]});
+    else if(hash==='#resume-builder')renderResumeBuilder();
+    else route('map');
+  });
   loadState(); recalcScores(); updateOverall();
   const hash=location.hash||'#map';
   if(hash.startsWith('#scene-')){ const id=Number(hash.split('-')[1]); const idx=scenes.findIndex(s=>s.id===id); route('scene',{index:idx>=0?idx:0}); }
