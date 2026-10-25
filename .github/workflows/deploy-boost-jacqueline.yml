@@ -1,6 +1,11 @@
 name: Deploy BOOST Jacqueline
 on:
   workflow_dispatch:
+    inputs:
+      agent_id:
+        description: 'Existing BOOST Jacqueline LiveKit Cloud Agent ID (CA_...)'
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
@@ -12,6 +17,26 @@ jobs:
           ref: feature/boost-live-interview-isolated
       - name: Validate agent source
         run: python -m py_compile experiments/boost-live-interview/agent.py
+      - name: Target existing BOOST Jacqueline agent
+        env:
+          AGENT_ID: ${{ inputs.agent_id }}
+          BOOST_URL: ${{ secrets.BOOST_LIVEKIT_URL }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          from urllib.parse import urlparse
+          agent_id = os.environ['AGENT_ID'].strip()
+          if not re.fullmatch(r'CA_[A-Za-z0-9]+', agent_id):
+              raise SystemExit('Enter the existing LiveKit Cloud agent ID (CA_...)')
+          host = urlparse(os.environ['BOOST_URL']).hostname or ''
+          if not host.endswith('.livekit.cloud'):
+              raise SystemExit('BOOST LiveKit URL is invalid')
+          subdomain = host.removesuffix('.livekit.cloud')
+          Path('experiments/boost-live-interview/livekit.toml').write_text(
+              f'[project]\\nsubdomain = "{subdomain}"\\n\\n[agent]\\nid = "{agent_id}"\\n'
+          )
+          PY
       - name: Deploy independent BOOST worker
         uses: livekit/deploy-action@v2.12.2
         env:
@@ -20,5 +45,5 @@ jobs:
           LIVEKIT_API_SECRET: ${{ secrets.BOOST_LIVEKIT_API_SECRET }}
           SECRET_LIST: ${{ format('SYNTHESIA_API_KEY={0},BOOST_INTERVIEW_CALLBACK_SECRET={1},BOOST_INTERVIEW_CALLBACK_URL=https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-live-interview-callback', secrets.BOOST_SYNTHESIA_API_KEY, secrets.BOOST_INTERVIEW_CALLBACK_SECRET) }}
         with:
-          OPERATION: create
+          OPERATION: deploy
           WORKING_DIRECTORY: experiments/boost-live-interview
