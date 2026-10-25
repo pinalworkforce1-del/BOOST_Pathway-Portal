@@ -44,13 +44,42 @@
   const promptAudio = $('promptAudio');
   const impactAudio = $('impactAudio');
 
-  function loadState(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(raw) state = {...state, ...JSON.parse(raw), skillScores:{...state.skillScores,...(JSON.parse(raw).skillScores||{})}};
-    }catch(e){}
+  // Store a verified copy before reporting progress as saved.
+  const BACKUP_KEY=STORAGE_KEY+'-backup';
+  let persistenceMessage='';
+  function reportPersistence(message){
+    persistenceMessage=message;
+    let el=document.getElementById('r2wPersistenceStatus');
+    if(!el){el=document.createElement('div');el.id='r2wPersistenceStatus';el.setAttribute('role','status');el.style.cssText='padding:8px 14px;text-align:center;font:12px system-ui;background:#fff3cd;color:#593b08';document.querySelector('.topbar')?.after(el);}
+    if(el){el.textContent=message;el.style.display=message?'block':'none';}
   }
-  function saveState(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
+  function loadState(){
+    for(const store of [localStorage,sessionStorage]){
+      try{
+        const raw=store.getItem(STORAGE_KEY);
+        if(!raw)continue;
+        const loaded=JSON.parse(raw);
+        if(!loaded || typeof loaded!=='object')continue;
+        state={...state,...loaded,sceneSelections:{...state.sceneSelections,...(loaded.sceneSelections||{})},skillScores:{...state.skillScores,...(loaded.skillScores||{})}};
+        if(store===sessionStorage)reportPersistence('Progress recovered from this browser tab. Export a backup before closing the tab.');
+        return;
+      }catch(e){reportPersistence('Could not read one saved progress copy: '+e.message);}
+    }
+  }
+  function saveState(){
+    const payload=JSON.stringify({...state,savedAt:new Date().toISOString()});
+    let verified=false;
+    try{localStorage.setItem(STORAGE_KEY,payload);verified=localStorage.getItem(STORAGE_KEY)===payload;}catch(e){}
+    if(verified){
+      try{sessionStorage.setItem(BACKUP_KEY,payload);}catch(e){}
+      if(persistenceMessage)reportPersistence('');
+    }else{
+      try{sessionStorage.setItem(STORAGE_KEY,payload);verified=sessionStorage.getItem(STORAGE_KEY)===payload;}catch(e){}
+      reportPersistence(verified?'Progress saved only for this tab; browser permanent storage is unavailable. Export a backup before leaving.':'WARNING: This browser is not saving progress. Export your results before leaving.');
+    }
+    window.dispatchEvent(new CustomEvent('boost-r2w-saved',{detail:{verified,progress:state}}));
+    return verified;
+  }
 
   function recalcScores(){
     const next={COM:0,PRO:0,PSA:0,TEAM:0,TIME:0,QUAL:0};
