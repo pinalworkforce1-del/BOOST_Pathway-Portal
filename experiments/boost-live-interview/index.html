@@ -38,6 +38,16 @@ document.querySelectorAll('button').forEach(b=>{b.disabled=true;b.title='Isolate
   if(readiness.livekit_enabled)throw Error('LiveKit readiness unexpected: interface must be independently validated first.');
   const progress=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');
   const decisions=progress.sceneSelections||{};
+  const answers=Object.fromEntries(['31','32','33','34','35'].filter(id=>['A','B','C','D'].includes(decisions[id])).map(id=>[id,decisions[id]]));
+  if(Object.keys(answers).length){
+    const {error:syncError}=await client.rpc('boost_save_interview_scenarios',{answers});
+    if(syncError)throw Error('Interview scenario cloud save: '+syncError.message);
+  }
+  const {data:cloud,error:cloudError}=await client.from('boost_interview_scenario_answers').select('scene_id').in('scene_id',[31,32,33,34,35]);
+  if(cloudError)throw Error('Cloud scenario verification: '+cloudError.message);
+  const cloudCount=new Set((cloud||[]).map(row=>row.scene_id)).size;
+  notice.textContent='BOOST session verified. Cloud Interview Landing scenarios: '+cloudCount+' of 5. Live interview remains disabled until the session gateway is validated.';
+  return;
   const interviewIds=(window.R2W_COURSE?.scenes||[]).filter(s=>s.stage==='Interview Landing').map(s=>s.id);
   notice.textContent='BOOST identity and TalentSync transfer verified. '+(interviewIds.length?'Interview scenarios: '+interviewIds.filter(id=>decisions[id]).length+' of '+interviewIds.length+' completed. ':'')+'BOOST gateway authenticated. Live avatar interview remains disabled until isolated LiveKit sessions are available.';
  }catch(e){notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
