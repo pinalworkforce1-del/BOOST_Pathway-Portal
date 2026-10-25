@@ -118,3 +118,6 @@
 .cert-footer strong{overflow-wrap:anywhere}
 @media(max-width:900px){.certificate-content{inset:4% 6%;gap:9px;align-content:space-between}.certificate-skills{grid-template-columns:1fr;width:97%;padding:8px}.cert-skill{font-size:clamp(.68rem,1.7vw,.9rem)}.cert-footer{width:98%;padding:8px}.cert-title h1{font-size:clamp(1.5rem,5vw,2.7rem)}}
 @media print{.certificate-sheet{break-inside:avoid;page-break-inside:avoid}.certificate-content{-webkit-print-color-adjust:exact;print-color-adjust:exact}.certificate-bg{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+.cert-brand-row{justify-content:flex-start;align-items:flex-start}.cert-aw-logo{width:min(390px,34%);height:auto;object-fit:contain;display:block}
+@media(max-width:900px){.cert-aw-logo{width:min(250px,45%)}}
