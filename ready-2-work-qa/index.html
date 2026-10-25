@@ -14,7 +14,7 @@
   <header class="topbar">
     <a class="brand" href="#map" data-route="map" aria-label="Ready 2 Work map">BOOST • GET 2 WORK READY</a>
     <div class="top-progress" aria-label="Ready 2 Work progress"><span id="overallProgressText">0 of 22 scenarios complete</span><div class="top-track"><i id="overallProgressBar"></i></div></div>
-    <div class="top-actions"><a class="top-link" href="../">← BOOST Map</a><button id="resetBtn" class="top-link button-link" type="button">Start over</button></div>
+    <div class="top-actions"><a class="top-link" href="../">← BOOST Map</a><button id="backupProgressBtn" class="top-link button-link" type="button">Backup Progress</button><button id="resetBtn" class="top-link button-link" type="button">Start over</button></div>
   </header>
 
   <main id="viewMap" class="view map-view">
@@ -98,6 +98,19 @@
 
 <dialog id="impactDialog" class="impact-dialog"><div class="impact-card"><button id="impactClose" class="impact-close" type="button" aria-label="Close impact card">×</button><span class="eyebrow">YOUR DECISION • SKILL IMPACT</span><h2 id="impactDialogTitle"></h2><p id="impactDialogText"></p><div id="impactSkillGrid" class="impact-skill-grid"></div><button id="impactContinue" class="primary-btn" type="button">Continue</button></div></dialog>
 
+<script>
+/* Independent, read-only backup control, even if the course app fails to start. */
+document.getElementById('backupProgressBtn').addEventListener('click',()=>{
+  const key='boost-r2w-integrated-v1';
+  let saved=null;
+  for(const [store,name] of [[localStorage,key],[sessionStorage,key],[sessionStorage,key+'-backup']]){
+    try{const raw=store.getItem(name);if(raw){saved=JSON.parse(raw);break}}catch(e){}
+  }
+  if(!saved){alert('No saved Ready 2 Work progress was found in this browser. Nothing was changed.');return}
+  const blob=new Blob([JSON.stringify({format:'BOOST-R2W-BACKUP-1',exportedAt:new Date().toISOString(),progress:saved},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='BOOST-ready2work-progress-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);
+});
+</script>
 <script src="course-data.js?v=20261004-r2w5"></script>
 <script src="app.js?v=20261025-savefix3"></script>
 <script src="resume-polish-v1.js?v=20261005-r2w45"></script>
