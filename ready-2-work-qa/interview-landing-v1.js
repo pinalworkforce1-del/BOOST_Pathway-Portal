@@ -1,12 +1,36 @@
 (() => {
   'use strict';
-  const STORAGE_KEY='boost-r2w-integrated-v1';
-  const STAGE='Interview Landing';
+  const KEY='boost-r2w-integrated-v1', STAGE='Interview Landing';
   const $=id=>document.getElementById(id);
-  function load(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}catch(_){return {}}}
-  function stageSceneCount(){return (window.R2W_COURSE?.scenes||[]).filter(s=>s.stage===STAGE).length}
-  function answeredCount(state){return (window.R2W_COURSE?.scenes||[]).filter(s=>s.stage===STAGE&&state.sceneSelections?.[s.id]).length}
-  function inject(){const title=$('stageHomeTitle');if(!title||title.textContent!==STAGE)return;const grid=$('stageExperienceGrid');if(!grid)return;grid.querySelectorAll('.mock-interview-card').forEach(x=>x.remove());const state=load(),total=stageSceneCount(),done=answeredCount(state),scenariosDone=total>0&&done===total,mi=state.jacquelineInterview||{};const b=document.createElement('button');b.type='button';b.className='board-card mock-interview-card'+(scenariosDone?'':' locked');b.disabled=!scenariosDone;b.innerHTML=`<span class="card-kicker">REQUIRED • STEP 2</span><strong>Jacqueline Live Interview</strong><small>${!scenariosDone?'Complete the Interview Landing decision scenarios to unlock.':mi.complete?'Jacqueline interview complete ✓':'Practice five employer-style questions with Jacqueline in a live interview session.'}</small><span class="card-arrow">${mi.complete?'✓':'→'}</span>`;if(scenariosDone)b.onclick=()=>location.href='../boost-jacqueline-test/index.html';grid.prepend(b);const status=$('stageHomeProgress'),reqTitle=$('requiredPathTitle'),reqMeta=$('requiredPathMeta');if(reqTitle)reqTitle.textContent=scenariosDone?'Review Interview Decision Trail':'Continue Interview Decision Trail';if(reqMeta)reqMeta.textContent=`${done} of ${total} decisions complete • Jacqueline Interview ${mi.complete?'complete':scenariosDone?'unlocked':'locked'}`;if(status)status.textContent=scenariosDone?(mi.complete?'Complete':'Jacqueline interview required'):`${done} of ${total} decisions`}
-  const observer=new MutationObserver(()=>setTimeout(inject,0));observer.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['hidden']});window.addEventListener('hashchange',()=>setTimeout(inject,30));setTimeout(inject,80);
-  // R2W47: Interview Landing is not complete until the Jacqueline Live Interview is complete.
+  const read=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch{return {}}};
+  let lastSignature='';
+  function refresh(){
+    const title=$('stageHomeTitle'),grid=$('stageExperienceGrid');
+    if(!title||!grid||title.textContent.trim()!==STAGE){lastSignature='';return}
+    const scenes=(window.R2W_COURSE?.scenes||[]).filter(s=>s.stage===STAGE);
+    const saved=read(), done=scenes.filter(s=>saved.sceneSelections?.[s.id]).length;
+    const unlocked=scenes.length>0&&done===scenes.length;
+    const finished=!!saved.jacquelineInterview?.verifiedComplete;
+    const signature=[done,scenes.length,unlocked,finished].join('|');
+    if(signature===lastSignature&&grid.querySelector('.mock-interview-card'))return;
+    lastSignature=signature;
+    let button=grid.querySelector('.mock-interview-card');
+    if(!button){button=document.createElement('button');button.type='button';button.className='board-card mock-interview-card';grid.prepend(button)}
+    button.classList.toggle('locked',!unlocked);
+    button.disabled=!unlocked;
+    button.innerHTML='<span class="card-kicker">REQUIRED • STEP 2</span><strong>Mock Interview</strong><small>'+(!unlocked?'Complete the five interview decisions to unlock.':finished?'Jacqueline mock interview complete ✓':'Practice five employer-style questions with Jacqueline in a live mock interview.')+'</small><span class="card-arrow">'+(finished?'✓':'→')+'</span>';
+    button.onclick=()=>{if(unlocked)window.location.assign('../boost-jacqueline-test/index.html')};
+    const status=$('stageHomeProgress'),path=$('requiredPathTitle'),meta=$('requiredPathMeta');
+    if(path)path.textContent=unlocked?'Review Interview Decision Trail':'Continue Interview Decision Trail';
+    if(meta)meta.textContent=done+' of '+scenes.length+' decisions complete • Mock Interview '+(finished?'complete':unlocked?'unlocked':'locked');
+    if(status)status.textContent=finished?'Complete':unlocked?'Mock Interview required':done+' of '+scenes.length+' decisions';
+  }
+  // Observe only screen visibility/title changes, not our own card mutations.
+  const title=$('stageHomeTitle'),view=$('viewStageHome');
+  if(title)new MutationObserver(refresh).observe(title,{childList:true,characterData:true,subtree:true});
+  if(view)new MutationObserver(refresh).observe(view,{attributes:true,attributeFilter:['hidden']});
+  window.addEventListener('hashchange',refresh);
+  window.addEventListener('boost-r2w-cloud-restored',refresh);
+  window.addEventListener('boost-r2w-saved',()=>{if($('stageHomeTitle')?.textContent.trim()===STAGE)refresh()});
+  setTimeout(refresh,50);
 })();
