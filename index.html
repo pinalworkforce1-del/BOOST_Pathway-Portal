@@ -35,7 +35,7 @@ function openModule(moduleId,tile){
  if(!authUser){alert('Sign in to BOOST to open your saved modules.');el('b2load')?.click();return}
  const id=moduleId==='investment'?'module5':industryId(moduleId);
  const shownStatus=tile?.dataset.b2status||'';
- if(!(hasEvidence(snapshot,id)||tile?.dataset.b2canLaunch==='true'||['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —'))){
+ if(!(hasEvidence(snapshot,id)||tile?.dataset.b2canLaunch==='true'||['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —')||shownStatus.startsWith('Review Required'))){
    alert('This step is locked until required earlier reviews are complete.');return;
  }
  sessionStorage.setItem('boost2_return_pathway',document.querySelector('.path-card.boost2-selected')?.dataset.key||'explore');
@@ -319,7 +319,7 @@ function industryComplete(j){const id=alignedIndustry(j);return id?hasEvidence(j
 function rapidDirection(j){return j?.__rapidDirection||j?.modules?.['rapid-discover']?.direction||null}
 function state(j,id,blocked){
  if(id==='optional')return {label:'Explore More',cls:'ok',block:false,canLaunch:true};
- if(id==='handoff')return {label:'Prepare for Your Appointment',cls:'ok',block:false,canLaunch:true};
+ if(id==='handoff')return {label:'Coach Brief — Snapshot for Discussion; Revisions Require Re-review',cls:'ok',block:false,canLaunch:true};
  if(id==='boostcert'||id==='r2wcert')return {label:'Certificate — Eligibility Check',cls:'unknown',block:false,canLaunch:false};
  if(chosen==='rapid'&&id==='r2w'&&!rapidReady2WorkUnlocked())return {label:'TalentSync Dislocated Worker Enrollment Required',cls:'lock',block:false,canLaunch:false};
  if(requiresEnrollment(id)&&!(chosen==='rapid'&&['financial','ai'].includes(id))&&!postEnrollmentAccess.unlocked)return {label:postEnrollmentAccess.checked?'Enrollment Required':'Verifying Enrollment',cls:'lock',block:false,canLaunch:false};
@@ -345,7 +345,7 @@ function state(j,id,blocked){
  
  const fres=fresh(j,id),done=hasEvidence(j,id);
  // Live BOOST gates any later step while an earlier required review is outstanding.
- if(blocked)return {label:fres==='Review Needed'||fres==='Waiting for Earlier Review'?'Waiting for Earlier Review':'Locked — Earlier Review Required',cls:'lock',block:true,canLaunch:false};
+ if(blocked){if(done)return {label:'Review Required — Earlier Module Changed',cls:'warn',block:true,canLaunch:true};return {label:'Locked — Earlier Review Required',cls:'lock',block:true,canLaunch:false};}
  if(fres&&fres!=='fresh'&&fres!=='Status Not Verified')return {label:fres,cls:'warn',block:true,canLaunch:fres==='Review Needed'};
  if(fres==='Status Not Verified')return {label:done?'Completed • Review Status Unverified':'Review Status Unverified',cls:'unknown',block:true,canLaunch:false};
  if(done)return {label:'Completed',cls:'ok',block:false,canLaunch:true};
@@ -422,7 +422,7 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
    tile.querySelectorAll('a[data-boost-step]').forEach(a=>{const enabled=!!status.canLaunch;a.setAttribute('aria-disabled',String(!enabled));a.style.opacity=enabled?'1':'.5';a.style.cursor=enabled?'pointer':'not-allowed';a.title=enabled?'':'Complete the previous required experience first.';});
  }
  tile.querySelectorAll('button.test-launch').forEach(control=>{
-   control.disabled=!status.canLaunch;
+   control.disabled=!(status.canLaunch||(chosen==='explore'&&(id==='industry'?industryComplete(snapshot):hasEvidence(snapshot,id))));
    control.title=status.canLaunch?'':'Complete the preceding required review first.';
  });
  tile.setAttribute('aria-label',(tile.querySelector('h3')?.textContent||id)+' — '+status.label);
