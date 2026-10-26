@@ -152,11 +152,11 @@ function show(key){
     if(moduleId==='r2w'||moduleId==='skillmobility'||moduleId==='jobsearch'||(key==='rapid'&&['financial','ai'].includes(moduleId))){
       const a=document.createElement('a');
       a.className='test-launch boost2-ready2work-link';
-      a.href=({r2w:new URL('ready-2-work-qa/',location.href).toString(),skillmobility:'https://pinalworkforce1-del.github.io/BOOST-Job_Mobility/',jobsearch:'https://pinalworkforce1-del.github.io/48_hour_job_search/',financial:'https://pinalworkforce1-del.github.io/Financial_Assessment/',ai:'https://pinalworkforce1-del.github.io/AI_Literacy/'})[moduleId];
+      a.href=({r2w:new URL('ready-2-work-qa/',location.href).toString(),skillmobility:new URL('rapid-skill-mobility.html',location.href).toString(),jobsearch:'https://pinalworkforce1-del.github.io/48_hour_job_search/',financial:'https://pinalworkforce1-del.github.io/Financial_Assessment/',ai:'https://pinalworkforce1-del.github.io/AI_Literacy/'})[moduleId];
       a.textContent='Open '+item[0]+' ↗';
       a.dataset.boostStep=moduleId;
       a.style.cssText='display:block;text-align:center;text-decoration:none';
-      a.addEventListener('click',e=>{if(key==='rapid'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if(moduleId==='r2w'&&!postEnrollmentAccess.unlocked){e.preventDefault();entryReady(el);return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);});
+      a.addEventListener('click',e=>{if(key==='rapid'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if(moduleId==='r2w'&&!postEnrollmentAccess.unlocked){e.preventDefault();entryReady(el);return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='skillmobility'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:skillmobility',nonce);const url=new URL('rapid-skill-mobility.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','skillmobility');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','skillmobility');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}});
       body.append(a);
     }else{
       const b=document.createElement('button');b.type='button';b.className='test-launch';
