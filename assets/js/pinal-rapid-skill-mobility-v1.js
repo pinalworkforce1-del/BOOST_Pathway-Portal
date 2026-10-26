@@ -167,21 +167,57 @@ function research(){return [...document.querySelectorAll('.researchGroup')].flat
 function labIds(){return SKILLS.filter(s=>$('lab_'+s.id)?.checked).map(s=>s.id)}
 function validResearchPosts(){return research().filter(p=>p.title&&p.pay&&p.req&&p.source)}
 function selectedResearchCareer(){const posts=validResearchPosts(),arr=window.__rapidDiscoverCareers||[];if(chosenTarget)return chosenTarget;for(const p of posts){const q=norm(p.title);const o=arr.find(x=>q.includes(norm(x.title))||norm(x.title).includes(q));if(o)return o}return posts.length?{title:posts[0].title,soc:''}:null}
-function updateReadiness(){const careers=window.__rapidDiscoverCareers||[],ids=checked(),posts=validResearchPosts(),target=selectedResearchCareer();if(!chosenTarget&&target)chosenTarget=target;const selection=getSelections(),covered=new Set(posts.map(p=>p.soc)),needs=selection.filter(x=>!covered.has(String(x.soc)));const items=[{ok:ids.length>0,text:'At least one transferable skill is confirmed.',fix:'In Step 3, check at least one skill you recognize from your experience.'},{ok:!!target,text:'A career has been selected for employer research.',fix:'In Step 4, click “Add to My Career Considerations” on the career you want to investigate.'},{ok:selection.length>0&&needs.length===0,text:'A complete employer posting is recorded for each selected career.',fix:'In Step 5, complete the employer/job title, base pay, requirements and source for '+(needs.length?needs.map(x=>x.title).join(', '):'each selected occupation')+'.'}],missing=items.filter(x=>!x.ok),ready=!missing.length,box=$('snapshotChecklist'),wrap=$('snapshotReadiness'),btn=$('saveBtn');if(box)box.innerHTML=ready?'<div style="margin:4px 0">✓ All required evidence is complete.</div>':missing.map((x,i)=>'<div style="margin:7px 0"><b>○ '+esc(x.text)+'</b><br><span style="margin-left:20px">'+esc(x.fix)+'</span></div>').join('');if(wrap){wrap.className='notice '+(ready?'success':'warning');wrap.querySelector('b').textContent=ready?'✓ Mobility Snapshot ready.':'Mobility Snapshot locked — '+missing.length+' required item'+(missing.length===1?' is':'s are')+' still missing:'}if(btn){btn.disabled=!ready;btn.style.opacity=ready?'1':'.55';btn.style.cursor=ready?'pointer':'not-allowed'}const guide=$('researchGuide');if(guide){guide.className='notice '+(posts.length?'success':'warning');guide.innerHTML=posts.length?'<b>✓ Employer evidence recorded.</b> '+posts.length+' complete posting'+(posts.length===1?'':'s')+' added. <button type="button" class="btn green" id="continueSnapshot" style="margin-left:10px">Continue to Mobility Snapshot ↓</button>':target?'<b>Next:</b> Complete all four fields for at least one real posting for <b>'+esc(target.title)+'</b>.':'<b>Next:</b> choose a career above with <b>Add to My Career Considerations</b>, then record at least one real employer posting.';const go=$('continueSnapshot');if(go)go.onclick=()=>{$('snapshotReadiness')?.scrollIntoView({behavior:'smooth',block:'center'})}}}
+function updateReadiness(){const careers=window.__rapidDiscoverCareers||[],ids=checked(),posts=validResearchPosts(),target=selectedResearchCareer();if(!chosenTarget&&target)chosenTarget=target;const selection=getSelections(),covered=new Set(posts.map(p=>p.soc)),needs=selection.filter(x=>!covered.has(String(x.soc)));const items=[{ok:ids.length>0,text:'At least one transferable skill is confirmed.',fix:'In Step 3, check at least one skill you recognize from your experience.'},{ok:!!target,text:'A career has been selected for employer research.',fix:'In Step 4, click “Add to My Career Considerations” on the career you want to investigate.'},{ok:selection.length>0&&needs.length===0,text:'A complete employer posting is recorded for each selected career.',fix:'In Step 5, complete the employer/job title, base pay, requirements and source for '+(needs.length?needs.map(x=>x.title).join(', '):'each selected occupation')+'.'}],missing=items.filter(x=>!x.ok),ready=!missing.length,box=$('snapshotChecklist'),wrap=$('snapshotReadiness'),btn=$('saveBtn');if(box)box.innerHTML=ready?'<div style="margin:4px 0">✓ All required evidence is complete.</div>':missing.map((x,i)=>'<div style="margin:7px 0"><b>○ '+esc(x.text)+'</b><br><span style="margin-left:20px">'+esc(x.fix)+'</span></div>').join('');if(wrap){wrap.className='notice '+(ready?'success':'warning');wrap.querySelector('b').textContent=ready?'✓ Mobility Snapshot ready.':'Mobility Snapshot locked — '+missing.length+' required item'+(missing.length===1?' is':'s are')+' still missing:'}if(btn){btn.disabled=!ready;btn.style.opacity=ready?'1':'.55';btn.style.cursor=ready?'pointer':'not-allowed'}const guide=$('researchGuide');if(guide){
+ guide.className='notice '+(posts.length?'success':'warning');
+ guide.innerHTML=posts.length?'<b>✓ Employer evidence recorded.</b> '+posts.length+' complete posting'+(posts.length===1?'':'s')+' added. '+(needs.length?'Complete at least one posting for each remaining option.':'All selected careers have employer evidence.'):(target?'<b>Next:</b> Complete all four fields for at least one real posting under each selected career.':'<b>Next:</b> choose a career above with <b>Add to My Career Considerations</b>, then record employer postings.');
+}
+const continueArea=$('researchContinue');if(continueArea){
+ continueArea.replaceChildren();
+ if(posts.length){
+  const go=document.createElement('button');go.type='button';go.className='btn green';go.id='continueSnapshot';go.textContent='Continue to Mobility Snapshot ↓';go.disabled=!ready;
+  if(!ready)go.title='Complete the remaining research and skill requirements first.';
+  go.addEventListener('click',()=>{$('snapshotReadiness')?.scrollIntoView({behavior:'smooth',block:'center'})});
+  continueArea.appendChild(go);
+ }
+}
+}
 function validateSnapshot(){const issues=[];if(read(RAPID)?.direction==='pivot'&&!window.BOOST_RAPID_SKILLS_ASSESSED?.())issues.push('Complete the transferable-skills questions and confirm at least one demonstrated skill.');const ids=checked(),posts=research(),careers=window.__rapidDiscoverCareers||[];if(!ids.length)issues.push('Confirm at least one transferable skill.');if(!selectedResearchCareer())issues.push('Choose a career for employer research.');const selected=getSelections(),covered=new Set(validResearchPosts().map(p=>p.soc));for(const x of selected)if(!covered.has(String(x.soc)))issues.push('Complete at least one employer posting for '+x.title+' (employer/job title, pay, requirements and source).');return issues}
 function showSaveIssues(issues){$('saveStatus').innerHTML='<div class="notice warning"><b>Your Mobility Snapshot needs a little more evidence:</b><ul style="margin:8px 0 0 20px">'+issues.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><small>Pizza Lab is optional and is not required to generate the snapshot.</small></div>';$('saveStatus').scrollIntoView({behavior:'smooth',block:'center'})}
 function save(){const issues=validateSnapshot();if(issues.length){showSaveIssues(issues);return}const ids=checked(),posts=research(),lab=labIds(),d={version:2,region:'Pinal',assessment:window.BOOST_RAPID_SKILL_RESULTS?.()||null,updatedAt:new Date().toISOString(),currentRole:'Experience carried from Discover',currentWage:Number($('currentWage').value)||null,minimumWage:Number($('minimumWage').value)||null,confirmedSkills:ids.map(id=>({id,label:skillLabel(id)})),resumeSignals:[...detected].map(id=>({id,label:skillLabel(id)})),target:(()=>{const x=selectedResearchCareer();if(!x)return null;return {soc:x.soc||'',title:x.title||'',regional:{jobs:x.jobs??null,annualOpenings:x.openings??null,p25Hourly:x.p25??null,medianHourly:x.median??null,tier:x.tier??null}}})(),research:posts,skillLab:{completed:$('labComplete').checked,reinforcedSkills:lab.map(id=>({id,label:skillLabel(id)}))}};localStorage.setItem(STORE,JSON.stringify(d));renderSnapshot(d);updateReadiness();$('saveStatus').innerHTML='<div class="notice success"><b>✓ Mobility Snapshot generated.</b> Review it above, then print or save it if you want a copy.</div>';$('snapshot').scrollIntoView({behavior:'smooth',block:'start'})}
+function hourlyPay(value){
+ const t=String(value??'').trim();
+ if(!/^\$?\s*(?:\d+(?:,\d{3})*|\d+)(?:\.\d{1,2})?\s*(?:\/\s*(?:hr|hour)|per\s+hour|hourly)?\s*$/i.test(t))return null;
+ const n=Number(t.replace(/\$/g,'').replace(/,/g,'').replace(/(?:\/\s*(?:hr|hour)|per\s+hour|hourly)/ig,'').trim());
+ return Number.isFinite(n)&&n>0&&n<1000?n:null;
+}
+function annualMoney(value){return '$'+Number(value).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}
 function renderSnapshot(d){
- const wage=d.currentWage?money(d.currentWage)+'/hr':'Not entered',min=d.minimumWage?money(d.minimumWage)+'/hr':'Not entered';
+ const currentRate=Number(d.currentWage),hasCurrent=Number.isFinite(currentRate)&&currentRate>0;
+ const wage=hasCurrent?money(currentRate)+'/hr':'Not entered',min=d.minimumWage?money(d.minimumWage)+'/hr':'Not entered';
  const options=getSelections(),evidence=d.research||[];
+ const currentAnnual=hasCurrent?currentRate*2080:null;
  const optionHtml=options.length?options.map((x,i)=>{
   const o=occs.find(o=>String(o.soc)===String(x.soc));
   const posts=evidence.filter(p=>String(p.soc)===String(x.soc));
+  const postingsHtml=posts.map(p=>{
+    const offered=hourlyPay(p.pay);
+    const annual=offered===null?null:offered*2080;
+    const delta=annual!==null&&currentAnnual!==null?annual-currentAnnual:null;
+    const deltaText=delta===null?'Annual difference unavailable — enter both wages as hourly rates.':
+     '<b>Annualized wage difference:</b> '+(delta>0?'+':delta<0?'−':'')+annualMoney(Math.abs(delta))+
+     (delta>0?' higher than previous annualized wages':delta<0?' lower than previous annualized wages':' — equal to previous annualized wages');
+    return '<div style="padding:10px 0;border-top:1px solid #d3e2ea"><b>Employer posting:</b> '+esc(p.title)+' · '+esc(p.source)+
+    '<br><b>Posted pay:</b> '+(offered===null?esc(p.pay)+' (hourly rate unverified)':money(offered)+'/hr')+
+    '<br><b>Previous wages (annualized):</b> '+(currentAnnual===null?'Not entered':annualMoney(currentAnnual))+
+    '<br><b>Researched wages (annualized):</b> '+(annual===null?'Not calculated':annualMoney(annual))+
+    '<br>'+deltaText+'</div>';
+  }).join('');
   return '<div class="snapBlock"><h3>Career consideration '+(i+1)+': '+esc(x.title)+'</h3>'+
    (o?'<b>Regional evidence:</b> '+num(o.jobs)+' jobs · '+num(o.openings)+' annual openings · Point-of-entry '+money(o.p25)+'/hr<br>':'')+
-   '<b>Employer postings recorded:</b> '+posts.length+posts.map(p=>'<br>• '+esc(p.title)+' — '+esc(p.pay)+' · '+esc(p.source)).join('')+'</div>';
+   '<b>Employer postings recorded:</b> '+posts.length+postingsHtml+
+   '<small>Annualized gross wages assume 2,080 paid hours per year (40 hours × 52 weeks), before taxes. Actual hours and earnings may differ.</small></div>';
  }).join(''):'<div class="snapBlock">Choose at least one career consideration.</div>';
- $('snapshot').innerHTML='<div class="snapBlock"><h3>Your starting point</h3>Previous occupation: '+esc(read(RAPID)?.priorOccupation||'Recorded in Rapid Discover')+'<br>Current/most recent wage: '+wage+'<br>Minimum considered: '+min+'</div>'+
+ $('snapshot').innerHTML='<div class="snapBlock"><h3>Your starting point</h3>Previous occupation: '+esc(read(RAPID)?.priorOccupation||'Recorded in Rapid Discover')+'<br>Current/most recent wage: '+wage+(currentAnnual===null?'':'<br>Current wages annualized: '+annualMoney(currentAnnual))+'<br>Minimum considered: '+min+'</div>'+
  '<div class="snapBlock"><h3>Transferable skill evidence</h3>'+(d.confirmedSkills.length?d.confirmedSkills.map(x=>'• '+esc(x.label)).join('<br>'):'No skills confirmed yet.')+'</div>'+
  optionHtml+'<div class="snapBlock"><h3>Additional evidence</h3>Pizza Lab: '+(d.skillLab.completed?'Completed — reflection evidence added':'Not marked complete (optional)')+'</div>';
 }
