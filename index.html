@@ -31,6 +31,9 @@ const industryRoutes = Object.freeze({
 const portalBase='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
 function freshNonce(){const b=new Uint8Array(24);crypto.getRandomValues(b);return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')}
 function openModule(moduleId,tile){
+ if(typeof window.boost2ModuleLaunch==='function')return window.boost2ModuleLaunch(moduleId,tile);
+ alert('BOOST is still loading your saved journey. Please try again.');
+ return;
  const identity=document.getElementById('b2identity');
  if(!authUser){alert('Sign in to BOOST to open your saved modules.');el('b2load')?.click();return}
  const id=moduleId==='investment'?'module5':industryId(moduleId);
@@ -287,6 +290,28 @@ rosieForm.onsubmit=async(event)=>{
 
 const el=id=>document.getElementById(id);let snapshot=null,chosen=null,authUser=null;
 let postEnrollmentAccess={unlocked:false,checked:false,program:null};
+window.boost2ModuleLaunch=function(moduleId,tile){
+ const id=moduleId==='investment'?'module5':industryId(moduleId);
+ if(!authUser){alert('Please sign in to BOOST to open a module.');el('b2load')?.click();return;}
+ const done=hasEvidence(snapshot,id)||(id.startsWith('industry-')&&industryComplete(snapshot));
+ const status=tile?.dataset.b2status||'';
+ const allowed=done||tile?.dataset.b2canLaunch==='true'||status==='Available'||status==='Review Needed'||status.startsWith('Available —')||status.startsWith('Review Required');
+ if(!allowed){alert('Complete or review the preceding required module before starting this activity.');return;}
+ const nonce=freshNonce();
+ sessionStorage.setItem('boost_completion_nonce:'+id,nonce);
+ sessionStorage.setItem('boost2_return_pathway',chosen||'explore');
+ sessionStorage.setItem('boost2_return_module',id);
+ const activity=new URL('activity.html',location.href);
+ activity.searchParams.set('m',id.startsWith('industry-')?id.slice(9):id);
+ activity.searchParams.set('boost_module',id);
+ activity.searchParams.set('boost_nonce',nonce);
+ const back=new URL(location.pathname,location.origin);
+ back.searchParams.set('boost2_path',chosen||'explore');
+ back.searchParams.set('boost2_from',id);
+ activity.searchParams.set('boost_return',back.toString());
+ location.assign(activity.toString());
+};
+
 function requiresEnrollment(key){return ['financial','ai','r2w','boostcert'].includes(key)}
 async function checkPostEnrollmentAccess(client,cfg,session){
  const response=await fetch(cfg.supabaseUrl+'/functions/v1/boost-post-enrollment-access',{headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+session.access_token}});
