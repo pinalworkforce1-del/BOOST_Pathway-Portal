@@ -64,6 +64,7 @@ function gapFor(o,ids){
  return {missing,prep}
 }
 function compareDiscoverCareers(){
+ if(read(RAPID)?.direction==='pivot'&&!window.BOOST_RAPID_SKILLS_ASSESSED?.()){$('matches').innerHTML='<div class="empty">Complete and confirm the transferable-skills questions first. Only demonstrated skills can be used for occupational matching.</div>';$('rapidSkillsAssessment')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
  const ids=checked(),arr=window.__rapidDiscoverCareers||[],prefs=[...document.querySelectorAll('.rapidPref:checked')].map(x=>x.value);
  const btn=$('matchBtn');if(btn){btn.textContent='Comparing…';btn.disabled=true}
  if(!ids.length){$('matches').innerHTML='<div class="empty">First confirm the transferable skills you use at work.</div>';if(btn){btn.textContent='Find occupations that match my skills';btn.disabled=false}return}
