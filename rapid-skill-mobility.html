@@ -111,7 +111,7 @@ function complete(d){
  prior.modules=prior.modules||{};
  prior.progress=prior.progress||{};
  prior.portal=prior.portal||{};
- prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[],occupationSoc:window.BOOST_RAPID_PROFILE?.()?.soc||null,confirmedPriorSkillIds:window.BOOST_RAPID_PROFILE?.()?.skillIds||[]};
+ prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[],skillAssessment:window.BOOST_RAPID_SKILL_RESULTS?.()||null,occupationSoc:window.BOOST_RAPID_PROFILE?.()?.soc||null,confirmedPriorSkillIds:window.BOOST_RAPID_PROFILE?.()?.skillIds||[]};
  prior.progress.skillmobility='complete';
  prior.portal.map=prior.portal.map||{};
  prior.portal.map.complete=prior.portal.map.complete||{};
