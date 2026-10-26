@@ -262,7 +262,7 @@ rosieForm.onsubmit=async(event)=>{
  addRosieMessage(question,'user');rosieInput.value='';const pending=addRosieMessage('Rosie is reviewing your question…','assistant');rosieForm.querySelector('button').disabled=true;
  try{
    if(!window.supabase?.createClient||!window.BOOST_CONFIG)throw Error('Load your authenticated BOOST journey before asking Rosie.');
-   const cfg=window.BOOST_CONFIG,client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+   const cfg=window.BOOST_CONFIG,client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
    const session=(await client.auth.getSession()).data?.session;if(!session?.access_token)throw Error('Your sign-in has expired. Please sign in to BOOST again.');
    const j=snapshot||{},m=j.modules||{},selected=m.module4||{},gap=m.module5||{};
    const steps=[...document.querySelectorAll('#stages .stage')].map((tile,i)=>({id:sequences[chosen]?.[i],label:tile.querySelector('h3')?.textContent||'',status:tile.querySelector('.status')?.textContent||''}));
