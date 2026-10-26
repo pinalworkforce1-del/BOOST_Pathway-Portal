@@ -250,7 +250,8 @@ function showBoostSignIn(client){
   el('b2continue').disabled=true;
 }
 
-const rosie=document.createElement('aside');rosie.id='boost2-rosie-guide';rosie.className='boost2-rosie-guide';rosie.innerHTML='<img src="assets/images/rosie-guide-panel.webp" onerror="this.onerror=null;this.src=&quot;assets/images/rosie-master.webp&quot;" alt="Rosie, your BOOST guide"><div><strong>Rosie — Your Journey Guide</strong><p id="boost2-rosie-text">Load your journey to see your next step.</p></div>';
+let rosiePathwayInteracted=false;
+const rosie=document.createElement('aside');rosie.id='boost2-rosie-guide';rosie.className='boost2-rosie-guide';rosie.innerHTML='<img src="assets/images/rosie-guide-panel.webp" onerror="this.onerror=null;this.src=&quot;assets/images/rosie-master.webp&quot;" alt="Rosie, your BOOST guide"><div><strong>Rosie — Your Journey Guide</strong><p id="boost2-rosie-text">Complete the interest form, create your Arizona Job Connection account, and then select your BOOST pathway below to get started.</p></div>';
 mount.after(rosie);
 
 
@@ -392,7 +393,7 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
    details.append(text);
  }
  const rosieBox=document.getElementById('boost2-rosie-guide');
- if(rosieBox&&chosen==='explore'){
+ if(rosieBox&&chosen==='explore'&&rosiePathwayInteracted){
    const nextStep=seq.find((key,index)=>['Review Needed','Available'].includes(tiles[index]?.dataset.b2status)||tiles[index]?.dataset.b2status?.startsWith('Available —'));
    const names={module1:'Discover',module2:'Validate',module3:'Career Mobility',module4:'Decide',industry:'your aligned industry challenge',module5:'Skill Investment',financial:'Financial Habits',ai:'AI & You'};
    const decision=nextStep?('Your next available step is '+(names[nextStep]||nextStep)+'.'):'Review your completion milestones and talk to your Career Coach about what comes next.';
@@ -431,6 +432,7 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
  document.querySelectorAll('.path-card').forEach(c=>{const yes=c.dataset.key===chosen;c.classList.toggle('boost2-selected',yes);c.querySelector('.boost2-pill')?.remove();if(yes){const pill=document.createElement('span');pill.className='boost2-pill';pill.textContent='IN PROGRESS';c.append(pill)}});
 }
 function activate(key,returning=false){
+ rosiePathwayInteracted=returning||rosiePathwayInteracted;
  chosen=key;
  show(key);
  paint();
@@ -443,7 +445,7 @@ function activate(key,returning=false){
   sessionStorage.removeItem('boost2_return_pathway');
  }
 }
-document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{if(snapshot){chosen=c.dataset.key;setTimeout(paint,60)}}));
+document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{rosiePathwayInteracted=true;if(snapshot){chosen=c.dataset.key;setTimeout(paint,60)}}));
 document.getElementById('choices').addEventListener('click',(event)=>{
  const card=event.target.closest('.path-card');if(!card)return;
  mount.classList.remove('boost2-pending-choice');
