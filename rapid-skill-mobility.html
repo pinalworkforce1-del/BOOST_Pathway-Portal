@@ -24,9 +24,10 @@
 <h2>What did you do—and do you want to continue doing it?</h2>
 <p>Start with the job you know. We'll help you decide whether returning makes sense in today's labor market, or whether your skills could carry you into another occupation.</p>
 <div class="gridChoice">
- <label>Most recent occupation<input id="rapidPriorRole" autocomplete="organization-title" placeholder="e.g., CNC operator, retail supervisor"></label>
- <label>What were your primary duties?<textarea id="rapidPriorDuties" placeholder="Describe responsibilities, tools, people, problems or accomplishments."></textarea></label>
+ <label>Most recent occupation<input id="rapidPriorRole" autocomplete="off" list="rapidOccupations" placeholder="Start typing an occupation, e.g., truck driver"><datalist id="rapidOccupations"></datalist><small id="rapidOccupationStatus">Type at least two letters to find an occupation.</small></label>
+ <label>Typical duties — confirm or edit<textarea id="rapidPriorDuties" placeholder="Choose a recognized occupation to get a suggested starting draft."></textarea><small>These are typical profile prompts. Keep only work you actually performed.</small></label>
 </div>
+<div id="rapidProfilePanel" class="explain" hidden><b id="rapidProfileTitle"></b><p id="rapidProfileDescription"></p><div id="rapidProfileSkills"></div><p><a id="rapidONETLink" href="https://www.onetonline.org/find/" target="_blank" rel="noopener">Review occupation on O*NET ↗</a></p><small>Confirm or edit the skills below to reflect your experience. An occupational profile does not certify your skills.</small></div>
 <div class="gridChoice">
 <button class="choiceCard" type="button" id="rapidReturnYes"><h3>Yes — I want to return to this occupation</h3><p>Review local wages, annual openings, qualifications and whether this kind of work still fits your needs.</p><b>Validate my old occupation →</b></button>
 <button class="choiceCard" type="button" id="rapidReturnNo"><h3>No — I'm ready to consider other work</h3><p>Extract and rate transferable skills, compare O*NET interests and work preferences, and select up to three occupations to explore.</p><b>Explore skill mobility →</b></button>
@@ -170,5 +171,63 @@ const old=safeRead(key);
 if(old.priorRole)$('rapidPriorRole').value=old.priorRole;
 if(old.duties)$('rapidPriorDuties').value=old.duties;
 if(Array.isArray(old.considerations))considerations=old.considerations.slice(0,3);
+})();
+</script>
+<script>
+(()=>{
+const role=document.getElementById('rapidPriorRole'),duties=document.getElementById('rapidPriorDuties'),list=document.getElementById('rapidOccupations');
+const status=document.getElementById('rapidOccupationStatus'),panel=document.getElementById('rapidProfilePanel'),title=document.getElementById('rapidProfileTitle'),desc=document.getElementById('rapidProfileDescription'),skills=document.getElementById('rapidProfileSkills'),link=document.getElementById('rapidONETLink');
+const normalize=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const escape=x=>String(x||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let currentSoc='',fromProfile='',selectedSkills=[];
+const ALIASES={truck:['heavy and tractor trailer truck drivers','light truck drivers'],cdl:['heavy and tractor trailer truck drivers'],nurse:['registered nurses','licensed practical and licensed vocational nurses'],warehouse:['laborers and freight stock and material movers'],electrician:['electricians'],retail:['retail salespersons'],cnc:['computer numerically controlled tool operators']};
+const BY_FAMILY={
+'11':['Coordinated work and team priorities','Monitored operations and addressed issues','Communicated with staff and stakeholders'],
+'13':['Analyzed information and prepared reports','Coordinated projects or business processes','Reviewed records and identified improvements'],
+'15':['Used technology to solve problems','Documented and communicated technical solutions','Checked systems and information for accuracy'],
+'29':['Supported patients or clients following applicable procedures','Maintained accurate records','Coordinated with health professionals'],
+'31':['Assisted with care and daily activities','Followed safety and service procedures','Recorded observations and communicated needs'],
+'41':['Assisted customers and explained services','Processed transactions or sales records','Worked with others to meet service needs'],
+'43':['Maintained records and organized information','Coordinated customer or operational requests','Verified information for accuracy'],
+'47':['Used tools and equipment following safety procedures','Read job instructions and completed hands-on tasks','Inspected work and resolved practical issues'],
+'49':['Inspected, maintained or repaired equipment','Diagnosed faults and selected next steps','Documented service and followed safety requirements'],
+'51':['Operated equipment and followed production procedures','Inspected products or processes for quality','Recorded production details and addressed issues'],
+'53':['Coordinated movement of goods or people','Followed safety and delivery procedures','Checked equipment, routes or documentation'],
+'35':['Handled customer service and teamwork demands','Followed operational, food safety and quality procedures','Organized work during busy periods']
+};
+function occupations(){return window.BOOST_RAPID_OCCUPATIONS||[]}
+function match(q){
+ const txt=normalize(q);if(txt.length<2)return[];
+ const aliases=ALIASES[txt]||[];
+ return occupations().map(o=>{let t=normalize(o.title),n=0;if(t===txt)n=120;else if(aliases.some(a=>t===a))n=110;else if(t.startsWith(txt))n=95;else if(t.includes(txt))n=70;else if(txt.split(' ').every(w=>t.includes(w)))n=55;return {o,n}}).filter(x=>x.n>0).sort((a,b)=>b.n-a.n||Number(b.o.openings||0)-Number(a.o.openings||0)).slice(0,15).map(x=>x.o)
+}
+function suggestions(){
+ const text=role.value.trim();const arr=match(text);
+ list.replaceChildren();arr.forEach(o=>{const el=document.createElement('option');el.value=o.title;list.append(el)});
+ const exact=occupations().find(o=>normalize(o.title)===normalize(text));
+ if(exact&&exact.soc!==currentSoc){choose(exact)}
+ else if(!exact){currentSoc='';panel.hidden=true;status.textContent=arr.length?'Choose a complete occupation title from the suggestions.':'No occupation found yet. Try another title or continue with your own work description.'}
+}
+function choose(o){
+ currentSoc=String(o.soc||'');
+ const labels=window.BOOST_RAPID_SKILL_LABELS||{}, ids=window.BOOST_RAPID_INFER_SKILLS?.(o)||[];
+ selectedSkills=[...ids];
+ const sample=BY_FAMILY[currentSoc.slice(0,2)]||['Completed the core duties of the occupation','Used job-related tools, information or procedures','Solved workplace problems and worked with others'];
+ fromProfile=sample.join('\n');
+ if(!duties.value.trim()||duties.dataset.autofilled==='true'){duties.value=fromProfile;duties.dataset.autofilled='true'}
+ else duties.dataset.autofilled='false';
+ panel.hidden=false;title.textContent=o.title+' • SOC '+currentSoc;
+ desc.textContent='Suggested duty prompts based on occupational family. This is not a verbatim O*NET task list. Check the official profile and edit to match the work you actually performed.';
+ skills.innerHTML='<b>Likely transferable skill areas — confirm each:</b><div class="gridChoice">'+ids.map(id=>'<label style="font-weight:500"><input type="checkbox" class="rapidOccupationSkill" value="'+escape(id)+'" checked> '+escape(labels[id]||id)+'</label>').join('')+'</div>';
+ link.href='https://www.onetonline.org/link/summary/'+encodeURIComponent(currentSoc.replace(/\.00$/,'')+'.00');
+ status.textContent='Matched '+o.title+'. Review the suggested duties and skills before moving ahead.';
+ document.dispatchEvent(new CustomEvent('rapid-occupation-selected',{detail:{occupation:o,skillIds:ids}}));
+}
+duties.addEventListener('input',()=>{duties.dataset.autofilled='false'});
+role.addEventListener('input',suggestions);role.addEventListener('change',suggestions);
+window.addEventListener('boost-rapid-occupations-ready',suggestions);
+document.addEventListener('change',e=>{if(e.target.matches('.rapidOccupationSkill')){selectedSkills=[...document.querySelectorAll('.rapidOccupationSkill:checked')].map(e=>e.value)}});
+window.BOOST_RAPID_PROFILE=()=>({soc:currentSoc,skillIds:selectedSkills,role:role.value.trim(),duties:duties.value.trim()});
+if(occupations().length)suggestions();
 })();
 </script></body></html>
