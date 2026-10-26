@@ -133,6 +133,28 @@ function show(key){
   }
   const el=document.createElement('article');el.className='stage';
   const bg=document.createElement('div');bg.className='stage-art';bg.style.backgroundImage=`url("${images[i%images.length]}")`;
+// Art is keyed to category, never card position. Existing art stays visible until each new asset is uploaded.
+if(key==='explore'){
+ const cardArt={
+  'Discover — Module 1':'discover',
+  'Validate':'validate',
+  'Career Mobility':'career-mobility',
+  'Decide':'decide',
+  'Industry Skills':'industry-skills',
+  'Skill Investment':'skill-investment',
+  'Optional Industry Exploration':'industry-skills',
+  'Coach Preparation':'coach-preparation',
+  'Financial Habits':'financial-habits',
+  'AI & You':'ai-and-you'
+ };
+ const artwork=cardArt[item[0]];
+ if(artwork){
+  const imageURL=new URL('assets/images/boost2-cards/'+artwork+'.webp',location.href).toString();
+  const preload=new Image();
+  preload.onload=()=>{if(bg.isConnected)bg.style.backgroundImage='url("'+imageURL+'")'};
+  preload.src=imageURL;
+ }
+}
   const body=document.createElement('div');body.className='stage-body';
   const top=document.createElement('div');top.className='stage-top';
   const num=document.createElement('span');num.className='num';num.textContent=i+1;
