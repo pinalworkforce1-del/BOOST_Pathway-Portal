@@ -146,9 +146,18 @@ document.addEventListener('click',e=>{
  const b=e.target.closest('.rapidConsider');if(!b)return;
  const soc=b.dataset.soc||'',title=b.dataset.title||'';
  const old=considerations.findIndex(x=>x.soc===soc);
- if(old>=0){considerations.splice(old,1);window.BOOST_RAPID_REMOVE_RESEARCH_OCCUPATION?.(soc);}
- else if(considerations.length<3){considerations.push({soc,title});window.BOOST_RAPID_ADD_RESEARCH_OCCUPATION?.(soc);}
+ if(old<0&&considerations.length>=3)return;
+ const removing=old>=0;
+ if(removing)considerations.splice(old,1);else considerations.push({soc,title});
  saveIntro();updateConsiderations();
+ try{
+  if(removing)window.BOOST_RAPID_REMOVE_RESEARCH_OCCUPATION?.(soc);
+  else window.BOOST_RAPID_ADD_RESEARCH_OCCUPATION?.(soc);
+ }catch(error){
+  console.warn('Employer research synchronization could not complete:',error);
+  const message=$('rapidConsiderList');
+  if(message)message.title='Career saved to considerations. Employer research may need to be refreshed.';
+ }
 });
 const matches=$('matches');
 if(matches)new MutationObserver(()=>updateConsiderations()).observe(matches,{childList:true,subtree:false});
