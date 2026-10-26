@@ -121,7 +121,7 @@ function complete(d){
  prior.modules=prior.modules||{};
  prior.progress=prior.progress||{};
  prior.portal=prior.portal||{};
- prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[],skillAssessment:window.BOOST_RAPID_SKILL_RESULTS?.()||null,occupationSoc:window.BOOST_RAPID_PROFILE?.()?.soc||null,confirmedPriorSkillIds:window.BOOST_RAPID_PROFILE?.()?.skillIds||[]};
+ prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:prior.modules.skillmobility?.completedAt||new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[],skillAssessment:window.BOOST_RAPID_SKILL_RESULTS?.()||null,occupationSoc:window.BOOST_RAPID_PROFILE?.()?.soc||null,confirmedPriorSkillIds:window.BOOST_RAPID_PROFILE?.()?.skillIds||[]};
  prior.progress.skillmobility='complete';
  prior.portal.map=prior.portal.map||{};
  prior.portal.map.complete=prior.portal.map.complete||{};
@@ -177,7 +177,7 @@ if(matches)new MutationObserver(()=>updateConsiderations()).observe(matches,{chi
 function completionPayload(){
  const report=safeRead('pinal_boost_rapid_skill_mobility_v1');
  if(!report?.updatedAt||!Array.isArray(report.research)||!report.research.length)return null;
- if(!window.BOOST_RAPID_SKILLS_ASSESSED?.())return null;
+ if(!window.BOOST_RAPID_SKILLS_ASSESSED?.()&&!report.assessment?.confirmedAt)return null;
  const selected=considerations.slice(0,3);
  if(!selected.length)return null;
  const complete=new Set(report.research.filter(p=>p.title&&p.pay&&p.req&&p.source).map(p=>String(p.soc)));
@@ -189,12 +189,12 @@ function showCompletionAction(){
  host.querySelector('#mobilityCompleteAndReturn')?.remove();
  const payload=completionPayload();if(!payload)return;
  const button=document.createElement('button');button.type='button';button.id='mobilityCompleteAndReturn';button.className='btn green';button.textContent='✓ Save Completion & Return to BOOST Pathway →';button.style.marginTop='12px';
- button.onclick=()=>{const latest=completionPayload();if(!latest){host.textContent='Your snapshot needs complete employer evidence for every selected occupation before completion can be sent.';return;}complete(latest)};
+ button.onclick=()=>{const latest=completionPayload();if(!latest){host.textContent='Your snapshot needs complete employer evidence for every selected occupation before completion can be sent.';return;}button.disabled=true;button.textContent='Saving completion and returning to BOOST…';complete(latest)};
  host.append(button);
 }
 const saveBtn=$('saveBtn');
 if(saveBtn)saveBtn.addEventListener('click',()=>setTimeout(showCompletionAction,0));
-if(safeRead('pinal_boost_rapid_skill_mobility_v1')?.updatedAt)window.addEventListener('load',()=>setTimeout(showCompletionAction,250));
+window.addEventListener('load',()=>setTimeout(showCompletionAction,250));
 const old=safeRead(key);
 if(old.priorRole)$('rapidPriorRole').value=old.priorRole;
 if(old.duties)$('rapidPriorDuties').value=old.duties;
