@@ -74,28 +74,51 @@ function gapFor(o,ids){
  const prep=[o.education,o.ojt].filter(Boolean);
  return {missing,prep}
 }
+const RIA_LABELS={R:'Realistic',I:'Investigative',A:'Artistic',S:'Social',E:'Enterprising',C:'Conventional'};
+function topInterestProfile(values){
+ if(!values||typeof values!=='object')return [];
+ return Object.keys(RIA_LABELS).filter(k=>Number.isFinite(Number(values[k]))&&Number(values[k])>0).sort((a,b)=>Number(values[b])-Number(values[a])).slice(0,3);
+}
+function interestFit(user,occupation){
+ const career=topInterestProfile(occupation?.ria),person=topInterestProfile(user);
+ if(!career.length||!person.length)return {career,person,shared:[],level:'Not established'};
+ const shared=person.filter(k=>career.includes(k));
+ // Ordinal overlap of the top three interest types, not a psychometric fit percentage.
+ const weighted=shared.reduce((sum,k)=>sum+(4-person.indexOf(k))*(4-career.indexOf(k)),0);
+ const level=weighted>=12?'Strong overlap':weighted>=6?'Some overlap':'Limited overlap';
+ return {career,person,shared,level};
+}
+function preferenceFit(prefs,o){
+ if(!prefs.length)return {matched:[],level:'Not assessed'};
+ const matched=prefs.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc));
+ // This is a narrow BOOST occupation crosswalk, not an official O*NET work-context rating.
+ const level=matched.length>=2?'Multiple preference signals':matched.length===1?'One preference signal':'Not yet mapped';
+ return {matched,level};
+}
 function compareDiscoverCareers(){
  if(read(RAPID)?.direction==='pivot'&&!window.BOOST_RAPID_SKILLS_ASSESSED?.()){$('matches').innerHTML='<div class="empty">Complete and confirm the transferable-skills questions first. Only demonstrated skills can be used for occupational matching.</div>';$('rapidSkillsAssessment')?.scrollIntoView({behavior:'smooth',block:'start'});return;}
  const ids=checked(),arr=window.__rapidDiscoverCareers||[],prefs=[...document.querySelectorAll('.rapidPref:checked')].map(x=>x.value);
  const btn=$('matchBtn');if(btn){btn.textContent='Comparing…';btn.disabled=true}
- if(!ids.length){$('matches').innerHTML='<div class="empty">First confirm the transferable skills you use at work.</div>';if(btn){btn.textContent='Find occupations that match my skills';btn.disabled=false}return}
- const rapid=read(RAPID),scores=rapid?.onetScores||{},tops=[];
- const interest=tops.length?tops:Object.entries(scores).sort((a,b)=>Number(b[1])-Number(a[1])).slice(0,3).map(x=>x[0]);
+ if(!ids.length){$('matches').innerHTML='<div class="empty">First confirm the transferable skills you use at work.</div>';if(btn){btn.textContent='Explore occupations that match my skills';btn.disabled=false}return}
+ const rapid=read(RAPID),scores=rapid?.onetScores||{};
  const ranked=occs.map(o=>{
   const matched=ids.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc));
-  const preferred=prefs.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc));
-  const ria=interest.reduce((sum,code,i)=>sum+(Number(o.ria?.[code])||0)/(i+1),0);
-  const score=matched.length*4+preferred.length*2+ria*.15+(o.gate?1:0)+(Number(o.openings)>0?.5:0);
-  return {o,score,reasons:matched.map(skillLabel),interestHits:interest.filter(code=>(Number(o.ria?.[code])||0)>0)};
+  const fit=interestFit(scores,o.ria?o:null),preferences=preferenceFit(prefs,o);
+  const interestPoints=fit.shared.reduce((sum,k)=>sum+(4-fit.person.indexOf(k))*(4-fit.career.indexOf(k)),0);
+  const score=matched.length*4+preferences.matched.length*2+interestPoints*.35+(o.gate?1:0)+(Number(o.openings)>0?.5:0);
+  return {o,score,reasons:matched.map(skillLabel),fit,preferences};
  }).filter(x=>x.reasons.length&&x.o.gate).sort((a,b)=>b.score-a.score||Number(b.o.openings)-Number(a.o.openings)).slice(0,12);
  const existing=new Set(ranked.map(x=>x.o.soc));
- for(const o of arr)if(!existing.has(o.soc))ranked.push({o,score:0,reasons:ids.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc)).map(skillLabel),interestHits:[]});
+ for(const o of arr)if(!existing.has(o.soc))ranked.push({o,score:0,reasons:ids.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc)).map(skillLabel),fit:interestFit(scores,o),preferences:preferenceFit(prefs,o)});
  $('matches').innerHTML=ranked.length?ranked.map(x=>{
- let card=renderJob(x.o,x.reasons,x.score?'Skills + interests + preferences':'Previously explored in Discover');
+ let card=renderJob(x.o,x.reasons,'Transferable skills + occupation evidence');
  const g=gapFor(x.o,ids);
- const why='<div class="notice" style="margin-top:10px"><b>Transferability:</b> '+esc(x.reasons.length?x.reasons.join(', '):'Review actual duties with your coach')+'<br><b>Potential evidence to investigate:</b> '+esc(g.missing.length?g.missing.join(', '):'No additional signal surfaced in this quick comparison')+'<br><b>O*NET interest alignment:</b> '+esc(x.interestHits.length?x.interestHits.join(', '):'Not verified — occupation remains available')+'<br><small>These are exploration matches, not qualification decisions. Confirm requirements, wages, openings, location, and scheduling with real employers.</small></div>';
+ const occupationProfile=x.fit.career.length?x.fit.career.map(k=>RIA_LABELS[k]+' ('+k+')').join(' · '):'O*NET occupation interest profile unavailable';
+ const interestText=x.fit.shared.length?x.fit.shared.map(k=>RIA_LABELS[k]).join(', '):'No shared leading interest types';
+ const workText=x.preferences.matched.length?x.preferences.matched.map(id=>({hands:'Hands-on / equipment',people:'Working with people',problem:'Problem solving',detail:'Detail-focused work',lead:'Leadership / coordinating',digital:'Technology'}[id]||id)).join(', '):'No supported occupation-specific work-preference crosswalk found';
+ const why='<div class="notice" style="margin-top:10px"><b>Transferable skill evidence:</b> '+esc(x.reasons.length?x.reasons.join(', '):'Review actual duties with your coach')+'<br><b>Potential skill evidence to investigate:</b> '+esc(g.missing.length?g.missing.join(', '):'No additional signal surfaced in this quick comparison')+'<br><b>This occupation’s O*NET interest profile:</b> '+esc(occupationProfile)+'<br><b>Interest match strength:</b> '+esc(x.fit.level)+(x.fit.career.length?' — '+esc(interestText):'')+'<br><b>Work preference match:</b> '+esc(x.preferences.level)+' — '+esc(workText)+'<br><small>Interest match is based on leading RIASEC types, not a qualification score. Work-preference signals use a limited BOOST occupation crosswalk, not validated O*NET work-context ratings. “Not yet mapped” does not mean poor fit. Confirm requirements, wages, openings, location, and scheduling with employers.</small></div>';
  return card.replace('</article>',why+'</article>');
- }).join(''):'<div class="empty">No strong automatic suggestions were identified from the selected skills. Add more experience evidence, revisit the skills, or work with your coach to search other occupations.</div>';
+ }).join(''):'<div class="empty">No automatic suggestions were identified from the selected skills. Add more experience evidence, revisit the skills, or work with your coach to search other occupations.</div>';
  bindTargets($('matches'));if(btn){btn.textContent='Update occupational matches';btn.disabled=false}updateReadiness();$('matches').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function scoreOcc(o,ids){let score=0,reasons=[];ids.forEach(id=>{if((OCC_HINTS[id]||[]).includes(o.soc)){score+=3;reasons.push(skillLabel(id))}});if(o.gate)score+=1.2;if(Number(o.openings)>500)score+=.5;if(Number(o.jobs)>5000)score+=.3;return{score,reasons:[...new Set(reasons)]}}
