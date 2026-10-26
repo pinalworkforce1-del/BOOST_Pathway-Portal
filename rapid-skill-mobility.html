@@ -172,6 +172,16 @@ const old=safeRead(key);
 if(old.priorRole)$('rapidPriorRole').value=old.priorRole;
 if(old.duties)$('rapidPriorDuties').value=old.duties;
 if(Array.isArray(old.considerations))considerations=old.considerations.slice(0,3);
+const discover=(()=>{try{return JSON.parse(localStorage.getItem('pinal_boost_rapid_discover_v1')||'{}')}catch{return {}}})();
+if(discover.direction==='pivot'&&(discover.priorOccupation||discover.role)){
+ if(!old.priorRole)$('rapidPriorRole').value=discover.priorOccupation||discover.role;
+ if(!old.duties)$('rapidPriorDuties').value=discover.duties||'';
+ choice='pivot';saveIntro();step('pivot');
+ const prefMap={hands:'hands',problem:'problem',people:'people',detail:'detail',lead:'lead',digital:'digital'};
+ (discover.workPreferences||discover.preferences||[]).forEach(p=>{const box=document.querySelector('.rapidPref[value="'+prefMap[p]+'"]');if(box)box.checked=true});
+ const selected=discover.occupationSoc||discover.occupation?.soc;
+ if(selected){const apply=()=>{const o=(window.BOOST_RAPID_OCCUPATIONS||[]).find(x=>String(x.soc)===String(selected));if(!o)return;const ids=window.BOOST_RAPID_INFER_SKILLS?.(o)||[];ids.forEach(id=>{const box=$('skill_'+id);if(box)box.checked=true});};window.addEventListener('boost-rapid-occupations-ready',apply,{once:true});apply();}
+}
 })();
 </script>
 <script>
