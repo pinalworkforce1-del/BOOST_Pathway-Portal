@@ -247,7 +247,7 @@ async function checkPostEnrollmentAccess(client,cfg,session){
  postEnrollmentAccess={...result,checked:true};
 }
 function entryReady(tile){if(postEnrollmentAccess.unlocked)return true;alert(postEnrollmentAccess.checked?'These services unlock after your coach transfers you into TalentSync or selects your Adult, Dislocated Worker, or Youth program.':'Load your signed-in BOOST journey to verify access.');return false}
-const sequences={explore:['module1','module2','module3','module4','industry','module5','optional','handoff','financial','ai','r2w','boostcert'],rapid:['module1','skillmobility','financial','ai','jobsearch'],ready:['financial','ai','r2w']};
+const sequences={explore:['module1','module2','module3','module4','industry','module5','optional','handoff','financial','ai','boostcert','r2w'],rapid:['module1','skillmobility','financial','ai','jobsearch'],ready:['financial','ai','r2w']};
 const parse=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
 const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
 function selected(j){const raw=String(j?.portal?.pathway||j?.portal?.map?.pathway||j?.selected_pathway||'').toLowerCase();if(raw.includes('rapid'))return'rapid';if(raw.includes('ready'))return'ready';if(raw.includes('career'))return'explore';return null}
