@@ -34,7 +34,7 @@ function openModule(moduleId,tile){
  if(!identity||identity.hidden){alert('Load your authenticated BOOST journey before opening a module.');return}
  const id=moduleId==='investment'?'module5':industryId(moduleId);
  const shownStatus=tile?.dataset.b2status||'';
- if(!(['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —'))){
+ if(!(tile?.dataset.b2canLaunch==='true'||['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —'))){
    alert('This step is locked until required earlier reviews are complete.');return;
  }
  sessionStorage.setItem('boost2_return_pathway',document.querySelector('.path-card.boost2-selected')?.dataset.key||'explore');
