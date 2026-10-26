@@ -134,8 +134,9 @@ function show(key){
   const el=document.createElement('article');el.className='stage';
   const bg=document.createElement('div');bg.className='stage-art';bg.style.backgroundImage=`url("${images[i%images.length]}")`;
 // Art is keyed to category, never card position. Existing art stays visible until each new asset is uploaded.
-if(key==='explore'){
+if(key==='explore'||item[0]==='Ready 2 Work'){
  const cardArt={
+  'Ready 2 Work':'industry-skills',
   'Discover — Module 1':'discover',
   'Validate':'validate',
   'Career Mobility':'career-mobility',
