@@ -92,7 +92,7 @@ function updateConsiderations(){
  if(list)list.textContent=considerations.length?considerations.map(x=>x.title).join(' • '):'No career considerations chosen yet.';
  document.querySelectorAll('.rapidConsider').forEach(btn=>{
  const chosen=considerations.some(x=>x.soc===btn.dataset.soc);
- btn.textContent=chosen?'✓ Selected — remove':'＋ Add to three considerations';
+ const desired=chosen?'✓ Selected — remove':'＋ Add to three considerations';if(btn.textContent!==desired)btn.textContent=desired;
  btn.setAttribute('aria-pressed',String(chosen));
  btn.disabled=!chosen&&considerations.length>=3;
  });
