@@ -89,7 +89,7 @@ function init(){
  $('rapidSkillQuestions')?.addEventListener('change',update);
  $('rapidConfirmSkills')?.addEventListener('click',confirm);
  $('rapidAskRosieSkills')?.addEventListener('click',rosie);
- window.addEventListener('boost-rapid-occupations-ready',()=>render());
+ window.addEventListener('boost-rapid-occupations-ready',()=>{lastSignature='';render()});
  render();setTimeout(render,300);
  const old=read(STORE);if(old?.accepted&&old?.sourceOccupation===source().occupation){answers=old.answers||{};accepted=true;lastSignature='';render()}
 }
