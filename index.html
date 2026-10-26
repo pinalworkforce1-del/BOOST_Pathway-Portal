@@ -32,10 +32,10 @@ const portalBase='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
 function freshNonce(){const b=new Uint8Array(24);crypto.getRandomValues(b);return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')}
 function openModule(moduleId,tile){
  const identity=document.getElementById('b2identity');
- if(!identity||identity.hidden){alert('Load your authenticated BOOST journey before opening a module.');return}
+ if(!authUser){alert('Sign in to BOOST to open your saved modules.');el('b2load')?.click();return}
  const id=moduleId==='investment'?'module5':industryId(moduleId);
  const shownStatus=tile?.dataset.b2status||'';
- if(!(tile?.dataset.b2canLaunch==='true'||['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —'))){
+ if(!(hasEvidence(snapshot,id)||tile?.dataset.b2canLaunch==='true'||['Review Needed','Available','Completed'].includes(shownStatus)||shownStatus.startsWith('Available —')||shownStatus.startsWith('Completed —'))){
    alert('This step is locked until required earlier reviews are complete.');return;
  }
  sessionStorage.setItem('boost2_return_pathway',document.querySelector('.path-card.boost2-selected')?.dataset.key||'explore');
