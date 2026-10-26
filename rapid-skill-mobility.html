@@ -71,6 +71,7 @@ function step(which){
  $('rapidMobilityMain').hidden=which!=='pivot';
  if(which==='return')$('rapidRoleHeading').textContent="Previous occupation: "+$('rapidPriorRole').value.trim();
  if(which==='pivot'){
+   const profile=window.BOOST_RAPID_PROFILE?.();if(profile?.skillIds?.length){profile.skillIds.forEach(id=>{const box=document.getElementById('skill_'+id);if(box)box.checked=true;});}
    const resume=$('resumeText');
    if(resume&&!resume.value.trim())resume.value=$('rapidPriorDuties').value.trim();
    $('rapidConsiderations')?.remove();
@@ -83,7 +84,7 @@ function step(which){
 function start(direction){
  const role=$('rapidPriorRole').value.trim(),tasks=$('rapidPriorDuties').value.trim();
  if(!role){$('rapidDecisionError').textContent='Enter your most recent occupation to continue.';return;}
- if(!tasks){$('rapidDecisionError').textContent='Add at least one important duty or responsibility.';return;}
+ if(!tasks){$('rapidDecisionError').textContent='Choose an occupation profile to prefill duties, or enter duties manually.';return;}
  $('rapidDecisionError').textContent='';
  choice=direction;saveIntro();step(direction);
 }
@@ -103,7 +104,7 @@ function complete(d){
  prior.modules=prior.modules||{};
  prior.progress=prior.progress||{};
  prior.portal=prior.portal||{};
- prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[]};
+ prior.modules.skillmobility={...prior.modules.skillmobility,version:2,completedAt:new Date().toISOString(),direction:d.direction,priorOccupation:d.priorOccupation,duties:d.duties,validation:d.validation||null,considerations:d.considerations||[],occupationSoc:window.BOOST_RAPID_PROFILE?.()?.soc||null,confirmedPriorSkillIds:window.BOOST_RAPID_PROFILE?.()?.skillIds||[]};
  prior.progress.skillmobility='complete';
  prior.portal.map=prior.portal.map||{};
  prior.portal.map.complete=prior.portal.map.complete||{};
