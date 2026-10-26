@@ -164,9 +164,30 @@ function show(key){
       a.addEventListener('click',e=>{if(key==='rapid'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if(moduleId==='r2w'&&!entryReady(el)){e.preventDefault();return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='rapid-coach-prep'){e.preventDefault();if(!hasEvidence(snapshot,'jobsearch')){alert('Complete your 48-Hour Job Search first.');return;}const url=new URL('rapid-coach-appointment-prep.html',location.href);sessionStorage.setItem('boost2_return_pathway','rapid');location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='rapid-discover'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:rapid-discover',nonce);const url=new URL('rapid-discover.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','rapid-discover');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','rapid-discover');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}if(key==='rapid'&&moduleId==='jobsearch'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:jobsearch',nonce);const url=new URL('https://pinalworkforce1-del.github.io/48_hour_job_search/');const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','jobsearch');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','jobsearch');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='skillmobility'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:skillmobility',nonce);const url=new URL('rapid-skill-mobility.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','skillmobility');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','skillmobility');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}});
       body.append(a);
     }else{
-      const b=document.createElement('button');b.type='button';b.className='test-launch';
-      b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
-      b.addEventListener('click',()=>{if(requiresEnrollment(moduleId)&&!entryReady(el))return;openModule(moduleId,el)});body.append(b);
+      if(key==='explore'&&['module1','module2','module3','module4','investment'].includes(moduleId)){
+        const b=document.createElement('a');b.className='test-launch boost2-career-module-link';
+        const id=moduleId==='investment'?'module5':moduleId;
+        const url=new URL('activity.html',location.href);url.searchParams.set('m',id);
+        b.href=url.toString();
+        b.textContent='Open '+item[0]+' ↗';
+        b.style.cssText='display:block;text-align:center;text-decoration:none';
+        b.addEventListener('click',event=>{
+          const label=el.dataset.b2status||'';
+          const completed=label==='Completed'||label.startsWith('Completed')||label.startsWith('Review Required')||label==='Review Needed';
+          const available=label==='Available'||label.startsWith('Available —');
+          if(!(completed||available)){event.preventDefault();alert('This module unlocks after the preceding required experience is complete or reviewed.');return;}
+          const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:'+id,nonce);
+          sessionStorage.setItem('boost2_return_pathway','explore');sessionStorage.setItem('boost2_return_module',id);
+          const returnUrl=new URL(location.pathname,location.origin);returnUrl.searchParams.set('boost2_path','explore');returnUrl.searchParams.set('boost2_from',id);
+          const destination=new URL(b.href);destination.searchParams.set('boost_return',returnUrl.toString());destination.searchParams.set('boost_module',id);destination.searchParams.set('boost_nonce',nonce);
+          b.href=destination.toString();
+        });
+        body.append(b);
+      }else{
+        const b=document.createElement('button');b.type='button';b.className='test-launch';
+        b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
+        b.addEventListener('click',()=>{if(requiresEnrollment(moduleId)&&!entryReady(el))return;openModule(moduleId,el)});body.append(b);
+      }
     }
   } else {
     if(!['Optional Industry Exploration','Coach Preparation'].includes(item[0])){const notice=document.createElement('div');notice.className='pending-wire';notice.textContent='Available later in your BOOST journey';body.append(notice);}
@@ -445,6 +466,15 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
  if(chosen==='rapid'){
    tile.dataset.b2canLaunch=String(!!status.canLaunch);
    tile.querySelectorAll('a[data-boost-step]').forEach(a=>{const enabled=!!status.canLaunch;a.setAttribute('aria-disabled',String(!enabled));a.style.opacity=enabled?'1':'.5';a.style.cursor=enabled?'pointer':'not-allowed';a.title=enabled?'':'Complete the previous required experience first.';});
+ }
+ if(chosen==='explore'&&['module1','module2','module3','module4','module5'].includes(id)){
+   tile.querySelectorAll('a.boost2-career-module-link').forEach(link=>{
+     const accessible=status.canLaunch||hasEvidence(snapshot,id)||status.label==='Completed'||status.label.startsWith('Review Required');
+     link.setAttribute('aria-disabled',String(!accessible));
+     link.style.opacity=accessible?'1':'.48';
+     link.style.cursor=accessible?'pointer':'not-allowed';
+     link.title=accessible?'Open or review this module':'Complete the preceding required module first';
+   });
  }
  tile.querySelectorAll('button.test-launch').forEach(control=>{
    control.disabled=!(status.canLaunch||(chosen==='explore'&&(id==='industry'?industryComplete(snapshot):hasEvidence(snapshot,id))));
