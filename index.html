@@ -149,7 +149,7 @@ if(key==='explore'){
  };
  const artwork=cardArt[item[0]];
  if(artwork){
-  const imageURL=new URL('assets/images/boost2-cards/'+artwork+'.webp',location.href).toString();
+  const imageURL=new URL('assets/images/'+artwork+'.webp',location.href).toString();
   const preload=new Image();
   preload.onload=()=>{if(bg.isConnected)bg.style.backgroundImage='url("'+imageURL+'")'};
   preload.src=imageURL;
