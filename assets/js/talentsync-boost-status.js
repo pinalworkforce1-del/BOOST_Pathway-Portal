@@ -38,7 +38,36 @@ async function renderBoostStatus(p){const title=document.querySelector('#modalTi
  html+=row('BOOST Certificate',cert?'complete':'',cert?'<div><b>Available:</b> Full BOOST pathway requirements are complete.</div>':'<div>Certificate remains unavailable until the full BOOST pathway is complete and current.</div>');
  html+='</div><div class="ts-boost-actions"><a class="ts-boost-link secondary" href="staff-dashboard.html">Open BOOST Coach View</a>'+(cert?'<a class="ts-boost-link" href="staff-dashboard.html">View / Download Certificate</a>':'')+'</div>';host.innerHTML=html
  }catch(e){host.innerHTML='<div class="ts-boost-head"><div><h4>BOOST Development Status</h4><p>Live, read-only learning evidence from BOOST.</p></div><span class="ts-boost-live">LIVE BOOST</span></div><div class="ts-boost-error">'+esc(e.message||'BOOST status unavailable.')+'</div>'}}
+async function renderReady2Work(journeyId){
+ const overlay=document.querySelector('#modalOverlay'),title=document.querySelector('#modalTitle');
+ if(title)title.textContent='BOOST Ready 2 Work Results';
+ if(overlay)overlay.classList.add('open');
+ const host=ensureHost();if(!host)return;
+ host.innerHTML='<div class="ts-boost-loading">Retrieving verified Ready 2 Work evidence…</div>';
+ try{
+  if(!journeyId)throw Error('No BOOST participant link was found.');
+  const token=localStorage.getItem(TOKEN_KEY)||'';
+  if(!token)throw Error('BOOST staff sign-in required.');
+  const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json',apikey:ANON,Authorization:'Bearer '+ANON,'X-BOOST-Staff-Token':token},body:JSON.stringify({action:'coach_board',area:'pinal'})});
+  const data=await response.json();
+  if(!response.ok)throw Error(data.error||'Unable to retrieve BOOST results');
+  const record=(data.records||[]).find(r=>String(r.journey_id)===String(journeyId));
+  if(!record)throw Error('Participant is not available in authorized Coach View.');
+  const p=record.ready2work;
+  if(!p){host.innerHTML='<div class="ts-boost-error">No Ready 2 Work results have been saved for this participant.</div>';return}
+  const defs=[['COM','Communication',27],['PRO','Professionalism & Integrity',25],['PSA','Problem Solving & Adaptability',14],['TEAM','Teamwork & Collaboration',9],['TIME','Planning & Time Management',11],['QUAL','Quality & Attention to Detail',9]];
+  const skillRows=defs.map(([key,name,max])=>{const raw=Number(p.skill_scores?.[key]||0),pct=Math.round(Math.max(0,raw)/max*100);const level=pct>=85?'Advanced':pct>=68?'Strong':pct>=48?'Demonstrated':'Developing';return '<div class="ts-boost-row"><div class="ts-boost-top"><b>'+esc(name)+'</b><span>'+raw+'/'+max+' · '+pct+'% · '+level+'</span></div></div>'}).join('');
+  const resume=p.resume||{};
+  host.innerHTML='<div class="ts-boost-head"><div><h4>BOOST Ready 2 Work</h4><p>Read-only evidence from the participant’s BOOST record.</p></div><span class="ts-boost-live">LIVE BOOST</span></div>'+
+   '<div class="ts-boost-card">'+row('Soft Skills',p.scenario_count===22?'complete':'',esc(p.scenario_count||0)+'/22 scenarios complete')+
+   '<div class="ts-boost-row"><b>Six Employability Competencies</b><div class="ts-boost-detail">Advanced ≥85% · Strong ≥68% · Demonstrated ≥48% · Developing below 48%</div></div>'+skillRows+
+   row('Résumé Studio',p.resume_complete?'complete':'',p.resume_complete?'<b>Target:</b> '+esc(resume.target||'Recorded')+'<br><b>Summary:</b> '+esc(resume.summary||'Saved'):'Not yet complete')+
+   row('Jacqueline Mock Interview',p.interview_complete?'complete':'',p.interview_complete?'Verified completion recorded':'Completion pending')+
+   row('BOOST Work Ready Certificate',p.certificate_earned?'complete':'',p.certificate_earned?'Earned; all required elements verified':'Not yet earned')+'</div>';
+ }catch(e){host.innerHTML='<div class="ts-boost-error">'+esc(e.message||'Ready 2 Work unavailable')+'</div>'}
+}
 addStyles();
+document.addEventListener('click',e=>{const btn=e.target.closest?.('[data-ready2work-inline]');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();void renderReady2Work(btn.dataset.ready2workInline)},true);
 document.addEventListener('click',e=>{const btn=e.target.closest?.('[data-boost-status]');if(!btn)return;e.preventDefault();e.stopImmediatePropagation();renderBoostStatus({sourceJourneyId:btn.dataset.boostJourney||''})},true);
 window.TalentSyncBoostStatus={render:renderBoostStatus};
 })();
