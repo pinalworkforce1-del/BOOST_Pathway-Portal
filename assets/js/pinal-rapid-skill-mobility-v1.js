@@ -194,17 +194,38 @@ function annualMoney(value){return '$'+Number(value).toLocaleString('en-US',{min
 function renderSnapshot(d){
  const currentRate=Number(d.currentWage),hasCurrent=Number.isFinite(currentRate)&&currentRate>0;
  const wage=hasCurrent?money(currentRate)+'/hr':'Not entered',min=d.minimumWage?money(d.minimumWage)+'/hr':'Not entered';
- const options=getSelections(),evidence=d.research||[];
+ const options=getSelections(),evidence=d.research||[],rapid=read(RAPID);
  const currentAnnual=hasCurrent?currentRate*2080:null;
+ const skillIds=(d.confirmedSkills||[]).map(x=>x.id).filter(Boolean);
+ const preferences=rapid?.workPreferences||rapid?.preferences||[];
+ const interestScores=rapid?.onetScores||{};
+ const riaName=k=>RIA_LABELS[k]+' ('+k+')';
  const optionHtml=options.length?options.map((x,i)=>{
   const o=occs.find(o=>String(o.soc)===String(x.soc));
   const posts=evidence.filter(p=>String(p.soc)===String(x.soc));
+  let alignment='';
+  if(o){
+   const overlap=skillIds.filter(id=>(OCC_HINTS[id]||[]).includes(o.soc));
+   const toReview=occupationSkillIds(o).filter(id=>!skillIds.includes(id));
+   const fit=interestFit(interestScores,o),work=preferenceFit(preferences,o);
+   const interestsMissing=fit.person.filter(k=>!fit.career.includes(k));
+   const supportedPrefs=work.matched.map(id=>({hands:'Hands-on / equipment',people:'Working with people',problem:'Problem solving',detail:'Detail-focused work',lead:'Leadership / coordination',digital:'Technology'}[id]||id));
+   alignment='<div style="margin-top:12px;padding:12px;border:1px solid #c9dce8;border-radius:10px;background:#f2f8fb">'+
+    '<b>Transferable skills alignment</b><br><b>Demonstrated overlap:</b> '+esc(overlap.length?overlap.map(skillLabel).join(', '):'No mapped overlap found in this limited skills crosswalk')+
+    '<br><b>Skills to investigate:</b> '+esc(toReview.length?toReview.map(skillLabel).join(', '):'No additional skills flagged by the crosswalk')+
+    '<hr style="border:0;border-top:1px solid #d1e2ea;margin:10px 0"><b>O*NET interest alignment</b><br><b>Occupation profile:</b> '+esc(fit.career.length?fit.career.map(riaName).join(' · '):'Occupation interest data unavailable')+
+    '<br><b>Alignment:</b> '+esc(fit.level)+(fit.shared.length?' — shared interests: '+esc(fit.shared.map(riaName).join(', ')):'')+
+    '<br><b>Potential interest differences:</b> '+esc(fit.career.length&&fit.person.length?(interestsMissing.length?interestsMissing.map(riaName).join(', '):'All three leading participant interest types appear in the occupation’s leading three'):'Not enough evidence to compare')+
+    '<hr style="border:0;border-top:1px solid #d1e2ea;margin:10px 0"><b>Work preferences</b><br><b>Match signal:</b> '+esc(work.level)+
+    '<br><b>Supported preferences:</b> '+esc(supportedPrefs.length?supportedPrefs.join(', '):'No work-preference overlap established by available mapping')+
+    '<br><small>Unmapped preferences and skills are questions for further research, not evidence of poor fit or a skills gap. Interest profiles are not qualifications. Work preferences use BOOST’s limited occupation crosswalk, not validated O*NET Work Context ratings.</small></div>';
+  }else alignment='<p>Occupation-specific skills and interest evidence unavailable; verify the SOC occupation before interpreting alignment.</p>';
   const postingsHtml=posts.map(p=>{
-    const offered=hourlyPay(p.pay);
-    const annual=offered===null?null:offered*2080;
+    const offered=hourlyPay(p.pay),annual=offered===null?null:offered*2080;
     const delta=annual!==null&&currentAnnual!==null?annual-currentAnnual:null;
-    const deltaText=delta===null?'Annual difference unavailable — enter both wages as hourly rates.':
-     '<b>Annualized wage difference:</b> '+(delta>0?'+':delta<0?'−':'')+annualMoney(Math.abs(delta))+
+    const deltaText=delta===null?'<span>Annual difference unavailable — enter both wages as hourly rates.</span>':
+     '<b>Annualized wage difference:</b> <strong style="color:'+(delta>0?'#177245':delta<0?'#b42318':'#33546b')+'">'+
+     (delta>0?'+':delta<0?'−':'')+annualMoney(Math.abs(delta))+'</strong>'+
      (delta>0?' higher than previous annualized wages':delta<0?' lower than previous annualized wages':' — equal to previous annualized wages');
     return '<div style="padding:10px 0;border-top:1px solid #d3e2ea"><b>Employer posting:</b> '+esc(p.title)+' · '+esc(p.source)+
     '<br><b>Posted pay:</b> '+(offered===null?esc(p.pay)+' (hourly rate unverified)':money(offered)+'/hr')+
@@ -214,10 +235,10 @@ function renderSnapshot(d){
   }).join('');
   return '<div class="snapBlock"><h3>Career consideration '+(i+1)+': '+esc(x.title)+'</h3>'+
    (o?'<b>Regional evidence:</b> '+num(o.jobs)+' jobs · '+num(o.openings)+' annual openings · Point-of-entry '+money(o.p25)+'/hr<br>':'')+
-   '<b>Employer postings recorded:</b> '+posts.length+postingsHtml+
+   alignment+'<b>Employer postings recorded:</b> '+posts.length+postingsHtml+
    '<small>Annualized gross wages assume 2,080 paid hours per year (40 hours × 52 weeks), before taxes. Actual hours and earnings may differ.</small></div>';
  }).join(''):'<div class="snapBlock">Choose at least one career consideration.</div>';
- $('snapshot').innerHTML='<div class="snapBlock"><h3>Your starting point</h3>Previous occupation: '+esc(read(RAPID)?.priorOccupation||'Recorded in Rapid Discover')+'<br>Current/most recent wage: '+wage+(currentAnnual===null?'':'<br>Current wages annualized: '+annualMoney(currentAnnual))+'<br>Minimum considered: '+min+'</div>'+
+ $('snapshot').innerHTML='<div class="snapBlock"><h3>Your starting point</h3>Previous occupation: '+esc(rapid?.priorOccupation||'Recorded in Rapid Discover')+'<br>Current/most recent wage: '+wage+(currentAnnual===null?'':'<br>Current wages annualized: '+annualMoney(currentAnnual))+'<br>Minimum considered: '+min+'</div>'+
  '<div class="snapBlock"><h3>Transferable skill evidence</h3>'+(d.confirmedSkills.length?d.confirmedSkills.map(x=>'• '+esc(x.label)).join('<br>'):'No skills confirmed yet.')+'</div>'+
  optionHtml+'<div class="snapBlock"><h3>Additional evidence</h3>Pizza Lab: '+(d.skillLab.completed?'Completed — reflection evidence added':'Not marked complete (optional)')+'</div>';
 }
