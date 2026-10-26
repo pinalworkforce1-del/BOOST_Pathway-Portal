@@ -146,9 +146,19 @@ function show(key){
     select.addEventListener('change',()=>b.disabled=!select.value);
     b.addEventListener('click',()=>select.value&&openModule(select.value,el));body.append(select,b);
   } else if(moduleId){
-    const b=document.createElement('button');b.type='button';b.className='test-launch';
-    b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
-    b.addEventListener('click',()=>{if(requiresEnrollment(moduleId)&&!entryReady(el))return;if(moduleId==='r2w')location.assign(new URL('ready-2-work-qa/',location.href).toString());else openModule(moduleId,el)});body.append(b);
+    if(moduleId==='r2w'){
+      const a=document.createElement('a');
+      a.className='test-launch boost2-ready2work-link';
+      a.href=new URL('ready-2-work-qa/',location.href).toString();
+      a.textContent='Open Ready 2 Work ↗';
+      a.style.cssText='display:block;text-align:center;text-decoration:none';
+      a.addEventListener('click',e=>{if(!postEnrollmentAccess.unlocked){e.preventDefault();entryReady(el)}});
+      body.append(a);
+    }else{
+      const b=document.createElement('button');b.type='button';b.className='test-launch';
+      b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
+      b.addEventListener('click',()=>{if(requiresEnrollment(moduleId)&&!entryReady(el))return;openModule(moduleId,el)});body.append(b);
+    }
   } else {
     if(!['Optional Industry Exploration','Coach Preparation'].includes(item[0])){const notice=document.createElement('div');notice.className='pending-wire';notice.textContent='Available later in your BOOST journey';body.append(notice);}
   }
