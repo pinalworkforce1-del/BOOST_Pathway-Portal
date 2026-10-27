@@ -4,7 +4,7 @@ if(window.__PINAL_ASK_ROSIE_V11__)return;window.__PINAL_ASK_ROSIE_V11__=true;
 
 const ENDPOINT='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/boost-ask-rosie-v172';
 const DATA_FILES=[1,2,3,4,5,6].map(n=>`https://pinalworkforce1-del.github.io/BOOST/assets/data/career-data-v1-0${n}.js`);
-const ROSIE='assets/images/rosie-master.webp';
+const ROSIE='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp';
 const PAGE_LABEL=()=>{const q=new URLSearchParams(location.search),m=q.get('m');return m?`Pinal BOOST ${m}`:'Pinal BOOST Journey Map'};
 const ALIASES={
  'medical assistant':['31-9092'],'ma':['31-9092'],'cna':['31-1131'],'nursing assistant':['31-1131'],'certified nursing assistant':['31-1131'],
