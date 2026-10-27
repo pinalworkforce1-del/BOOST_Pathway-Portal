@@ -590,12 +590,12 @@ function activate(key,returning=false){
   sessionStorage.removeItem('boost2_return_pathway');
  }
 }
-document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{rosiePathwayInteracted=true;if(snapshot&&authUser){chosen=c.dataset.key;persistSelectedBoostPath(chosen);setTimeout(paint,60)}}));
+document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{rosiePathwayInteracted=true;if(snapshot&&authUser){document.body.classList.remove('boost2-auth-gate');activate(c.dataset.key,false)}}));
 document.getElementById('choices').addEventListener('click',(event)=>{
  const card=event.target.closest('.path-card');if(!card)return;
+ if(authUser){document.body.classList.remove('boost2-auth-gate');return;}
  document.body.classList.add('boost2-auth-gate');
  mount.classList.remove('boost2-pending-choice');
- if(authUser)return;
  event.preventDefault();event.stopImmediatePropagation();
  boost2PathwayRequested=true;sessionStorage.setItem('boost2_return_pathway',card.dataset.key);
  el('b2load').click();mount.scrollIntoView({behavior:'smooth',block:'start'});
