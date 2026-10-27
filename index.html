@@ -534,6 +534,19 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
  if(sel){sel.value=choice||'';sel.disabled=true;}
  const btn=tile.querySelector('button.test-launch');if(btn)btn.textContent=choice?'Open '+choice.toUpperCase()+' Skills Challenge ↗':'Industry Experience Not Required';
  }
+ if(chosen==='ready'&&id==='r2w'){
+   // A disabled-looking link is still navigable. Remove the URL until enrollment is verified.
+   tile.dataset.b2canLaunch=String(!!status.canLaunch);
+   tile.querySelectorAll('a[data-boost-step="r2w"]').forEach(link=>{
+     if(!link.dataset.boostTargetHref)link.dataset.boostTargetHref=link.getAttribute('href')||'';
+     if(status.canLaunch)link.setAttribute('href',link.dataset.boostTargetHref);
+     else link.removeAttribute('href');
+     link.setAttribute('aria-disabled',String(!status.canLaunch));
+     link.style.opacity=status.canLaunch?'1':'.46';
+     link.style.cursor=status.canLaunch?'pointer':'not-allowed';
+     link.title=status.canLaunch?'Open Ready 2 Work':'Requires completed Financial Habits and AI & You, plus confirmed TalentSync enrollment';
+   });
+ }
  if(chosen==='rapid'){
    tile.dataset.b2canLaunch=String(!!status.canLaunch);
    tile.querySelectorAll('a[data-boost-step]').forEach(a=>{const enabled=!!status.canLaunch;a.setAttribute('aria-disabled',String(!enabled));a.style.opacity=enabled?'1':'.5';a.style.cursor=enabled?'pointer':'not-allowed';a.title=enabled?'':'Complete the previous required experience first.';});
