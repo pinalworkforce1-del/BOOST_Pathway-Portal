@@ -213,7 +213,7 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
       }else{
         const b=document.createElement('button');b.type='button';b.className='test-launch';
         b.textContent=`Open ${item[0]==='Financial Habits + AI & You'?'AI & You':item[0]} ↗`;
-        b.addEventListener('click',()=>{if(requiresEnrollment(moduleId)&&!entryReady(el))return;openModule(moduleId,el)});body.append(b);
+        b.addEventListener('click',()=>{if((requiresEnrollment(moduleId)||chosen==='ready')&&!entryReady(el))return;openModule(moduleId,el)});body.append(b);
       }
     }
   } else {
@@ -380,6 +380,7 @@ let postEnrollmentAccess={unlocked:false,checked:false,program:null};
 window.boost2ModuleLaunch=function(moduleId,tile){
  const id=moduleId==='investment'?'module5':industryId(moduleId);
  if(!authUser){alert('Please sign in to BOOST to open a module.');el('b2load')?.click();return;}
+ if(chosen==='ready'&&['financial','ai','r2w'].includes(id)&&!employmentReadyAllowed(id)){alert(id==='ai'?'Complete Financial Habits before opening AI & You.':'Ready 2 Work requires completed Financial Habits and AI & You plus verified TalentSync enrollment.');return;}
  const done=hasEvidence(snapshot,id)||(id.startsWith('industry-')&&industryComplete(snapshot));
  const status=tile?.dataset.b2status||'';
  const allowed=done||tile?.dataset.b2canLaunch==='true'||status==='Available'||status==='Review Needed'||status.startsWith('Available —')||status.startsWith('Review Required');
@@ -399,6 +400,8 @@ window.boost2ModuleLaunch=function(moduleId,tile){
  location.assign(activity.toString());
 };
 
+function employmentReadyEnrollmentConfirmed(){return !!(postEnrollmentAccess.checked && postEnrollmentAccess.transferred && ['adult','dislocated worker','youth'].includes(String(postEnrollmentAccess.program||'').trim().toLowerCase()))}
+function employmentReadyAllowed(id){if(chosen!=='ready')return null;if(id==='financial')return true;if(id==='ai')return hasEvidence(snapshot||{},'financial');if(id==='r2w')return hasEvidence(snapshot||{},'financial')&&hasEvidence(snapshot||{},'ai')&&employmentReadyEnrollmentConfirmed();return null}
 function requiresEnrollment(key){return ['financial','ai','r2w','boostcert'].includes(key)}
 async function checkPostEnrollmentAccess(client,cfg,session){
  const response=await fetch(cfg.supabaseUrl+'/functions/v1/boost-post-enrollment-access',{headers:{apikey:cfg.supabaseAnonKey,Authorization:'Bearer '+session.access_token}});
@@ -407,7 +410,7 @@ async function checkPostEnrollmentAccess(client,cfg,session){
  postEnrollmentAccess={...result,checked:true};
 }
 function rapidReady2WorkUnlocked(){return !!postEnrollmentAccess.transferred&&String(postEnrollmentAccess.program||'').trim().toLowerCase()==='dislocated worker'}
-function entryReady(tile){if(chosen==='rapid'&&tile?.querySelector('h3')?.textContent==='Ready 2 Work'){if(rapidReady2WorkUnlocked())return true;alert('Rapid Reemployment Ready 2 Work unlocks when your participant record is transferred into TalentSync and Dislocated Worker is selected as the program.');return false}if(postEnrollmentAccess.unlocked)return true;alert(postEnrollmentAccess.checked?'These services unlock after your coach transfers you into TalentSync or selects your Adult, Dislocated Worker, or Youth program.':'Load your signed-in BOOST journey to verify access.');return false}
+function entryReady(tile){if(chosen==='ready'){const name=tile?.querySelector('h3')?.textContent||'';const id=name.includes('Financial Habits')?'financial':name.includes('AI & You')?'ai':name.includes('Ready 2 Work')?'r2w':null;if(id){const ok=employmentReadyAllowed(id);if(!ok)alert(id==='ai'?'Complete Financial Habits before opening AI & You.':id==='r2w'?'Complete Financial Habits and AI & You, then have your coach confirm your TalentSync enrollment before opening Ready 2 Work.':'This activity is not available yet.');return !!ok;}}if(chosen==='rapid'&&tile?.querySelector('h3')?.textContent==='Ready 2 Work'){if(rapidReady2WorkUnlocked())return true;alert('Rapid Reemployment Ready 2 Work unlocks when your participant record is transferred into TalentSync and Dislocated Worker is selected as the program.');return false}if(postEnrollmentAccess.unlocked)return true;alert(postEnrollmentAccess.checked?'These services unlock after your coach transfers you into TalentSync or selects your Adult, Dislocated Worker, or Youth program.':'Load your signed-in BOOST journey to verify access.');return false}
 const sequences={explore:['module1','module2','module3','module4','industry','module5','optional','handoff','financial','ai','boostcert','r2w'],rapid:['rapid-discover','skillmobility','jobsearch','rapid-coach-prep','financial','ai','r2w'],ready:['financial','ai','r2w']};
 const parse=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
 const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -433,6 +436,9 @@ function state(j,id,blocked){
  if(id==='optional')return {label:'Explore More',cls:'ok',block:false,canLaunch:true};
  if(id==='handoff')return {label:'Coach Brief — Snapshot for Discussion; Revisions Require Re-review',cls:'ok',block:false,canLaunch:true};
  if(id==='boostcert'||id==='r2wcert')return {label:'Certificate — Eligibility Check',cls:'unknown',block:false,canLaunch:false};
+ if(chosen==='ready'&&id==='financial')return {label:hasEvidence(j,'financial')?'Completed — Review Again':'Available — Start Financial Habits',cls:hasEvidence(j,'financial')?'ok':'warn',block:true,canLaunch:true};
+ if(chosen==='ready'&&id==='ai')return hasEvidence(j,'financial')?{label:hasEvidence(j,'ai')?'Completed — Review Again':'Available — Start AI & You',cls:hasEvidence(j,'ai')?'ok':'warn',block:true,canLaunch:true}:{label:'Locked — Complete Financial Habits First',cls:'lock',block:true,canLaunch:false};
+ if(chosen==='ready'&&id==='r2w')return !hasEvidence(j,'financial')||!hasEvidence(j,'ai')?{label:'Locked — Complete Financial Habits and AI & You',cls:'lock',block:false,canLaunch:false}:employmentReadyEnrollmentConfirmed()?{label:'Available — Start Ready 2 Work',cls:'ok',block:false,canLaunch:true}:{label:postEnrollmentAccess.checked?'TalentSync Enrollment Confirmation Required':'Verifying TalentSync Enrollment',cls:'lock',block:false,canLaunch:false};
  if(chosen==='rapid'&&id==='r2w'&&!rapidReady2WorkUnlocked())return {label:'TalentSync Dislocated Worker Enrollment Required',cls:'lock',block:false,canLaunch:false};
  if(requiresEnrollment(id)&&!(chosen==='rapid'&&['financial','ai'].includes(id))&&!postEnrollmentAccess.unlocked)return {label:postEnrollmentAccess.checked?'Enrollment Required':'Verifying Enrollment',cls:'lock',block:false,canLaunch:false};
  if(id==='r2w')return {label:'Optional — Open Ready 2 Work',cls:'ok',block:false,canLaunch:true};
