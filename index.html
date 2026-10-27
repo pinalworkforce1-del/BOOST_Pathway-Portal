@@ -276,6 +276,40 @@ prep.innerHTML='<h2>Get Started with BOOST</h2><div class="boost2-prep-grid"><ar
 mount.before(prep);
 document.getElementById('boost2-see-pathways').onclick=()=>document.getElementById('choices').scrollIntoView({behavior:'smooth'});
 let boost2PathwayRequested=false;
+const boostPathKeys=['explore','rapid','ready'];
+const validBoostPath=p=>boostPathKeys.includes(p)?p:null;
+const requestedBoostPath=()=>validBoostPath(new URLSearchParams(location.search).get('boost2_path'))||validBoostPath(sessionStorage.getItem('boost2_return_pathway'));
+const boostSignInRedirect=()=>{const u=new URL(location.origin+location.pathname);const p=requestedBoostPath();if(p)u.searchParams.set('boost2_path',p);return u.toString()};
+async function boostCollectName(client,user,journey,region){
+ const meta=user.user_metadata||{},j=journey||{};
+ const existing=String(j.participant?.name||j.participant_name||meta.full_name||[meta.first_name,meta.last_name].filter(Boolean).join(' ')).trim();
+ if(existing)return j;
+ const form=document.createElement('form');form.id='boost2-profile';
+ form.style.cssText='display:grid;gap:12px;max-width:550px;margin:16px 0;padding:20px;border:2px solid #f6c967;border-radius:14px;background:#153c55;color:white';
+ const h=document.createElement('h3');h.textContent='Welcome to BOOST — tell us your name';h.style.margin='0';
+ const note=document.createElement('p');note.textContent='We use your name for your BOOST results and coach reports.';note.style.margin='0';
+ const first=document.createElement('input'),last=document.createElement('input');
+ first.placeholder='First name';last.placeholder='Last name';first.autocomplete='given-name';last.autocomplete='family-name';
+ for(const i of [first,last]){i.required=true;i.maxLength=100;i.style.cssText='padding:12px;border-radius:8px;border:1px solid #8aaec5;font:inherit'}
+ const btn=document.createElement('button');btn.type='submit';btn.textContent='Save Name & Continue';
+ const error=document.createElement('div');error.setAttribute('role','alert');
+ form.append(h,note,first,last,btn,error);mount.prepend(form);
+ form.scrollIntoView({behavior:'smooth',block:'center'});first.focus();
+ return await new Promise(resolve=>form.addEventListener('submit',async e=>{
+  e.preventDefault();btn.disabled=true;error.textContent='';
+  try{
+   const f=first.value.trim(),l=last.value.trim();if(!f||!l)throw Error('Enter your first and last name.');
+   const full=f+' '+l,updated=JSON.parse(JSON.stringify(j));
+   updated.participant={...(updated.participant||{}),name:full,email:user.email};updated.participant_name=full;
+   const saved=await client.rpc('boost_save_my_journey_for_region',{p_region:region,p_journey:updated});
+   if(saved.error)throw saved.error;
+   const auth=await client.auth.updateUser({data:{first_name:f,last_name:l,full_name:full}});
+   if(auth.error)throw auth.error;
+   form.remove();resolve(updated);
+  }catch(err){error.textContent='Could not save your name: '+(err.message||String(err));btn.disabled=false}
+ }));
+}
+
 function showBoostSignIn(client){
   mount.classList.remove('boost2-pending-choice');mount.classList.add('boost2-awaiting-auth');
   const message=el('b2message');
@@ -286,11 +320,15 @@ function showBoostSignIn(client){
     form.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0';
     const email=document.createElement('input');email.type='email';email.required=true;email.autocomplete='email';email.placeholder='Your email address';email.setAttribute('aria-label','Email address');email.style.cssText='padding:13px;border-radius:9px;border:1px solid #7da7b9;min-width:min(290px,100%);font:inherit';
     const submit=document.createElement('button');submit.type='submit';submit.textContent='Email My Sign-In Link';
-    form.append(email,submit);mount.insertBefore(form,document.getElementById('b2identity'));
+    const code=document.createElement('input');code.type='text';code.inputMode='numeric';code.autocomplete='one-time-code';code.placeholder='Enter verification code';code.setAttribute('aria-label','Email verification code');code.style.cssText='padding:13px;border-radius:9px;border:1px solid #7da7b9;min-width:210px;font:inherit';
+    const verify=document.createElement('button');verify.type='button';verify.textContent='Verify Code & Continue';
+    const codeGroup=document.createElement('div');codeGroup.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%';codeGroup.append(code,verify);
+    form.append(email,submit,codeGroup);mount.insertBefore(form,document.getElementById('b2identity'));
+    verify.addEventListener('click',async()=>{verify.disabled=true;try{const address=email.value.trim(),token=code.value.replace(/\s+/g,'');if(!address||!token)throw Error('Enter your email address and verification code.');const result=await client.auth.verifyOtp({email:address,token,type:'email'});if(result.error)throw result.error;message.textContent='Verified. Loading your BOOST pathway…';el('b2load').click();}catch(err){message.textContent='Verification failed: '+(err.message||String(err))}finally{verify.disabled=false}});
     form.addEventListener('submit',async(event)=>{
       event.preventDefault();submit.disabled=true;
       try{
-        const {error}=await client.auth.signInWithOtp({email:email.value.trim(),options:{shouldCreateUser:true,emailRedirectTo:location.origin+location.pathname}});
+        const {error}=await client.auth.signInWithOtp({email:email.value.trim(),options:{shouldCreateUser:true,emailRedirectTo:boostSignInRedirect()}});
         if(error)throw error;
         message.textContent='Check your email for a secure BOOST sign-in link. Open it in this browser to continue.';
       }catch(error){message.textContent='Unable to send your sign-in link: '+(error.message||String(error));}
@@ -538,7 +576,7 @@ document.getElementById('choices').addEventListener('click',(event)=>{
 },true);
 el('b2all').onclick=()=>document.querySelector('#choices').scrollIntoView({behavior:'smooth'});
 el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!location.pathname.startsWith('/BOOST_Pathway-Portal/'))throw Error('Open BOOST from its official portal address to sign in.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});const result=await client.auth.getSession();authUser=result.data?.session?.user;if(!authUser){document.documentElement.classList.remove('boost2-module-return');if(boost2PathwayRequested)showBoostSignIn(client);else el('b2message').textContent='Select a BOOST pathway below to begin.';return;}mount.classList.remove('boost2-awaiting-auth');
-const receiptMessage=await acceptCompletionReceipt(client,cfg.region||'Pinal County');const loaded=await client.rpc('boost_load_my_journey_for_region',{p_region:cfg.region||'Pinal County'});if(loaded.error)throw loaded.error;if(!loaded.data){snapshot={participant:{email:authUser.email||'',name:authUser.user_metadata?.full_name||''}};el('b2message').textContent='Welcome to BOOST! Your pathway is ready.';activate(sessionStorage.getItem('boost2_return_pathway')||'explore',false);return;}snapshot=loaded.data;try{const progress=await client.from('boost_module_progress').select('module_id,status,evidence').eq('user_id',authUser.id).eq('region',cfg.region||'Pinal County').eq('status','completed');if(!progress.error&&Array.isArray(progress.data)){snapshot.__cloudCompleted=progress.data.map(x=>x.module_id);const rd=progress.data.find(x=>x.module_id==='rapid-discover');if(rd?.evidence?.direction)snapshot.__rapidDirection=rd.evidence.direction;}}catch(e){console.warn('Module progress read:',e.message)}try{await checkPostEnrollmentAccess(client,cfg,result.data.session)}catch(e){console.warn('Enrollment access verification:',e.message);postEnrollmentAccess={unlocked:false,checked:false}}document.querySelectorAll('.demo-mark').forEach(b=>b.disabled=true);const pp=snapshot.participant||{},name=String(pp.name||snapshot.participant_name||'').trim(),email=String(pp.email||snapshot.participant_email||'').trim(),meta=authUser.user_metadata||{},profileName=[meta.first_name,meta.last_name].filter(Boolean).join(' ')||meta.full_name||'';const mismatch=email&&authUser.email&&norm(email)!==norm(authUser.email)||name&&profileName&&norm(name)!==norm(profileName);el('b2identity').hidden=false;el('b2identity').textContent='Progress belongs to: '+(name||'Name unavailable')+' • '+(mismatch?'⚠ Identity details do not match sign-in':email&&authUser.email?'✓ Signed-in email matches saved journey':'Identity match not fully verified');el('b2message').textContent=receiptMessage||'Authenticated Pinal BOOST journey loaded. Module results are saved by BOOST; this page displays them.';const params=new URLSearchParams(location.search);const urlPath=params.get('boost2_path');const savedPath=urlPath==='explore'||urlPath==='rapid'||urlPath==='ready'?urlPath:sessionStorage.getItem('boost2_return_pathway');const returning=!!savedPath;activate(savedPath||selected(snapshot)||'explore',returning);/* Preserve return context in the URL until the participant leaves the page. */}catch(err){el('b2message').textContent=err.message||String(err);}finally{button.disabled=false}};
+const receiptMessage=await acceptCompletionReceipt(client,cfg.region||'Pinal County');const loaded=await client.rpc('boost_load_my_journey_for_region',{p_region:cfg.region||'Pinal County'});if(loaded.error)throw loaded.error;if(!loaded.data){snapshot={participant:{email:authUser.email||'',name:authUser.user_metadata?.full_name||''}};snapshot=await boostCollectName(client,authUser,snapshot,cfg.region||'Pinal County');el('b2message').textContent='Welcome to BOOST! Your pathway is ready.';activate(requestedBoostPath()||selected(snapshot)||'explore',false);return;}snapshot=loaded.data;snapshot=await boostCollectName(client,authUser,snapshot,cfg.region||'Pinal County');try{const progress=await client.from('boost_module_progress').select('module_id,status,evidence').eq('user_id',authUser.id).eq('region',cfg.region||'Pinal County').eq('status','completed');if(!progress.error&&Array.isArray(progress.data)){snapshot.__cloudCompleted=progress.data.map(x=>x.module_id);const rd=progress.data.find(x=>x.module_id==='rapid-discover');if(rd?.evidence?.direction)snapshot.__rapidDirection=rd.evidence.direction;}}catch(e){console.warn('Module progress read:',e.message)}try{await checkPostEnrollmentAccess(client,cfg,result.data.session)}catch(e){console.warn('Enrollment access verification:',e.message);postEnrollmentAccess={unlocked:false,checked:false}}document.querySelectorAll('.demo-mark').forEach(b=>b.disabled=true);const pp=snapshot.participant||{},name=String(pp.name||snapshot.participant_name||'').trim(),email=String(pp.email||snapshot.participant_email||'').trim(),meta=authUser.user_metadata||{},profileName=[meta.first_name,meta.last_name].filter(Boolean).join(' ')||meta.full_name||'';const mismatch=email&&authUser.email&&norm(email)!==norm(authUser.email)||name&&profileName&&norm(name)!==norm(profileName);el('b2identity').hidden=false;el('b2identity').textContent='Progress belongs to: '+(name||'Name unavailable')+' • '+(mismatch?'⚠ Identity details do not match sign-in':email&&authUser.email?'✓ Signed-in email matches saved journey':'Identity match not fully verified');el('b2message').textContent=receiptMessage||'Authenticated Pinal BOOST journey loaded. Module results are saved by BOOST; this page displays them.';const params=new URLSearchParams(location.search);const urlPath=params.get('boost2_path');const savedPath=validBoostPath(urlPath)||requestedBoostPath();const returning=!!savedPath;activate(savedPath||selected(snapshot)||'explore',returning);/* Preserve return context in the URL until the participant leaves the page. */}catch(err){el('b2message').textContent=err.message||String(err);}finally{button.disabled=false}};
 window.addEventListener('load',()=>{setTimeout(()=>el('b2load')?.click(),250)});
 })();
 </script>
