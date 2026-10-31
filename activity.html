@@ -324,6 +324,41 @@ function saveEvidence(evidence){
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function finish(){
+  // Module 1 is cross-origin: collect saved UI state by origin-checked message.
+  if(m==='module1'){
+    const child=await new Promise(resolve=>{
+      const requestId='m1-'+crypto.randomUUID(),timeout=setTimeout(()=>{window.removeEventListener('message',receive);resolve(null)},4000);
+      function receive(event){
+        if(event.source!==frame.contentWindow||event.origin!==embeddedModuleOrigin||
+           event.data?.type!=='pinal-boost-module1-current'||event.data?.requestId!==requestId)return;
+        clearTimeout(timeout);window.removeEventListener('message',receive);resolve(event.data.state);
+      }
+      window.addEventListener('message',receive);
+      frame.contentWindow.postMessage({type:'pinal-boost-module1-collect',requestId},embeddedModuleOrigin);
+    });
+    const mod=child?.module1;
+    if(!mod||!Array.isArray(mod.selected)||!mod.selected.length||
+       Object.keys(mod.scores||{}).length!==6){
+      window.BOOSTPortal?.toast?.('Module 1 has not returned complete saved evidence. No changes were made.');
+      return;
+    }
+    const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.module1={...(j.modules.module1||{}),interestScores:mod.scores,careers:mod.selected,
+      topInterests:mod.topInterests||[],mindmap:mod.mindmap||null,
+      alignmentProfile:mod.alignmentProfile||null,completedAt:mod.completedAt||new Date().toISOString()};
+    j.progress.module1='complete';writeJourney(j);
+    finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
+    let cloudSaved=false;
+    try{await window.PinalBOOSTCloud?.ready?.();cloudSaved=await window.PinalBOOSTCloud?.saveNow?.()===true}catch(err){console.warn('Module 1 cloud save',err)}
+    if(!cloudSaved){
+      finishBtn.disabled=false;finishBtn.textContent='Retry Save & Return to BOOST';
+      window.BOOSTPortal?.toast?.('Module 1 information is retained in this browser. Cloud saving was not confirmed; do not close this page.');
+      return;
+    }
+    const target=new URL(safeReturn);target.searchParams.set('boost_complete',requestedModule);
+    if(receipt)target.searchParams.set('boost_nonce',receipt);
+    location.assign(target.toString());return;
+  }
   const evidence=extractSafeEvidence();
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
