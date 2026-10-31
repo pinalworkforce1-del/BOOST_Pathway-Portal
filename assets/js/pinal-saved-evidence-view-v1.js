@@ -3,7 +3,7 @@
 (()=>{
   'use strict';
   const requested=new URLSearchParams(location.search).get('m');
-  const id=requested==='module3'||requested==='module4'?requested:null;
+  const id=['module2','module3','module4'].includes(requested)?requested:null;
   if(!id||!/activity\.html$/i.test(location.pathname))return;
 
   const style=document.createElement('style');
@@ -69,13 +69,15 @@
       const details=document.createElement('details');
       details.open=true;
       const heading=document.createElement('summary');
-      heading.textContent='Your saved '+(id==='module3'?'Career Mobility':'Career Decision')+' evidence';
+      heading.textContent='Your saved '+({module2:'Career Validation',module3:'Career Mobility',module4:'Career Decision'}[id])+' evidence';
       const sub=document.createElement('p');sub.className='pinalSub';
       sub.textContent=reviewing
         ?'Saved answers were found. BOOST also records that this module needs review because earlier evidence changed.'
         :'These are your original saved answers from BOOST. They are shown here because the separate module page may not load the same saved browser state.';
       const grid=document.createElement('div');grid.className='pinalGrid';
-      const keys=id==='module3'
+      const keys=id==='module2'
+        ?['currentHourlyWage','wageBaseline','careers','validationBySoc','fields','completedAt']
+        :id==='module3'
         ?['startingPoint','currentWage','careers','careerDecisionsBySoc','selfAssessment','workPreferences','skillEvidence','skillLab','skillAlignmentBySoc','newExplorations','workNote','completedAt']
         :['careerTitle','selectedSoc','route','participantDirection','answers','decision','wageComparison','preparationIntel','resultSnapshot','completedAt'];
       for(const key of keys){const el=field(key,saved[key]);if(el)grid.appendChild(el)}
