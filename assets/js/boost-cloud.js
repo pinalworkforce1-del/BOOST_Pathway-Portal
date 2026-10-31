@@ -127,6 +127,47 @@
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
   }
+  // Targeted industry completion write: rebase only this module onto the latest
+  // server journey, rather than overwriting newer work from another tab.
+  async function saveIndustryCompletion(moduleId,evidence){
+    if(!/^industry-(healthcare|trades|manufacturing|it|cdl)$/.test(moduleId)||!evidence?.completed)return false;
+    const c=getClient();if(!c)return false;
+    const session=(await c.auth.getSession()).data.session;
+    if(!session?.user)return false;
+    const operation=async()=>{
+      for(let attempt=0;attempt<2;attempt++){
+        const current=await loadVersioned();
+        if(!current||!Number.isFinite(Number(current.revision)))return false;
+        const remote=current.journey&&typeof current.journey==='object'?current.journey:{};
+        const existing=remote.modules?.[moduleId];
+        if(existing?.completedAt&&existing?.source==='industry_challenge_verified_handoff'&&existing?.completedAt===evidence.completedAt){
+          cloudRevision=current.revision;cloudBaseline=stable(remote);cloudReady=true;
+          return true;
+        }
+        const payload=mergeJourney(remote,{
+          schema_version:2,region:REGION,
+          modules:{[moduleId]:{...evidence,module:moduleId,completedAt:evidence.completedAt||new Date().toISOString()}},
+          progress:{[moduleId]:'complete'},
+          updated_at:new Date().toISOString()
+        });
+        const response=await c.rpc('boost_pinal_save_if_revision',{p_journey:payload,p_revision:current.revision});
+        if(response.error){console.warn('Industry cloud save RPC failed',response.error.message);return false;}
+        if(response.data?.saved){
+          const server=response.data.journey||payload;
+          cloudRevision=response.data.revision;cloudBaseline=stable(server);cloudReady=true;
+          // Preserve all unsynced browser data in a recovery copy before adopting cloud state.
+          if(stable(readJourney())!==stable(server))retainBrowserCopy('industry-cloud-rebase');
+          restore(server);
+          window.dispatchEvent(new CustomEvent('boost-cloud-status',{detail:{state:'saved',region:REGION}}));
+          return true;
+        }
+      }
+      return false;
+    };
+    const next=saveQueue.then(operation,operation);
+    saveQueue=next.catch(()=>false);
+    return next;
+  }
   // Serialize explicit module saves and automatic storage saves in the same tab.
   // Otherwise two callers can race using the same revision token.
   function saveNow(){
@@ -226,7 +267,7 @@
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
-  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
+  window.PinalBOOSTCloud={configured:configured,saveIndustryCompletion:saveIndustryCompletion,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
   bootstrapPromise=bootstrap();
 })();
 
