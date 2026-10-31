@@ -630,6 +630,31 @@ window.addEventListener('message',event=>{
   finishBtn.textContent='✓ Save Results & Return to BOOST';
   if(event.data.saveRequested)finish().catch(err=>console.warn('Industry save request failed',err));
 });
+function recoverSavedIndustryCompletion(){
+  if(!c.industry||industryCompletionEvidence)return;
+  try{
+    // Industry pages share the BOOST GitHub Pages origin. Only accept matching, completed records.
+    const keyByModule={healthcare:'healthcare',trades:'skilled-trades',manufacturing:'manufacturing',it:'it',cdl:'cdl'};
+    const sector=keyByModule[m];
+    if(!sector)return;
+    const storage=frame.contentWindow?.localStorage;
+    const data=JSON.parse(storage?.getItem('boostProgress')||'{}');
+    const result=data['skill-challenge-'+sector];
+    if(!result?.completed||!result.completedAt||!Number.isFinite(Number(result.alignment)))return;
+    industryCompletionEvidence={
+      completed:true,sector,alignment:Number(result.alignment),fitBefore:result.fitBefore??null,
+      fitAfter:result.fitAfter??null,participant:result.participant||'',
+      completedAt:result.completedAt,recoveredFromSavedChallenge:true
+    };
+    finishBtn.disabled=false;
+    finishBtn.textContent='✓ Save Completed Challenge & Return to BOOST';
+    window.BOOSTPortal?.toast?.('Your previously completed industry challenge was recovered. Use Save to keep it in BOOST.');
+  }catch(err){console.warn('Industry completion recovery unavailable',err)}
+}
+if(c.industry){
+  frame.addEventListener('load',()=>setTimeout(recoverSavedIndustryCompletion,300));
+  setTimeout(recoverSavedIndustryCompletion,1200);
+}
 finishBtn.addEventListener('click',finish);
 window.addEventListener('message',event=>{
  if(m!=='module3'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||
