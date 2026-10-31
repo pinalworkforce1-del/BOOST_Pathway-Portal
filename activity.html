@@ -359,6 +359,39 @@ async function finish(){
     if(receipt)target.searchParams.set('boost_nonce',receipt);
     location.assign(target.toString());return;
   }
+  if(m==='module2'){
+    const expectedOrigin=new URL(c.src).origin;
+    const result=await new Promise(resolve=>{
+      const requestId='m2-'+crypto.randomUUID();
+      const timeout=setTimeout(()=>{window.removeEventListener('message',onAnswer);resolve(null)},6000);
+      function onAnswer(event){
+        if(event.source!==frame.contentWindow||event.origin!==expectedOrigin||
+           event.data?.type!=='pinal-boost-module2-current'||event.data.requestId!==requestId)return;
+        clearTimeout(timeout);window.removeEventListener('message',onAnswer);resolve(event.data.module2||null);
+      }
+      window.addEventListener('message',onAnswer);
+      frame.contentWindow.postMessage({type:'pinal-boost-module2-collect',requestId},expectedOrigin);
+    });
+    const rows=result?.validationBySoc||{};
+    if(!result?.completedAt||Object.keys(rows).length===0){
+      window.BOOSTPortal?.toast?.('Module 2 saved answers are not ready for cloud completion. Keep the module open and retry.');
+      return;
+    }
+    const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.module2={...(j.modules.module2||{}),...result,completedAt:result.completedAt};
+    j.progress.module2='complete';writeJourney(j);
+    finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
+    let cloudSaved=false;
+    try{await window.PinalBOOSTCloud?.ready?.();cloudSaved=await window.PinalBOOSTCloud?.saveNow?.()===true}catch(err){console.warn('Module 2 cloud save failed',err)}
+    if(!cloudSaved){
+      finishBtn.disabled=false;finishBtn.textContent='Retry Save & Return to BOOST';
+      window.BOOSTPortal?.toast?.('Cloud save not confirmed. Your answers remain in this browser; retry the save.');
+      return;
+    }
+    const target=new URL(safeReturn);target.searchParams.set('boost_complete',requestedModule);
+    if(receipt)target.searchParams.set('boost_nonce',receipt);
+    location.assign(target.toString());return;
+  }
   const evidence=extractSafeEvidence();
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
@@ -394,6 +427,13 @@ async function finish(){
   location.assign(target.toString());
 }
 
+let module2Finishing=false;
+window.addEventListener('message',event=>{
+ if(m!=='module2'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||
+    event.data?.type!=='pinal-boost-module2-finish-request'||module2Finishing)return;
+ module2Finishing=true;
+ finish().catch(err=>console.warn('Module 2 finish failed',err)).finally(()=>{module2Finishing=false});
+});
 const embeddedModuleOrigin = m==='module1'?new URL(c.src).origin:null;
 let module1Finishing=false;
 window.addEventListener('message',event=>{
