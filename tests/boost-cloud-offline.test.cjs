@@ -41,7 +41,7 @@ async function browser(db,{withSession=true,initial=null,storage=null}={}){
   const window={BOOST_CONFIG:{cloudEnabled:true,supabaseUrl:'https://offline.invalid',supabaseAnonKey:'offline-only',region:'Pinal County'},supabase:{createClient(){return c}},dispatchEvent(e){events.push({type:e.type,detail:e.detail});},addEventListener(){}};
   const document={readyState:'loading',addEventListener(){},querySelector(){return null;},getElementById(){return null;}};
   const location={hostname:'offline.invalid',pathname:'/unit-test',origin:'https://offline.invalid',href:'https://offline.invalid/unit-test'};
-  const context={window,document,Storage,localStorage,sessionStorage,location,crypto:webcrypto,Uint8Array,Date,JSON,CustomEvent:class{constructor(type,opts){this.type=type;this.detail=opts?.detail}},setTimeout,clearTimeout,console,fetch:async()=>{throw Error('Network forbidden in offline QA')}};
+  const context={window,document,Storage,localStorage,sessionStorage,location,navigator:{onLine:true},crypto:webcrypto,Uint8Array,Date,JSON,CustomEvent:class{constructor(type,opts){this.type=type;this.detail=opts?.detail}},setTimeout,clearTimeout,console,fetch:async()=>{throw Error('Network forbidden in offline QA')}};
   vm.runInNewContext(source,context,{filename:'assets/js/boost-cloud.js'});
   assert.ok(window.PinalBOOSTCloud,'Draft client must export PinalBOOSTCloud');
   await window.PinalBOOSTCloud.ready();
