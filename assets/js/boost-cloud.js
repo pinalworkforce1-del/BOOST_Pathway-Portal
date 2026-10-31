@@ -120,7 +120,9 @@
       window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'conflict',message:'Newer cloud progress or a verification issue prevented this save. Your device copy has been retained.'}}));
       console.warn('Pinal BOOST cloud save rejected',result.error?.message||result.data?.reason);return false;
     }
-    cloudRevision=result.data.revision;cloudBaseline=stable(payload);
+    const serverJourney=result.data.journey||payload;
+    cloudRevision=result.data.revision;cloudBaseline=stable(serverJourney);
+    if(stable(serverJourney)!==stable(payload))restore(serverJourney);
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
   }
