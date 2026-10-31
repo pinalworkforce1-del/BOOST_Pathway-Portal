@@ -395,6 +395,13 @@ async function finish(){
 }
 
 const embeddedModuleOrigin = m==='module1'?new URL(c.src).origin:null;
+let module1Finishing=false;
+window.addEventListener('message',event=>{
+ if(m!=='module1'||event.source!==frame.contentWindow||event.origin!==embeddedModuleOrigin||
+    event.data?.type!=='pinal-boost-module1-finish-request'||module1Finishing)return;
+ module1Finishing=true;
+ finish().catch(err=>console.warn('Module 1 completion request failed',err)).finally(()=>{module1Finishing=false});
+});
 window.addEventListener('message',function(event){
  if(m!=='module1'||event.source!==frame.contentWindow||event.origin!==embeddedModuleOrigin)return;
  if(event.data?.type!=='pinal-boost-module1-request-state')return;
