@@ -407,7 +407,11 @@ function industryComplete(j){const id=alignedIndustry(j);return id?hasEvidence(j
 function rapidDirection(j){return j?.__rapidDirection||j?.modules?.['rapid-discover']?.direction||null}
 function state(j,id,blocked){
  if(id==='optional')return {label:'Explore More',cls:'ok',block:false,canLaunch:true};
- if(id==='handoff')return {label:'Coach Brief — Snapshot for Discussion; Revisions Require Re-review',cls:'ok',block:false,canLaunch:true};
+ if(id==='handoff'){
+   const ready=!!j?.modules?.coachAppointmentPrep?.readyAt&&j?.progress?.coachAppointmentPrep==='complete';
+   const eligible=hasEvidence(j,'module5');
+   return ready?{label:'Completed — Ready for Coach Appointment',cls:'ok',block:false,canLaunch:true}:eligible?{label:'Available — Complete Appointment Prep',cls:'warn',block:false,canLaunch:true}:{label:'Available after Skill Investment',cls:'lock',block:true,canLaunch:false};
+ }
  if(id==='boostcert'||id==='r2wcert')return {label:'Certificate — Eligibility Check',cls:'unknown',block:false,canLaunch:false};
  if(chosen==='ready'&&id==='financial')return {label:hasEvidence(j,'financial')?'Completed — Review Again':'Available Now — Start Financial Habits',cls:hasEvidence(j,'financial')?'ok':'warn',block:!hasEvidence(j,'financial'),canLaunch:true};
  if(chosen==='ready'&&id==='ai')return hasEvidence(j,'financial')?{label:hasEvidence(j,'ai')?'Completed — Review Again':'Available — Start AI & You',cls:hasEvidence(j,'ai')?'ok':'warn',block:true,canLaunch:true}:{label:'Locked — Complete Financial Habits First',cls:'lock',block:true,canLaunch:false};
