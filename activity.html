@@ -109,6 +109,18 @@ function applyCarryForward(){
     if(m==='module3'){
       const cs=previousCareers(j);if(cs[0]){setValue(d,'primaryQuery',titleOf(cs[0]));setValue(d,'primarySoc',socOf(cs[0]));}if(cs[1]){setValue(d,'secondaryQuery',titleOf(cs[1]));setValue(d,'secondarySoc',socOf(cs[1]));}
       try{if(typeof w.applyHandoffToInputs==='function')w.applyHandoffToInputs()}catch(_){}
+      // Current/recent wage is collected in Module 2. Carry it forward; never invent a wage.
+      const wage=Number(mods.module2?.currentHourlyWage||mods.module2?.wageBaseline?.hourly||j.participant?.currentHourlyWage||0);
+      const input=d.getElementById('currentWage');
+      if(input&&Number.isFinite(wage)&&wage>0&&wage<=250&&!Number(input.value)){
+        input.value=String(wage);input.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      if(input&&!d.getElementById('boostWageCarryNote')){
+        const note=d.createElement('small');note.id='boostWageCarryNote';
+        note.textContent='Carried forward from Career Validation (Module 2). Change only if the earlier wage was incorrect or has changed.';
+        note.style.cssText='display:block;color:#356378;margin-top:5px';
+        input.insertAdjacentElement('afterend',note);
+      }
     }
     if(m==='module4'){
       const cs=previousCareers(j),first=cs[0]||{};['career','careerTitle','targetCareer','targetOccupation','occupation'].forEach(id=>setValue(d,id,titleOf(first)));['careerSoc','targetSoc','soc'].forEach(id=>setValue(d,id,socOf(first)));
