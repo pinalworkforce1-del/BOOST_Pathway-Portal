@@ -44,7 +44,7 @@
     const map=parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}");
     const completed=parse(COMPLETED_KEY,"[]");
     const journey=readJourney();
-    return !!(map.pathway||Object.keys(map.complete||{}).length||completed.length||localStorage.getItem(PATH_KEY)||Object.keys(journey.modules||{}).length||Object.keys(journey.progress||{}).length);
+    return !!(Object.keys(map.complete||{}).length||completed.length||Object.keys(journey.modules||{}).length||Object.keys(journey.progress||{}).length);
   }
   function mergeJourney(base,overlay){
     base=base&&typeof base==="object"?base:{};overlay=overlay&&typeof overlay==="object"?overlay:{};
