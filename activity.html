@@ -654,6 +654,15 @@ if(c.industry){
   frame.addEventListener('load',()=>setTimeout(recoverSavedIndustryCompletion,300));
   setTimeout(recoverSavedIndustryCompletion,1200);
 }
+if(c.industry){
+  frame.addEventListener('load',()=>{
+    const saved=readJourney()?.modules?.[requestedModule];
+    if(saved?.completed){
+      industryCompletionEvidence=saved;
+      frame.contentWindow.postMessage({type:'boost-industry-restore-report',module:requestedModule,evidence:saved},new URL(c.src).origin);
+    }
+  });
+}
 finishBtn.addEventListener('click',finish);
 window.addEventListener('message',event=>{
  if(m!=='module3'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||
