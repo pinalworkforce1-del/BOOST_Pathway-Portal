@@ -359,6 +359,18 @@ async function finish(){
   location.assign(target.toString());
 }
 
+const embeddedModuleOrigin = m==='module1'?new URL(c.src).origin:null;
+window.addEventListener('message',function(event){
+ if(m!=='module1'||event.source!==frame.contentWindow||event.origin!==embeddedModuleOrigin)return;
+ if(event.data?.type!=='pinal-boost-module1-request-state')return;
+ const journey=readJourney(),saved=journey?.modules?.module1;
+ if(!saved||!Array.isArray(saved.careers)||!saved.careers.length)return;
+ event.source.postMessage({type:'pinal-boost-module1-restore',version:1,state:{
+   module1:{scores:saved.interestScores||{},selected:saved.careers,topInterests:saved.topInterests||[],
+     mindmap:saved.mindmap||null,alignmentProfile:saved.alignmentProfile||null,completedAt:saved.completedAt||null},
+   participant:{name:journey.participant?.name||''}
+ }},embeddedModuleOrigin);
+});
 frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI();injectModule3BottomSave()},250)});
 let module5AutoFinishing=false;
 window.addEventListener('message',event=>{
