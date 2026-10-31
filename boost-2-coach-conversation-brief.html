@@ -173,8 +173,14 @@
   const j=read();
   if(!hasRequired(j)){status.textContent='Finish Skill Investment before marking appointment preparation complete.';return}
   const m=j.modules||{},m4=m.module4||{},m5=m.module5||{},m2=m.module2||{},m3=m.module3||{};
+  const sections=[...document.querySelectorAll('#conversationBrief .conversation-section')].map(section=>({
+    heading:section.querySelector('h3')?.textContent?.trim()||'Saved evidence',
+    lines:[...section.querySelectorAll('p')].map(p=>p.textContent.trim()).filter(Boolean)
+  })).filter(x=>x.lines.length);
+  if(sections.length<5){status.textContent='The full conversation brief has not finished loading. Please reopen it and try again; no information was cleared.';return}
   const report={
    readyAt:new Date().toISOString(),pathway:'explore',source:'participant_appointment_prep',
+   evidenceSections:sections,evidenceVersion:1,
    selectedCareer:m5.careerTitle||m4.careerTitle||'',
    careerDecision:m4.route||m4.participantDirection||'',
    trainingProgram:m5.programName||'',trainingProvider:m5.provider||'',
