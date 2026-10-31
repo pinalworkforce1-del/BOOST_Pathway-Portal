@@ -137,7 +137,7 @@
     const operation=async()=>{
       for(let attempt=0;attempt<2;attempt++){
         const current=await loadVersioned();
-        if(!current||!Number.isFinite(Number(current.revision)))return false;
+        if(!current||!Object.prototype.hasOwnProperty.call(current,'revision'))return false;
         const remote=current.journey&&typeof current.journey==='object'?current.journey:{};
         const existing=remote.modules?.[moduleId];
         if(existing?.completedAt&&existing?.source==='industry_challenge_verified_handoff'&&existing?.completedAt===evidence.completedAt){
