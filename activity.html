@@ -54,6 +54,8 @@ const frame=document.getElementById('activityFrame');
 const finishBtn=document.getElementById('finishBtn');
 const backTopic=document.getElementById('backTopic');
 let interactionCount=0;
+let industryCompletionEvidence=null;
+
 
 document.title=c.title+' | BOOST';
 document.getElementById('activityTitle').textContent=c.title;
@@ -324,6 +326,36 @@ function saveEvidence(evidence){
 }
 function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 async function finish(){
+  if(c.industry){
+    if(!industryCompletionEvidence){
+      window.BOOSTPortal?.toast?.('Complete the industry challenge and open its results before saving.');
+      return false;
+    }
+    finishBtn.disabled=true;
+    finishBtn.textContent='Saving your industry challenge…';
+    const evidence={...industryCompletionEvidence,module:requestedModule,source:'industry_challenge_verified_handoff',capturedAt:new Date().toISOString()};
+    try{
+      saveEvidence(evidence);
+      await window.PinalBOOSTCloud?.ready?.();
+      const saved=await window.PinalBOOSTCloud?.saveNow?.()===true;
+      if(!saved)throw new Error('Cloud save not confirmed');
+      const origin=new URL(c.src).origin;
+      try{frame.contentWindow.postMessage({type:'boost-industry-save-status',status:'saved'},origin)}catch(_){}
+      const target=new URL(safeReturn);
+      target.searchParams.set('boost_complete',requestedModule);
+      if(receipt)target.searchParams.set('boost_nonce',receipt);
+      location.assign(target.toString());
+      return true;
+    }catch(err){
+      console.warn('Industry challenge save failed',err);
+      finishBtn.disabled=false;
+      finishBtn.textContent='Retry Save Results & Return to BOOST';
+      window.BOOSTPortal?.toast?.('Cloud save not confirmed. Keep the challenge open and retry saving.');
+      try{frame.contentWindow.postMessage({type:'boost-industry-save-status',status:'error'},new URL(c.src).origin)}catch(_){}
+      return false;
+    }
+  }
+
   // Module 1 is cross-origin: collect saved UI state by origin-checked message.
   if(m==='module1'){
     const child=await new Promise(resolve=>{
@@ -587,6 +619,16 @@ window.addEventListener('message',event=>{
     finishBtn.textContent='✓ Save Results & Return to BOOST';
     console.warn('BOOST Module 5 completion handoff failed',err);
   });
+});
+window.addEventListener('message',event=>{
+  if(!c.industry||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin)return;
+  if(event.data?.type!=='boost-industry-challenge-completed' || event.data.module!==requestedModule)return;
+  const evidence=event.data.evidence;
+  if(!evidence||evidence.completed!==true||!Number.isFinite(evidence.alignment))return;
+  industryCompletionEvidence=evidence;
+  finishBtn.disabled=false;
+  finishBtn.textContent='✓ Save Results & Return to BOOST';
+  if(event.data.saveRequested)finish().catch(err=>console.warn('Industry save request failed',err));
 });
 finishBtn.addEventListener('click',finish);
 window.addEventListener('message',event=>{
