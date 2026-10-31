@@ -328,8 +328,19 @@ async function finish(){
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
   saveEvidence(evidence);
-  const cloudAttempt=(async()=>{try{await window.PinalBOOST?.save?.();await window.PinalBOOSTCloud?.saveNow?.()}catch(e){console.warn('BOOST cloud save did not finish before return',e)}})();
-  await Promise.race([cloudAttempt,wait(1800)]);
+  // A completion receipt must never be issued before the canonical cloud save succeeds.
+  // Keep the module open and its local answers intact when verification is unavailable.
+  let saved=false;
+  try{
+    await window.PinalBOOSTCloud?.ready?.();
+    saved=await window.PinalBOOSTCloud?.saveNow?.()===true;
+  }catch(err){console.warn('BOOST verified save failed',err)}
+  if(!saved){
+    finishBtn.disabled=false;
+    finishBtn.textContent='Retry Save & Return to BOOST';
+    window.BOOSTPortal?.toast?.('Your answers are retained on this device, but cloud saving is not confirmed. Check your connection, then retry or refresh and sign in.');
+    return;
+  }
   const target=new URL(safeReturn);if(target.origin!==location.origin){finishBtn.disabled=false;finishBtn.textContent='✓ Save Results & Return to BOOST';return}
   target.searchParams.set('boost_complete',requestedModule);if(receipt)target.searchParams.set('boost_nonce',receipt);
   finishBtn.textContent='✓ Saved — returning to BOOST…';
