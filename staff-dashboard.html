@@ -136,11 +136,11 @@ function phaseGroups(r){
  const p=pathKind(r);
  if(p==='career')return [
   {title:'Pre-Enrollment · Career Exploration',items:['module1','module2','module3','module4','industry','module5']},
-  {title:'Coach Appointment · Intake Handoff',items:['handoff']},
+  {title:'Coach Appointment · Pre-Enrollment',items:['handoff']},
   {title:'Post-Enrollment · Workforce Readiness',items:['financial','ai','softskills','resume','interview']}];
  if(p==='rapid')return [
   {title:'Pre-Enrollment · Rapid Reemployment',items:['rapid-discover','skillmobility','jobsearch']},
-  {title:'Coach Appointment · Intake Handoff',items:['rapid-coach-prep']},
+  {title:'Coach Appointment · Pre-Enrollment',items:['rapid-coach-prep']},
   {title:'Post-Enrollment · Workforce Readiness',items:['financial','ai','softskills','resume','interview']}];
  if(p==='ready')return [{title:'Employment Ready · Work Readiness',items:['ai','financial','softskills','resume','interview']}];
  return [];
@@ -152,9 +152,9 @@ function coachPrepReady(r,id){
  if(id==='rapid-coach-prep'&&path==='rapid')return validated(r,'jobsearch');
  return false;
 }
-function stageEvidenceAvailable(r,id){return id==='handoff'||id==='rapid-coach-prep'?!!handoffs.get(String(r.journey_id)):id==='softskills'||id==='resume'||id==='interview'?!!r.ready2work:validated(r,id)}
+function stageEvidenceAvailable(r,id){return id==='handoff'||id==='rapid-coach-prep'?coachPrepReady(r,id):id==='softskills'||id==='resume'||id==='interview'?!!r.ready2work:validated(r,id)}
 function stageStatus(r,id){
- if(['handoff','rapid-coach-prep'].includes(id))return handoffs.has(String(r.journey_id))?'Handoff recorded':coachPrepReady(r,id)?'Ready for coach appointment':'Awaiting prerequisite completion';
+ if(['handoff','rapid-coach-prep'].includes(id))return coachPrepReady(r,id)?'Ready for coach appointment':'Awaiting prerequisite completion';
  if(['softskills','resume','interview'].includes(id)){
   const x=r.ready2work||{};
   const ok=id==='softskills'?Number(x.scenario_count||0)>=12:id==='resume'?!!x.resume_complete:!!x.interview_complete;
@@ -522,7 +522,13 @@ function openReady2Work(id){
  html+=section('Certificate','<p>'+(p.certificate_earned?'BOOST Work Ready Certificate earned.':'Certificate not yet earned.')+'</p>');
  $('drawerBody').innerHTML=html;$('drawerBack').classList.add('show');
 }
-function coachHandoffView(r,id){const h=handoffs.get(String(r.journey_id));return h?'<div class="completionOk"><strong>TalentSync handoff recorded ✓</strong><p>Intake handoff has been submitted. Enrollment approval and actual program enrollment should be verified in TalentSync.</p></div>':coachPrepReady(r,id)?'<div class="completionOk"><strong>Ready for coach appointment</strong><p>Pre-enrollment pathway requirements are complete. The participant can review the appointment preparation materials and bring relevant documents. This checkpoint will be marked complete after the TalentSync handoff is recorded.</p></div>':'<div class="notice">Awaiting completion of the prerequisite pathway modules before coach appointment preparation. The TalentSync handoff has not been recorded.</div>'}
+function coachHandoffView(r,id){
+ const ready=coachPrepReady(r,id);
+ const h=handoffs.get(String(r.journey_id));
+ return ready
+  ?'<div class="completionOk"><strong>Ready for coach appointment</strong><p>Required pre-enrollment pathway work is complete. Review the participant’s saved findings and appointment preparation materials during intake. Appointment attendance and enrollment are not confirmed by this status.</p></div>'+(h?'<div class="notice">A separate TalentSync transfer is recorded. Verify enrollment status in TalentSync; transfer alone does not verify that the appointment occurred.</div>':'')
+  :'<div class="notice">Coach appointment preparation will become available after the prerequisite pathway modules are completed. The appointment is a pre-enrollment step.</div>';
+}
 async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{if(moduleId==='handoff'||moduleId==='rapid-coach-prep'){$('drawerBody').innerHTML=coachHandoffView(r,moduleId);return;}if(['softskills','resume','interview'].includes(moduleId)){$('drawerBody').innerHTML='<div class="notice">Ready 2 Work status: '+esc(stageStatus(r,moduleId))+'</div><p>Use View Ready 2 Work Results for available scenario, résumé, and interview evaluations. Detailed module-level viewer integration is pending.</p>';return;}const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+(moduleId==='industry'&&(!rows||!rows.length)&&ev&&Object.values(ev).some(v=>v?.completed)?'<div class="completionOk"><strong>Saved completion evidence ✓</strong><span>Industry challenge results are present in the participant journey. A separate validated completion record has not been found.</span></div>':completionSummary(rows,moduleId))+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':moduleId==='module4'?'Participant Decision Report & Coach Action':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):moduleId==='module4'?module4DecisionView(ev):moduleId==='industry'?industryCoachView(ev):['module1','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 function intakeRosieAdd(text,who='bot'){const c=$('intakeRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.textContent=String(text||'');c.appendChild(d);c.scrollTop=c.scrollHeight}
 function intakeRosieQuick(){const q=$('intakeRosieQuick');if(!q)return;q.innerHTML='';const items=[['Adult Eligibility','Analyze Adult eligibility separately from Priority of Service. Show supported facts, missing verification, and policy basis.'],['DW Category','Analyze Dislocated Worker eligibility and identify the likely category or competing categories, supported facts, missing verification, and policy basis.'],['Priority of Service','Analyze Adult Priority of Service using only documented facts and identify missing verification.'],["What's Missing?",'List the eligibility facts or documentation still missing before staff can make a determination.'],['Draft Intake Note','Draft a professional intake note using BOOST outcomes and documented eligibility facts. Do not invent anything. Flag pending verification.'],['Prep for Intake','Summarize the BOOST career story and the most important Adult/DW eligibility and Priority of Service questions to resolve at intake.']];items.forEach(([label,prompt])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>intakeRosieAsk(prompt);q.appendChild(b)})}
