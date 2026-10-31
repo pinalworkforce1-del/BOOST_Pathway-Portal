@@ -25,7 +25,7 @@
 <div class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/boost-config.js?v=20260908f"></script>
-<script src="assets/js/boost-cloud.js?v=20260908f"></script>
+<script src="assets/js/boost-cloud.js?v=20261031-industry-revision-save"></script>
 <script src="assets/js/config.js?v=20261031-mod3-verified-save"></script>
 <script src="assets/js/portal.js?v=20260926-progression2"></script>
 <script>
@@ -335,9 +335,8 @@ async function finish(){
     finishBtn.textContent='Saving your industry challenge…';
     const evidence={...industryCompletionEvidence,module:requestedModule,source:'industry_challenge_verified_handoff',capturedAt:new Date().toISOString()};
     try{
-      saveEvidence(evidence);
       await window.PinalBOOSTCloud?.ready?.();
-      const saved=await window.PinalBOOSTCloud?.saveNow?.()===true;
+      const saved=await window.PinalBOOSTCloud?.saveIndustryCompletion?.(requestedModule,evidence)===true;
       if(!saved)throw new Error('Cloud save not confirmed');
       const origin=new URL(c.src).origin;
       try{frame.contentWindow.postMessage({type:'boost-industry-save-status',status:'saved'},origin)}catch(_){}
