@@ -13,6 +13,9 @@
   const WATCHED=new Set([MAP_KEY,MAP_OLD_KEY,COMPLETED_KEY,PATH_KEY,JOURNEY_KEY]);
   const originalSetItem=Storage.prototype.setItem;
   let client=null,saveTimer=null,saving=false,pending=false;
+  // The first authenticated cloud read must finish before any background journey save.
+  let cloudReady=false,cloudBaseline=null,cloudRevision=null;
+  let saveQueue=Promise.resolve(false), bootstrapPromise=Promise.resolve(false);
 
   function configured(){
     return !!(cfg.cloudEnabled&&cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase&&window.supabase.createClient);
@@ -42,7 +45,7 @@
     const map=parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}");
     const completed=parse(COMPLETED_KEY,"[]");
     const journey=readJourney();
-    return !!(map.pathway||Object.keys(map.complete||{}).length||completed.length||localStorage.getItem(PATH_KEY)||Object.keys(journey.modules||{}).length||Object.keys(journey.progress||{}).length);
+    return !!(Object.keys(map.complete||{}).length||completed.length||Object.keys(journey.modules||{}).length||Object.keys(journey.progress||{}).length);
   }
   function mergeJourney(base,overlay){
     base=base&&typeof base==="object"?base:{};overlay=overlay&&typeof overlay==="object"?overlay:{};
@@ -65,48 +68,93 @@
       portal:{
         map:parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}"),
         completed:parse(COMPLETED_KEY,"[]"),
-        pathway:localStorage.getItem(PATH_KEY)||""
+        pathway:localStorage.getItem(PATH_KEY)||existing.portal?.pathway||existing.selectedPathway||""
       },
       updated_at:new Date().toISOString()
     });
   }
+  // Canonical JSON guards against key ordering differences introduced by Postgres jsonb.
+  function stable(v){
+    return JSON.stringify((function sorted(value){
+      if(Array.isArray(value))return value.map(sorted);
+      if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,sorted(value[k])]));
+      return value;
+    })(v));
+  }
+  function retainBrowserCopy(label){
+    try{
+      if(!hasLocalProgress())return;
+      const backupKey='boost_pinal_browser_recovery_'+Date.now();
+      originalSetItem.call(localStorage,backupKey,JSON.stringify({saved_at:new Date().toISOString(),reason:label,journey:readJourney(),map:parse(MAP_KEY,'{}'),completed:parse(COMPLETED_KEY,'[]'),pathway:localStorage.getItem(PATH_KEY)||''}));
+      window.dispatchEvent(new CustomEvent('boost-cloud-status',{detail:{state:'browser-copy-retained',region:REGION}}));
+    }catch(err){console.warn('Could not retain a browser-only recovery copy',err)}
+  }
   function restore(journey){
-    if(!journey||typeof journey!=="object")return false;
-    const local=readJourney();
-    const merged=mergeJourney(journey,local);
-    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(merged));
-    const p=merged.portal||{};
+    if(!journey||typeof journey!=='object')return false;
+    // Cloud is authoritative on sign-in. Never overlay an older browser journey.
+    if(stable(readJourney())!==stable(journey))retainBrowserCopy('cloud-authoritative-restore');
+    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(journey));
+    const p=journey.portal||{};
     if(p.map)originalSetItem.call(localStorage,MAP_KEY,JSON.stringify(p.map));
     if(Array.isArray(p.completed))originalSetItem.call(localStorage,COMPLETED_KEY,JSON.stringify(p.completed));
     if(p.pathway)originalSetItem.call(localStorage,PATH_KEY,p.pathway);
     return true;
   }
-  async function saveNow(){
-    const c=getClient();if(!c)return false;
+  async function saveOnce(){
+    const c=getClient();if(!c||!cloudReady)return false;
     const session=(await c.auth.getSession()).data.session;
     if(!session||!session.user)return false;
+    const current=await loadVersioned();
+    if(current===undefined)return false;
+    if(stable(current.journey)!==cloudBaseline||current.revision!==cloudRevision){
+      retainBrowserCopy('newer-cloud-version-detected');cloudReady=false;
+      window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'conflict',message:'Your BOOST journey changed in another session. This browser will not overwrite it.'}}));
+      return false;
+    }
     const meta=session.user.user_metadata||{};
     const name=[meta.first_name,meta.last_name].filter(Boolean).join(" ")||meta.full_name||readJourney().participant?.name||"";
     const payload=snapshot(name,session.user.email||readJourney().participant?.email||"");
     originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(payload));
-    const result=await c.rpc("boost_save_my_journey_for_region",{p_region:REGION,p_journey:payload});
-    if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"save",message:result.error.message}}));return false}
+    const result=await c.rpc('boost_pinal_save_if_revision',{p_journey:payload,p_revision:cloudRevision});
+    if(result.error||!result.data?.saved){
+      retainBrowserCopy('versioned-cloud-save-rejected');cloudReady=false;
+      window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'conflict',message:'Newer cloud progress or a verification issue prevented this save. Your device copy has been retained.'}}));
+      console.warn('Pinal BOOST cloud save rejected',result.error?.message||result.data?.reason);return false;
+    }
+    const serverJourney=result.data.journey||payload;
+    cloudRevision=result.data.revision;cloudBaseline=stable(serverJourney);
+    if(stable(serverJourney)!==stable(payload))restore(serverJourney);
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
   }
+  // Serialize explicit module saves and automatic storage saves in the same tab.
+  // Otherwise two callers can race using the same revision token.
+  function saveNow(){
+    const next=saveQueue.then(()=>saveOnce(),()=>saveOnce());
+    saveQueue=next.catch(()=>false);
+    return next;
+  }
   function queueSave(){
-    if(!configured())return;
+    if(!configured()||!cloudReady)return;
     pending=true;clearTimeout(saveTimer);
     saveTimer=setTimeout(async function(){
       if(saving)return;saving=true;
       try{while(pending){pending=false;await saveNow()}}finally{saving=false}
     },450);
   }
+  async function loadVersioned(){
+    const c=getClient();if(!c)return undefined;
+    const result=await c.rpc('boost_pinal_load_versioned');
+    if(result.error||!result.data){
+      console.warn('Pinal BOOST revision load failed',result.error?.message||'No versioned response');
+      window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'load',message:'Could not verify cloud journey revision; saving is paused.'}}));
+      return undefined;
+    }
+    return result.data;
+  }
   async function loadMine(){
-    const c=getClient();if(!c)return null;
-    const result=await c.rpc("boost_load_my_journey_for_region",{p_region:REGION});
-    if(result.error){console.warn("Pinal BOOST cloud load failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"load",message:result.error.message}}));return undefined}
-    return result.data||null;
+    const current=await loadVersioned();
+    return current===undefined?undefined:current.journey;
   }
   Storage.prototype.setItem=function(key,value){
     originalSetItem.call(this,key,value);
@@ -120,6 +168,9 @@
     document.head.appendChild(s);
   }
   async function showGate(){
+    // The authenticated homepage has its own pathway-first sign-in UI.
+    // Do not overlay a second login form on top of that workflow.
+    if(document.getElementById('b2load'))return;
     if(!configured()||sessionStorage.getItem(DEVICE_KEY)==="1")return;
     const c=getClient();
     const session=(await c.auth.getSession()).data.session;
@@ -146,7 +197,16 @@
       verify.disabled=true;status.textContent="Verifying…";
       const result=await c.auth.verifyOtp({email:em,token:token,type:"email"});verify.disabled=false;
       if(result.error){status.textContent="That code could not be verified. "+result.error.message;window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_failed",message:result.error.message}}));return}
-      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_verified"}}));const remote=await loadMine();if(remote===undefined){status.textContent='Verified, but we could not load your saved journey. Please reload to retry.';return}if(remote)restore(remote);await saveNow();gate.remove();location.reload();
+      window.dispatchEvent(new CustomEvent('boost-auth-event',{detail:{type:'auth_code_verified'}}));
+      const versioned=await loadVersioned();
+      if(versioned===undefined){status.textContent='Verified, but we could not load your saved journey. Please reload to retry.';return}
+      const remote=versioned.journey;cloudRevision=versioned.revision;
+      if(remote){restore(remote);cloudBaseline=stable(remote);cloudReady=true;}
+      else if(hasLocalProgress()){
+        retainBrowserCopy('browser-only-work-before-first-cloud-save');
+        status.textContent='Verified. Browser-only progress needs review before its first cloud save; your work has been retained on this device.';return;
+      }else{cloudBaseline=stable(null);cloudReady=true;}
+      gate.remove();location.reload();
     };
     gate.querySelector("#boostDevice").onclick=function(){sessionStorage.setItem(DEVICE_KEY,"1");gate.remove()};
   }
@@ -155,13 +215,19 @@
     const c=getClient();
     const session=(await c.auth.getSession()).data.session;
     if(session&&session.user){
-      const remote=await loadMine();
-      if(remote!==undefined){if(remote)restore(remote);await saveNow();}
+      const versioned=await loadVersioned();
+      if(versioned!==undefined){
+        const remote=versioned.journey;cloudRevision=versioned.revision;
+        if(remote){restore(remote);cloudBaseline=stable(remote);cloudReady=true;}
+        else if(hasLocalProgress())retainBrowserCopy('unsynced-browser-only-work');
+        else{cloudBaseline=stable(null);cloudReady=true;}
+      }
+      // Never write the journey back to Supabase just because a user signed in.
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
-  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore};
-  bootstrap();
+  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
+  bootstrapPromise=bootstrap();
 })();
 
 (function loadPinalAskRosie(){
