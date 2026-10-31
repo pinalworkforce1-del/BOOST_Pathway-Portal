@@ -301,8 +301,9 @@ async function boostCollectName(client,user,journey,region){
    const f=first.value.trim(),l=last.value.trim();if(!f||!l)throw Error('Enter your first and last name.');
    const full=f+' '+l,updated=JSON.parse(JSON.stringify(j));
    updated.participant={...(updated.participant||{}),name:full,email:user.email};updated.participant_name=full;
-   const saved=await client.rpc('boost_save_my_journey_for_region',{p_region:region,p_journey:updated});
-   if(saved.error)throw saved.error;
+   localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(updated));
+   const saved=await window.PinalBOOSTCloud?.saveNow?.();
+   if(!saved)throw Error('Your name is kept on this device; cloud saving requires revision verification.');
    const auth=await client.auth.updateUser({data:{first_name:f,last_name:l,full_name:full}});
    if(auth.error)throw auth.error;
    form.remove();resolve(updated);
@@ -580,11 +581,17 @@ function persistSelectedBoostPath(path){
  clean.selectedPathway=path;
  clean.portal={...(clean.portal||{}),pathway:path};
  boostPathSaveQueue=boostPathSaveQueue.then(async()=>{
-  const response=await boostPathSaveClient.rpc('boost_save_my_journey_for_region',{p_region:boostPathSaveRegion,p_journey:clean});
-  if(response.error)throw response.error;
+  // Pathway selection is saved through the same guarded client as module progress.
+  // Never replace the whole cloud journey from an out-of-date homepage snapshot.
+  const live=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
+  live.selectedPathway=path;
+  live.portal={...(live.portal||{}),pathway:path};
+  localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(live));
+  const ok=await window.PinalBOOSTCloud?.saveNow?.();
+  if(!ok)throw Error('Cloud save is paused pending journey revision verification');
   snapshot.selectedPathway=path;
   snapshot.portal={...(snapshot.portal||{}),pathway:path};
- }).catch(error=>{console.warn('BOOST pathway persistence:',error);el('b2message').textContent='Your pathway is open, but saving the pathway preference failed. Please try selecting it again.'});
+ }).catch(error=>{console.warn('BOOST pathway persistence:',error);el('b2message').textContent='Your pathway is open, but saving the pathway preference needs verification. Your selection is retained on this device.';});
 }
 function activate(key,returning=false){
  if(!authUser){document.body.classList.add('boost2-auth-gate');return;}
