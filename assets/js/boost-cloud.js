@@ -105,7 +105,7 @@
   async function loadMine(){
     const c=getClient();if(!c)return null;
     const result=await c.rpc("boost_load_my_journey_for_region",{p_region:REGION});
-    if(result.error){console.warn("Pinal BOOST cloud load failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"load",message:result.error.message}}));return null}
+    if(result.error){console.warn("Pinal BOOST cloud load failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"load",message:result.error.message}}));return undefined}
     return result.data||null;
   }
   Storage.prototype.setItem=function(key,value){
@@ -146,7 +146,7 @@
       verify.disabled=true;status.textContent="Verifying…";
       const result=await c.auth.verifyOtp({email:em,token:token,type:"email"});verify.disabled=false;
       if(result.error){status.textContent="That code could not be verified. "+result.error.message;window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_failed",message:result.error.message}}));return}
-      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_verified"}}));await saveNow();gate.remove();location.reload();
+      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_verified"}}));const remote=await loadMine();if(remote===undefined){status.textContent='Verified, but we could not load your saved journey. Please reload to retry.';return}if(remote)restore(remote);await saveNow();gate.remove();location.reload();
     };
     gate.querySelector("#boostDevice").onclick=function(){sessionStorage.setItem(DEVICE_KEY,"1");gate.remove()};
   }
@@ -156,8 +156,7 @@
     const session=(await c.auth.getSession()).data.session;
     if(session&&session.user){
       const remote=await loadMine();
-      if(remote){restore(remote);await saveNow();}
-      else await saveNow();
+      if(remote!==undefined){if(remote)restore(remote);await saveNow();}
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
@@ -167,8 +166,9 @@
 
 (function loadPinalAskRosie(){
   try{
-    if(!location.pathname.includes('/BOOST_Pathway-Portal/'))return;
-    if(!(/\/BOOST_Pathway-Portal\/$/.test(location.pathname)||/\/BOOST_Pathway-Portal\/index\.html$/i.test(location.pathname)||/\/BOOST_Pathway-Portal\/activity\.html$/i.test(location.pathname)))return;
+    const oldPortal=location.hostname==='pinalworkforce1-del.github.io'&&(/^\/BOOST_Pathway-Portal\/$/.test(location.pathname)||/^\/BOOST_Pathway-Portal\/(?:index|activity)\.html$/i.test(location.pathname));
+    const newPortal=location.hostname==='pinal.boostpathways.org'&&(location.pathname==='/'||/^\/(?:index|activity)\.html$/i.test(location.pathname));
+    if(!(oldPortal||newPortal))return;
     if(document.querySelector('script[data-pinal-ask-rosie]'))return;
     const context=document.createElement('script');
     context.src='assets/js/pinal-ask-rosie-context-v12.js?v=20260927-industryreview1';
