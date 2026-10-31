@@ -48,7 +48,7 @@ const m=raw==='investment'?'module5':raw;
 const c=cfg[m]||cfg.module1;
 const requestedModule=q.get('boost_module')||(c.industry?'industry-'+m:m);
 const returnUrl=q.get('boost_return')||'index.html';
-const safeReturn=(()=>{try{const url=new URL(returnUrl,location.href);return url.origin===location.origin&&url.pathname.startsWith('/BOOST_Pathway-Portal/')?url.toString():new URL('index.html',location.href).toString()}catch(_){return new URL('index.html',location.href).toString()}})();
+const safeReturn=(()=>{try{const url=new URL(returnUrl,location.href);return url.origin===location.origin&&(url.pathname.startsWith('/BOOST_Pathway-Portal/')||(location.hostname==='pinal.boostpathways.org'&&(url.pathname==='/'||url.pathname==='/index.html')))?url.toString():new URL('index.html',location.href).toString()}catch(_){return new URL('index.html',location.href).toString()}})();
 const receipt=q.get('boost_nonce')||'';
 const frame=document.getElementById('activityFrame');
 const finishBtn=document.getElementById('finishBtn');
@@ -223,7 +223,7 @@ function injectConnectedUI(){
     if(d.getElementById('pinalConnectedCarry'))return;
     const style=d.createElement('style');style.textContent='#pinalConnectedCarry{position:relative;z-index:2147480000;margin:0;padding:11px 15px;background:#eaf4f7;border-bottom:3px solid #e4a72b;color:#17324d;font:700 13px/1.45 Arial,sans-serif}#pinalConnectedMap{position:fixed;right:16px;bottom:16px;z-index:2147483000;padding:11px 15px;border-radius:999px;background:#0d2741;color:#fff;text-decoration:none;font:900 13px Arial,sans-serif;box-shadow:0 10px 25px #0005;border:2px solid #fff8}';d.head.appendChild(style);
     const bar=d.createElement('div');bar.id='pinalConnectedCarry';bar.innerHTML=carrySummary(readJourney());d.body.insertBefore(bar,d.body.firstChild);
-    const a=d.createElement('a');a.id='pinalConnectedMap';a.href='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';a.target='_top';a.textContent='My Journey Map';d.body.appendChild(a);
+    const a=d.createElement('a');a.id='pinalConnectedMap';a.href=new URL('index.html',location.href).toString();a.target='_top';a.textContent='My Journey Map';d.body.appendChild(a);
   }catch(e){console.warn('Connected BOOST panel could not be injected',e)}
 }
 function cleanChoice(t){return String(t||'').replace(/\s*[•·].*$/,'').replace(/\s+Remove\s*$/i,'').replace(/^\d+\.\s*/,'').trim()}
