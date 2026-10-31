@@ -463,7 +463,7 @@ function state(j,id,blocked){
  
  const fres=fresh(j,id),done=hasEvidence(j,id);
  // Live BOOST gates any later step while an earlier required review is outstanding.
- if(blocked){if(done)return {label:'Review Required — Earlier Module Changed',cls:'warn',block:true,canLaunch:true};return {label:'Locked — Earlier Review Required',cls:'lock',block:true,canLaunch:false};}
+ if(blocked){const reviewPending=['module2','module3','module4','module5'].some(k=>j?.progress?.[k]==='stale'||!!j?.staleModules?.[k]);if(done)return {label:reviewPending?'Review Required — Earlier Module Changed':'Locked — Complete Earlier Module First',cls:reviewPending?'warn':'lock',block:true,canLaunch:reviewPending};return {label:reviewPending?'Locked — Earlier Review Required':'Locked — Complete Earlier Module First',cls:'lock',block:true,canLaunch:false};}
  if(fres&&fres!=='fresh'&&fres!=='Status Not Verified')return {label:fres,cls:'warn',block:true,canLaunch:fres==='Review Needed'};
  if(fres==='Status Not Verified')return {label:done?'Completed • Review Status Unverified':'Review Status Unverified',cls:'unknown',block:true,canLaunch:false};
  if(done)return {label:'Completed',cls:'ok',block:false,canLaunch:true};
