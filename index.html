@@ -388,7 +388,7 @@ const sequences={explore:['module1','module2','module3','module4','industry','mo
 const parse=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'null')}catch{return null}};
 const norm=v=>String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
 function selected(j){const raw=String(j?.portal?.pathway||j?.portal?.map?.pathway||j?.selected_pathway||'').toLowerCase();if(raw.includes('rapid'))return'rapid';if(raw.includes('ready'))return'ready';if(raw==='explore'||raw.includes('career'))return'explore';return null}
-function hasEvidence(j,id){if(id==='rapid-coach-prep')return hasEvidence(j,'jobsearch');if(j?.__cloudCompleted?.includes(id))return true;if(id==='industry')return ['healthcare','trades','manufacturing','it','cdl'].some(n=>hasEvidence(j,'industry-'+n));if(id==='financial_ai')return hasEvidence(j,'financial')&&hasEvidence(j,'ai');if(['optional','handoff','certificate','softskills','resume','interview'].includes(id))return false;const m=j?.modules?.[id],map=j?.portal?.map||{},key=id.startsWith('industry-')?'i:'+id.slice(9):'m:'+id;return !!(m&&typeof m==='object'&&Object.keys(m).length&&(j?.progress?.[id]==='complete'||map.complete?.[key]));}
+function hasEvidence(j,id){if(id==='rapid-discover'&&chosen==='rapid'&&j?.progress?.module1==='complete'&&!!j?.modules?.module1?.completedAt)return true;if(id==='rapid-coach-prep')return hasEvidence(j,'jobsearch');if(j?.__cloudCompleted?.includes(id))return true;if(id==='industry')return ['healthcare','trades','manufacturing','it','cdl'].some(n=>hasEvidence(j,'industry-'+n));if(id==='financial_ai')return hasEvidence(j,'financial')&&hasEvidence(j,'ai');if(['optional','handoff','certificate','softskills','resume','interview'].includes(id))return false;const m=j?.modules?.[id],map=j?.portal?.map||{},key=id.startsWith('industry-')?'i:'+id.slice(9):'m:'+id;return !!(m&&typeof m==='object'&&Object.keys(m).length&&(j?.progress?.[id]==='complete'||map.complete?.[key]));}
 function fresh(j,id){if(!['module2','module3','module4','module5'].includes(id))return null;if(j?.progress?.[id]==='stale'||j?.staleModules?.[id])return'Review Needed';return 'fresh'}
 function alignedIndustry(j){
  const m=j?.modules?.module4||{},career=m.career||m.careerTarget||m.selectedCareer||{};
@@ -424,6 +424,7 @@ function state(j,id,blocked){
    if(['financial','ai'].includes(id)&&!postEnrollmentAccess.unlocked)return {label:postEnrollmentAccess.checked?'Available After Enrollment':'Verifying Enrollment',cls:'lock',block:false,canLaunch:false};
    if(id==='skillmobility'&&rapidDirection(j)==='return')return {label:'Not Required — Returning to Previous Occupation',cls:'ok',block:false,canLaunch:false};
    const done=hasEvidence(j,id);
+   if(id==='rapid-discover'&&done&&!j?.progress?.['rapid-discover'])return {label:'Completed — Original Module 1 Preserved',cls:'ok',block:false,canLaunch:true};
    if(done)return {label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true};
    if(blocked)return {label:'Locked — Complete Earlier Step',cls:'lock',block:true,canLaunch:false};
    return {label:'Available — Start Here',cls:'warn',block:true,canLaunch:true};
