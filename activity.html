@@ -407,6 +407,19 @@ window.addEventListener('message',function(event){
    participant:{name:journey.participant?.name||''}
  }},embeddedModuleOrigin);
 });
+// Read-only authenticated state handoff for embedded Career Validation and Decide.
+window.addEventListener('message',function(event){
+  if(!['module2','module4'].includes(m)||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin)return;
+  if(event.data?.type!=='pinal-boost-module-restore-request'||event.data.module!==m)return;
+  const journey=readJourney(),mods=journey?.modules||{};
+  if(!mods.module1?.careers?.length)return;
+  const source={module1:{scores:mods.module1.interestScores||{},selected:mods.module1.careers||[],completedAt:mods.module1.completedAt||null},
+    module2:{validationBySoc:mods.module2?.validationBySoc||{},currentHourlyWage:mods.module2?.currentHourlyWage||mods.module2?.wageBaseline?.hourly||null,wageBaseline:mods.module2?.wageBaseline||null,completedAt:mods.module2?.completedAt||null},
+    module3:{careers:mods.module3?.careers||[],careerDecisionsBySoc:mods.module3?.careerDecisionsBySoc||{},selfAssessment:mods.module3?.selfAssessment||[],startingPoint:mods.module3?.startingPoint||null,completedAt:mods.module3?.completedAt||null},
+    module4:{selectedSoc:mods.module4?.selectedSoc||null,careerTitle:mods.module4?.careerTitle||'',answers:mods.module4?.answers||{},route:mods.module4?.route||'',completedAt:mods.module4?.completedAt||null},
+    participant:{name:journey.participant?.name||''}};
+  event.source.postMessage({type:'pinal-boost-module-restore',module:m,state:source},event.origin);
+});
 frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI();injectModule3BottomSave()},250)});
 let module5AutoFinishing=false;
 window.addEventListener('message',event=>{
