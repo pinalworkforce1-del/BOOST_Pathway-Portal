@@ -68,7 +68,7 @@
       portal:{
         map:parse(MAP_KEY,localStorage.getItem(MAP_OLD_KEY)||"{}"),
         completed:parse(COMPLETED_KEY,"[]"),
-        pathway:localStorage.getItem(PATH_KEY)||""
+        pathway:localStorage.getItem(PATH_KEY)||existing.portal?.pathway||existing.selectedPathway||""
       },
       updated_at:new Date().toISOString()
     });
@@ -168,6 +168,9 @@
     document.head.appendChild(s);
   }
   async function showGate(){
+    // The authenticated homepage has its own pathway-first sign-in UI.
+    // Do not overlay a second login form on top of that workflow.
+    if(document.getElementById('b2load'))return;
     if(!configured()||sessionStorage.getItem(DEVICE_KEY)==="1")return;
     const c=getClient();
     const session=(await c.auth.getSession()).data.session;
