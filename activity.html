@@ -409,7 +409,7 @@ window.addEventListener('message',function(event){
 });
 // Read-only authenticated state handoff for embedded Career Validation and Decide.
 window.addEventListener('message',function(event){
-  if(!['module2','module4'].includes(m)||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin)return;
+  if(!['module2','module3','module4'].includes(m)||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin)return;
   if(event.data?.type!=='pinal-boost-module-restore-request'||event.data.module!==m)return;
   const journey=readJourney(),mods=journey?.modules||{};
   if(!mods.module1?.careers?.length)return;
