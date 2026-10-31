@@ -432,6 +432,48 @@ async function finish(){
     location.assign(target.toString());
     return true;
   }
+  if(m==='module4'){
+    const origin=new URL(c.src).origin;
+    const notify=(status,message='')=>{try{frame.contentWindow.postMessage({type:'pinal-boost-module4-save-status',status,message},origin)}catch(_){}};
+    notify('saving');
+    const result=await new Promise(resolve=>{
+      const requestId='m4-'+crypto.randomUUID();
+      const timeout=setTimeout(()=>{window.removeEventListener('message',onReply);resolve(null)},6000);
+      function onReply(event){
+        if(event.source!==frame.contentWindow||event.origin!==origin||
+           event.data?.type!=='pinal-boost-module4-current'||event.data.requestId!==requestId)return;
+        clearTimeout(timeout);window.removeEventListener('message',onReply);
+        resolve(event.data.error?null:event.data.module4||null);
+      }
+      window.addEventListener('message',onReply);
+      frame.contentWindow.postMessage({type:'pinal-boost-module4-collect',requestId},origin);
+    });
+    if(!result?.selectedSoc||!result?.careerTitle||!['READY','BRIDGE','BUILD','RECONSIDER'].includes(result.route)||
+       Object.keys(result.answers||{}).length<5){
+      window.BOOSTPortal?.toast?.('Your Module 4 decision was not received. Keep this page open and try saving again.');
+      notify('error','The completed decision could not be verified. Please retry.');
+      return false;
+    }
+    finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
+    const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.module4={...(j.modules.module4||{}),...result,completedAt:result.completedAt||new Date().toISOString()};
+    j.progress.module4='complete';writeJourney(j);
+    let saved=false;
+    try{await window.PinalBOOSTCloud?.ready?.();saved=await window.PinalBOOSTCloud?.saveNow?.()===true}
+    catch(err){console.warn('Module 4 cloud save failed',err)}
+    if(!saved){
+      finishBtn.disabled=false;finishBtn.textContent='Retry Save & Return to BOOST';
+      window.BOOSTPortal?.toast?.('Module 4 was not confirmed in the cloud. Keep this page open and retry.');
+      notify('error','Cloud save not confirmed. Keep your answers open and retry.');
+      return false;
+    }
+    notify('saved');
+    const target=new URL(safeReturn);
+    target.searchParams.set('boost_complete',requestedModule);
+    if(receipt)target.searchParams.set('boost_nonce',receipt);
+    location.assign(target.toString());
+    return true;
+  }
   const evidence=extractSafeEvidence();
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
