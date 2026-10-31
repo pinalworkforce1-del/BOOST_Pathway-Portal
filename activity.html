@@ -368,6 +368,24 @@ async function finish(){
     }
   }
 
+  if(m==='module5'){
+    const shared=readCareerExplorationState()||{},local=readJourney();
+    const ev=shared.module5||local.modules?.module5;
+    if(!ev?.evaluatedAt||!ev?.programName||!ev?.selectedSoc){
+      window.BOOSTPortal?.toast?.('Save your Career Investment Results before returning to BOOST.');
+      return false;
+    }
+    finishBtn.disabled=true;finishBtn.textContent='Saving Skill Investment to BOOST…';
+    const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.module5={...ev,module:'module5',completedAt:ev.completedAt||new Date().toISOString()};
+    j.progress.module5='complete';writeJourney(j);
+    let saved=false;
+    try{await window.PinalBOOSTCloud?.ready?.();saved=await window.PinalBOOSTCloud?.saveNow?.()===true}catch(err){console.warn('Module 5 cloud verification failed',err)}
+    if(!saved){finishBtn.disabled=false;finishBtn.textContent='Retry Save Results & Return to BOOST';window.BOOSTPortal?.toast?.('Cloud save not confirmed. Keep your plan open and retry.');return false}
+    const target=new URL(safeReturn);target.searchParams.set('boost_complete',requestedModule);
+    if(receipt)target.searchParams.set('boost_nonce',receipt);
+    location.assign(target.toString());return true;
+  }
   // Module 1 is cross-origin: collect saved UI state by origin-checked message.
   if(m==='module1'){
     const child=await new Promise(resolve=>{
@@ -676,6 +694,13 @@ if(c.industry){
     }
   });
 }
+window.addEventListener('message',event=>{
+  if(m!=='module5'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||event.data?.type!=='boost-module5-saved')return;
+  if(event.data.evidence?.evaluatedAt){
+    const j=readJourney();j.modules=j.modules||{};j.modules.module5={...event.data.evidence};writeJourney(j);
+  }
+  window.BOOSTPortal?.toast?.('Career Investment Plan saved locally. Use Save Results & Return to BOOST to finish.');
+});
 finishBtn.addEventListener('click',finish);
 window.addEventListener('message',event=>{
  if(m!=='module3'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||
