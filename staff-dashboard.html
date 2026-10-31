@@ -155,7 +155,7 @@ function coachPrepReady(r,id){
 }
 function stageEvidenceAvailable(r,id){return id==='handoff'||id==='rapid-coach-prep'?coachPrepReady(r,id):id==='softskills'||id==='resume'||id==='interview'?!!r.ready2work:validated(r,id)}
 function stageStatus(r,id){
- if(['handoff','rapid-coach-prep'].includes(id))return prepRecord(r)?.readyAt?'Ready for coach appointment':coachPrepReady(r,id)?'Prep available':'Awaiting prerequisite completion';
+ if(['handoff','rapid-coach-prep'].includes(id))return (r.progress?.coachAppointmentPrep==='complete'||prepRecord(r)?.readyAt)?'Ready for coach appointment':coachPrepReady(r,id)?'Prep available':'Awaiting prerequisite completion';
  if(['softskills','resume','interview'].includes(id)){
   const x=r.ready2work||{};
   const ok=id==='softskills'?Number(x.scenario_count||0)>=12:id==='resume'?!!x.resume_complete:!!x.interview_complete;
