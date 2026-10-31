@@ -26,7 +26,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/js/boost-config.js?v=20260908f"></script>
 <script src="assets/js/boost-cloud.js?v=20260908f"></script>
-<script src="assets/js/config.js?v=20260910m4interactive3"></script>
+<script src="assets/js/config.js?v=20261031-mod3-verified-save"></script>
 <script src="assets/js/portal.js?v=20260926-progression2"></script>
 <script>
 const links=window.BOOST_LINKS||{};
@@ -552,11 +552,11 @@ if(backTopic)backTopic.addEventListener('click',event=>{
  event.preventDefault();event.stopImmediatePropagation();
  if(m!=='module3'){location.assign(safeReturn);return}
  const j=readJourney(),done=j?.progress?.[requestedModule]==='complete'||j?.progress?.module3==='complete';
- if(done){location.assign(safeReturn);return}
+ if(done&&interactionCount===0){location.assign(safeReturn);return}
  const ready=(()=>{try{return completionOkay(extractSafeEvidence())}catch(_){return false}})();
  const question=ready
-   ?'Your Career Mobility Plan has not been saved to your BOOST account. Select OK to save before returning, or Cancel to keep working.'
-   :'You have not saved a completed Career Mobility Plan. Select OK to stay and finish your work, or Cancel to leave without saving.';
+   ?'Save your current Career Mobility Plan before returning to BOOST? Select OK to save, or Cancel to keep working.'
+   :'Your current Career Mobility Plan has not been saved as a completed result. Select OK to stay and finish, or Cancel for an option to leave without saving.';
  if(window.confirm(question)){
    if(ready)finish().catch(err=>console.warn('Module 3 Back save failed',err));
    else window.BOOSTPortal?.toast?.('Create your Career Mobility Plan and use Save Results & Return to BOOST when ready.');
