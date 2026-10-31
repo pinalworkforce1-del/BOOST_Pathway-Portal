@@ -530,7 +530,7 @@ window.addEventListener('message',async function(event){
     participant:{name:journey.participant?.name||''}};
   event.source.postMessage({type:'pinal-boost-module-restore',module:m,state:source},event.origin);
 });
-frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI();injectModule3BottomSave()},250)});
+frame.addEventListener('load',()=>{setTimeout(()=>{applyCarryForward();injectOnetProfilerStep();interactionCount=0;bindUserInteractions();injectConnectedUI()},250)});
 let module5AutoFinishing=false;
 window.addEventListener('message',event=>{
   if(m!=='module4'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||event.data?.type!=='boost-module4-finish-request')return;
