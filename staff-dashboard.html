@@ -66,6 +66,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
 <script src="assets/js/pinal-cloud-config.js"></script>
+<script src="assets/js/pinal-coach-mobility-report-v1.js?v=20261031-coach1"></script>
 <script>
 (()=>{'use strict';
 const AREA='pinal',cfg=window.PINAL_BOOST_CONFIG||{},SUPABASE_URL=cfg.url||cfg.supabaseUrl,ANON=cfg.key||cfg.supabaseAnonKey,ENDPOINT=SUPABASE_URL+'/functions/v1/boost-staff-access',TOKEN_KEY='boost-coach-staff-token-v1';
@@ -362,6 +363,8 @@ function module2CoachView(ev){
  return html+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
 }
 function mobilityCoachView(ev){
+ const newReport=window.BOOSTCoachMobilityReport?.render(ev);
+ if(newReport)return newReport;
  const m=ev&&typeof ev==='object'?ev:{};
  const start=m.startingPoint||{};
  const careers=Array.isArray(m.careers)?m.careers:[];
