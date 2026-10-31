@@ -394,6 +394,8 @@ async function finish(){
   }
   if(m==='module3'){
     const expectedOrigin=new URL(c.src).origin;
+    const notify=(status,message='')=>{try{frame.contentWindow.postMessage({type:'pinal-boost-module3-save-status',status,message},expectedOrigin)}catch(_){}};
+    notify('saving');
     const evidence=await new Promise(resolve=>{
       const requestId='m3-'+crypto.randomUUID();
       const timeout=setTimeout(()=>{window.removeEventListener('message',onAnswer);resolve(null)},6000);
@@ -407,6 +409,7 @@ async function finish(){
     });
     if(!evidence?.reportCreated||!evidence.startingPoint?.soc){
       window.BOOSTPortal?.toast?.('Create your Career Mobility Plan before saving. Your work has not been cleared.');
+      notify('error','Save not completed. Create your Mobility Plan, then try again.');
       return false;
     }
     finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
@@ -419,8 +422,10 @@ async function finish(){
     if(!saved){
       finishBtn.disabled=false;finishBtn.textContent='Retry Save & Return to BOOST';
       window.BOOSTPortal?.toast?.('Cloud save was not confirmed. Your work remains in this browser. Please retry instead of leaving.');
+      notify('error','Cloud save not confirmed. Stay on this page and retry.');
       return false;
     }
+    notify('saved','Your Module 3 completion is saved to your BOOST account.');
     const target=new URL(safeReturn);
     target.searchParams.set('boost_complete',requestedModule);
     if(receipt)target.searchParams.set('boost_nonce',receipt);
