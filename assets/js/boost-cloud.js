@@ -13,6 +13,8 @@
   const WATCHED=new Set([MAP_KEY,MAP_OLD_KEY,COMPLETED_KEY,PATH_KEY,JOURNEY_KEY]);
   const originalSetItem=Storage.prototype.setItem;
   let client=null,saveTimer=null,saving=false,pending=false;
+  // The first authenticated cloud read must finish before any background journey save.
+  let cloudReady=false,cloudBaseline=null;
 
   function configured(){
     return !!(cfg.cloudEnabled&&cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase&&window.supabase.createClient);
@@ -70,32 +72,56 @@
       updated_at:new Date().toISOString()
     });
   }
+  // Canonical JSON guards against key ordering differences introduced by Postgres jsonb.
+  function stable(v){
+    return JSON.stringify((function sorted(value){
+      if(Array.isArray(value))return value.map(sorted);
+      if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(k=>[k,sorted(value[k])]));
+      return value;
+    })(v));
+  }
+  function retainBrowserCopy(label){
+    try{
+      if(!hasLocalProgress())return;
+      const backupKey='boost_pinal_browser_recovery_'+Date.now();
+      originalSetItem.call(localStorage,backupKey,JSON.stringify({saved_at:new Date().toISOString(),reason:label,journey:readJourney(),map:parse(MAP_KEY,'{}'),completed:parse(COMPLETED_KEY,'[]'),pathway:localStorage.getItem(PATH_KEY)||''}));
+      window.dispatchEvent(new CustomEvent('boost-cloud-status',{detail:{state:'browser-copy-retained',region:REGION}}));
+    }catch(err){console.warn('Could not retain a browser-only recovery copy',err)}
+  }
   function restore(journey){
-    if(!journey||typeof journey!=="object")return false;
-    const local=readJourney();
-    const merged=mergeJourney(journey,local);
-    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(merged));
-    const p=merged.portal||{};
+    if(!journey||typeof journey!=='object')return false;
+    // Cloud is authoritative on sign-in. Never overlay an older browser journey.
+    if(stable(readJourney())!==stable(journey))retainBrowserCopy('cloud-authoritative-restore');
+    originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(journey));
+    const p=journey.portal||{};
     if(p.map)originalSetItem.call(localStorage,MAP_KEY,JSON.stringify(p.map));
     if(Array.isArray(p.completed))originalSetItem.call(localStorage,COMPLETED_KEY,JSON.stringify(p.completed));
     if(p.pathway)originalSetItem.call(localStorage,PATH_KEY,p.pathway);
     return true;
   }
   async function saveNow(){
-    const c=getClient();if(!c)return false;
+    const c=getClient();if(!c||!cloudReady)return false;
     const session=(await c.auth.getSession()).data.session;
     if(!session||!session.user)return false;
+    const current=await loadMine();
+    if(current===undefined)return false;
+    if(stable(current)!==cloudBaseline){
+      retainBrowserCopy('newer-cloud-version-detected');cloudReady=false;
+      window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'conflict',message:'Your BOOST journey changed in another session. This browser will not overwrite it.'}}));
+      return false;
+    }
     const meta=session.user.user_metadata||{};
     const name=[meta.first_name,meta.last_name].filter(Boolean).join(" ")||meta.full_name||readJourney().participant?.name||"";
     const payload=snapshot(name,session.user.email||readJourney().participant?.email||"");
     originalSetItem.call(localStorage,JOURNEY_KEY,JSON.stringify(payload));
     const result=await c.rpc("boost_save_my_journey_for_region",{p_region:REGION,p_journey:payload});
     if(result.error){console.warn("Pinal BOOST cloud save failed",result.error.message);window.dispatchEvent(new CustomEvent("boost-cloud-error",{detail:{kind:"save",message:result.error.message}}));return false}
+    cloudBaseline=stable(payload);
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
   }
   function queueSave(){
-    if(!configured())return;
+    if(!configured()||!cloudReady)return;
     pending=true;clearTimeout(saveTimer);
     saveTimer=setTimeout(async function(){
       if(saving)return;saving=true;
@@ -146,7 +172,15 @@
       verify.disabled=true;status.textContent="Verifying…";
       const result=await c.auth.verifyOtp({email:em,token:token,type:"email"});verify.disabled=false;
       if(result.error){status.textContent="That code could not be verified. "+result.error.message;window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_failed",message:result.error.message}}));return}
-      window.dispatchEvent(new CustomEvent("boost-auth-event",{detail:{type:"auth_code_verified"}}));const remote=await loadMine();if(remote===undefined){status.textContent='Verified, but we could not load your saved journey. Please reload to retry.';return}if(remote)restore(remote);await saveNow();gate.remove();location.reload();
+      window.dispatchEvent(new CustomEvent('boost-auth-event',{detail:{type:'auth_code_verified'}}));
+      const remote=await loadMine();
+      if(remote===undefined){status.textContent='Verified, but we could not load your saved journey. Please reload to retry.';return}
+      if(remote){restore(remote);cloudBaseline=stable(remote);cloudReady=true;}
+      else if(hasLocalProgress()){
+        retainBrowserCopy('browser-only-work-before-first-cloud-save');
+        status.textContent='Verified. Browser-only progress needs review before its first cloud save; your work has been retained on this device.';return;
+      }else{cloudBaseline=stable(null);cloudReady=true;}
+      gate.remove();location.reload();
     };
     gate.querySelector("#boostDevice").onclick=function(){sessionStorage.setItem(DEVICE_KEY,"1");gate.remove()};
   }
@@ -156,7 +190,12 @@
     const session=(await c.auth.getSession()).data.session;
     if(session&&session.user){
       const remote=await loadMine();
-      if(remote!==undefined){if(remote)restore(remote);await saveNow();}
+      if(remote!==undefined){
+        if(remote){restore(remote);cloudBaseline=stable(remote);cloudReady=true;}
+        else if(hasLocalProgress())retainBrowserCopy('unsynced-browser-only-work');
+        else{cloudBaseline=stable(null);cloudReady=true;}
+      }
+      // Never write the journey back to Supabase just because a user signed in.
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
