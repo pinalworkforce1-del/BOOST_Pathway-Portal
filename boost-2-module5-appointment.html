@@ -27,7 +27,8 @@
 <div class="doc"><b>If applicable: Education / Veteran Records</b><span>Diplomas, transcripts, certificates, licenses, training records, or DD-214 / veteran documentation when relevant.</span></div>
 </div>
 <p class="note small"><b>Don't have everything?</b> You can still meet with your Career Coach. Not every document applies to everyone, and staff can help identify accepted forms of verification or alternatives. Please don't upload sensitive documents through BOOST.</p>
-<div class="actions"><a class="btn primary" id="pauseBtn" href="index.html">Pause Here — Return to BOOST Map</a><a class="btn secondary" id="continueBtn" href="index.html">Continue Exploring BOOST</a></div>
+<div class="callout" id="prepSaveStatus">When you have reviewed this preparation information, select Complete Appointment Prep to notify your Career Coach.</div>
+<div class="actions"><button class="btn primary" type="button" id="prepCompleteBtn">Complete Appointment Prep</button><a class="btn primary" id="pauseBtn" href="index.html">Pause Here — Return to BOOST Map</a><a class="btn secondary" id="continueBtn" href="index.html">Continue Exploring BOOST</a></div>
 <p class="note small">Your Career Coach can review your direction and next BOOST experiences with you.</p>
 </section></div></main>
 <script>
@@ -37,6 +38,51 @@
   if(raw){try{const u=new URL(raw,location.href);if(u.origin===location.origin)next=u}catch(_){}}
   document.getElementById('pauseBtn').href=next.toString();
   document.getElementById('continueBtn').href=next.toString();
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/boost-config.js"></script>
+<script src="assets/js/boost-cloud.js?v=20261031-industry-revision-save"></script>
+<script>
+(function(){
+ const b=document.getElementById('prepCompleteBtn'),status=document.getElementById('prepSaveStatus');
+ const key='pinal_boost_journey_v1';
+ const read=()=>{try{return JSON.parse(localStorage.getItem(key)||'{}')}catch(_){return{}}};
+ const hasRequired=(j)=>j.progress?.module5==='complete'||!!j.modules?.module5?.evaluatedAt;
+ function render(j){
+  const done=j.modules?.coachAppointmentPrep;
+  if(done?.readyAt){status.textContent='Appointment preparation completed '+new Date(done.readyAt).toLocaleString()+'. Your Career Coach can review your preparation summary.';b.textContent='Update Appointment Prep';}
+ }
+ render(read());
+ b.addEventListener('click',async()=>{
+  const j=read();
+  if(!hasRequired(j)){status.textContent='Finish Skill Investment before marking appointment preparation complete.';return}
+  const m=j.modules||{},m4=m.module4||{},m5=m.module5||{},m2=m.module2||{},m3=m.module3||{};
+  const report={
+   readyAt:new Date().toISOString(),pathway:'explore',source:'participant_appointment_prep',
+   selectedCareer:m5.careerTitle||m4.careerTitle||'',
+   careerDecision:m4.route||m4.participantDirection||'',
+   trainingProgram:m5.programName||'',trainingProvider:m5.provider||'',
+   trainingCost:m5.listedCost??null,
+   investmentGap:m5.specificGap||'',
+   currentHourlyWage:m2.currentHourlyWage||m2.wageBaseline?.hourly||null,
+   targetHourlyWage:m5.targetHourlyReference??null,
+   mobilitySummary:m3.reportSummary||m3.summary||'',
+   documentsReviewed:['Photo identification','Social Security card verification','Residency if applicable','Income or benefits if applicable','Employment situation if applicable','Education or veteran records if applicable'],
+   intakeNote:'Participant reviewed the BOOST coach appointment preparation checklist. Coach must confirm relevant documents, eligibility, service needs, and enrollment at the appointment.'
+  };
+  b.disabled=true;status.textContent='Saving appointment preparation…';
+  try{
+   j.modules={...m,coachAppointmentPrep:report};j.updated_at=new Date().toISOString();
+   localStorage.setItem(key,JSON.stringify(j));
+   await window.PinalBOOSTCloud?.ready?.();
+   const saved=await window.PinalBOOSTCloud?.saveNow?.();
+   if(saved!==true)throw Error('Cloud verification not confirmed');
+   render(j);
+  }catch(e){status.textContent='Cloud save not confirmed. Keep this page open and retry; the preparation record remains in this browser.';}
+  finally{b.disabled=false}
+ });
 })();
 </script>
 </body></html>
