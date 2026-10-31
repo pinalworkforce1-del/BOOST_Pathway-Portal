@@ -76,15 +76,38 @@ function coachingState(body){
  return {currentDirection,careerStatuses,staleModules:authoritative.staleModules||{},progress:authoritative.progress||j.progress||{},...plan};
 }
 window.fetch=async function(input,init){
+ let requestedQuestion='',verifiedPlan=null,rosieRequest=false;
  try{
   const url=typeof input==='string'?input:(input?.url||'');
   if(String(url).includes(ENDPOINT)&&init?.body){
-   const body=JSON.parse(init.body);body.journey=body.journey&&typeof body.journey==='object'?body.journey:{};body.journey.coachingState=coachingState(body);
+   const body=JSON.parse(init.body);body.journey=body.journey&&typeof body.journey==='object'?body.journey:{};body.journey.coachingState=coachingState(body);verifiedPlan=body.journey.coachingState;requestedQuestion=String(body?.question||'');rosieRequest=true;
    const q=String(body?.question||''),occs=Array.isArray(body?.occupations)?body.occupations:[],explicit=fullFocus(body);
    if(explicit){body.focusOccupation=explicit;lastFocus=explicit}else if(lastFocus&&looksLikeFollowup(q)){body.focusOccupation=lastFocus;body.occupations=[lastFocus,...occs.filter(o=>String(o?.soc||'')!==String(lastFocus.soc))].slice(0,24)}else if(!broadQuestion(q)&&occs.length===1){body.focusOccupation=occs[0];lastFocus=occs[0]}
    init={...init,body:JSON.stringify(body)};
   }
  }catch(e){console.warn('Ask Rosie context continuity patch skipped',e)}
- return nativeFetch(input,init);
+ const response=await nativeFetch(input,init);
+ if(!rosieRequest||!verifiedPlan||!response.ok||!/(what('?s| is) next|next step|what should i do|where do i go|what.*(pathway|module)|what.*(required|complete)|remaining.*(work|module)|ready for intake)/i.test(requestedQuestion))return response;
+ try{
+   const data=await response.clone().json();
+   if(data?.mode==='wellbeing-safety'||typeof data?.answer!=='string')return response;
+   const p=verifiedPlan;
+   if(!p.pathwayVerified)return response;
+   const next=p.immediateNextStep;
+   const queue=p.nextSteps.filter(x=>x.id!=='coach-handoff');
+   let answer='Your assigned BOOST pathway is **'+p.pathwayLabel+'**. ';
+   if(p.pathway==='ready'){
+     answer+='Employment Ready starts with **Financial Habits**, then **AI & You**. **Ready 2 Work** follows only after those activities and verified TalentSync enrollment access. ';
+   }else if(p.hasRequiredPreEnrollmentWork){
+     answer+='Your next step is **'+next.label+'**'+(next.status==='review'?' (review required because earlier evidence changed)':'')+'. ';
+     const later=queue.slice(1,4).map(x=>x.label);
+     if(later.length)answer+='After that, your remaining pathway activities include '+later.join(', ')+'. ';
+     answer+='Financial Habits and AI & You belong to the post-enrollment portion of this pathway; they are not the next steps right now. ';
+   }else{
+     answer+='Your pre-enrollment career pathway activities are recorded as complete. Your next step is **'+p.coachHandoff+'**. ';
+   }
+   answer+='Your existing BOOST answers carry forward. Your local team determines eligibility, enrollment, and available services; Rosie does not make those decisions.';
+   return new Response(JSON.stringify({...data,answer,pathway_guidance_source:'verified-boost-pathway-sequence'}),{status:response.status,statusText:response.statusText,headers:response.headers});
+ }catch(err){console.warn('BOOST pathway response guard unavailable',err);return response}
 };
 })();
