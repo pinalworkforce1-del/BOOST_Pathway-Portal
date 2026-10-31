@@ -59,7 +59,9 @@
         console.warn('Pinal BOOST verified cloud writer not ready. Retaining work on device.');
         return null;
       }
-      return await window.PinalBOOSTCloud.saveNow() || null;
+      const saved=await window.PinalBOOSTCloud.saveNow();
+      if(!saved){window.dispatchEvent(new CustomEvent('boost-cloud-error',{detail:{kind:'save',message:'Your work is retained on this device. Cloud saving needs verification. Refresh BOOST and sign in again before continuing.'}}));}
+      return saved||null;
     }
     // Device-only progress remains on this device until a verified user signs in.
     return null;
