@@ -408,10 +408,21 @@ window.addEventListener('message',function(event){
  }},embeddedModuleOrigin);
 });
 // Read-only authenticated state handoff for embedded Career Validation and Decide.
-window.addEventListener('message',function(event){
+window.addEventListener('message',async function(event){
   if(!['module2','module3','module4'].includes(m)||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin)return;
   if(event.data?.type!=='pinal-boost-module-restore-request'||event.data.module!==m)return;
-  const journey=readJourney(),mods=journey?.modules||{};
+  // Never hand an embedded page a stale local journey from another login.
+  const cloud=window.PinalBOOSTCloud;
+  if(!cloud?.ready||!cloud?.getClient||!cloud?.loadMine)return;
+  try{await cloud.ready()}catch(_){return}
+  const client=cloud.getClient();
+  const result=client?await client.auth.getSession():null;
+  const user=result?.data?.session?.user;
+  if(!user?.id||!user.email)return;
+  const journey=await cloud.loadMine();
+  if(!journey||String(journey.participant?.email||'').toLowerCase()!==String(user.email).toLowerCase())return;
+  if(event.source!==frame.contentWindow)return;
+  const mods=journey.modules||{};
   if(!mods.module1?.careers?.length)return;
   const source={module1:{scores:mods.module1.interestScores||{},selected:mods.module1.careers||[],completedAt:mods.module1.completedAt||null},
     module2:{validationBySoc:mods.module2?.validationBySoc||{},currentHourlyWage:mods.module2?.currentHourlyWage||mods.module2?.wageBaseline?.hourly||null,wageBaseline:mods.module2?.wageBaseline||null,completedAt:mods.module2?.completedAt||null},
