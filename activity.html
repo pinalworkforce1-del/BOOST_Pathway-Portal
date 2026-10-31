@@ -370,8 +370,8 @@ async function finish(){
 
   if(m==='module5'){
     const shared=readCareerExplorationState()||{},local=readJourney();
-    const ev=shared.module5||local.modules?.module5;
-    if(!ev?.evaluatedAt||!ev?.programName||!ev?.selectedSoc){
+    const ev=local.modules?.module5?.evaluatedAt?local.modules.module5:shared.module5;
+    if(!ev?.evaluatedAt||!ev?.programName){
       window.BOOSTPortal?.toast?.('Save your Career Investment Results before returning to BOOST.');
       return false;
     }
