@@ -13,9 +13,17 @@ function drivers(x=m1()){return uniq(arr(x?.alignmentProfile?.validatedWorkDrive
 function scoreBits(x=m1()){const r=x.scores||x.interestScores||{};return ['R','I','A','S','E','C'].map(k=>`${k}:${r[k]??''}`)}
 function module1Scores(){const {j,s}=stores(),candidates=[s?.module1?.scores,s?.module1?.interestScores,j?.modules?.module1?.interestScores,j?.modules?.module1?.scores];for(const r of candidates){if(r&&typeof r==='object'&&['R','I','A','S','E','C'].some(k=>r[k]!==undefined&&r[k]!==null&&String(r[k]).trim()!==''))return r}return{}}
 function sig(){return JSON.stringify({careers:socs(),scores:scoreBits(),drivers:drivers()})}
-function state(){const d=read(DK);d.review=d.review||{};return d}
-function mark(d,id,reason){if(!d.review[id])d.review[id]={since:new Date().toISOString(),reason}}
-function status(id){const d=state();if(!d.review[id])return'fresh';if(id==='module2')return'review';if(id==='module3')return d.review.module2?'blocked':'review';if(id==='module4')return(d.review.module2||d.review.module3)?'blocked':'review';return'fresh'}
+// Review state must come from the cloud journey restored for the authenticated user.
+function state(){
+  const j=read(JK),review={};
+  for(const id of ['module2','module3','module4','module5']){
+    if(j?.progress?.[id]==='stale'||j?.staleModules?.[id]){
+      review[id]={reason:j?.staleModules?.[id]?.reason||'Earlier career evidence changed.',since:j?.staleModules?.[id]?.markedAt||null};
+    }
+  }
+  return {review,legacyBrowserReview:read(DK)?.review||{}};
+}
+function status(id){const r=state().review;if(!r[id])return'fresh';if(id==='module2')return'review';if(id==='module3')return r.module2?'blocked':'review';if(id==='module4')return (r.module2||r.module3)?'blocked':'review';if(id==='module5')return (r.module2||r.module3||r.module4)?'blocked':'review';return'fresh'}
 function meaningful(o){if(!o||typeof o!=='object')return false;return Object.keys(o).some(k=>!['updatedAt','updated_at','createdAt','created_at','region','participant'].includes(k))}
 function hasLaterWork(){const {j,s}=stores(),mods=j?.modules||{},progress=j?.progress||{};return ['module2','module3','module4'].some(id=>meaningful(s[id])||meaningful(mods[id])||!!progress[id])}
 function moduleComplete(id){const {j,s}=stores();return j?.progress?.[id]==='complete'||!!j?.modules?.[id]?.completedAt||!!s?.[id]?.completedAt}
@@ -45,24 +53,10 @@ function mirrorModule3Interests(){
   }catch(e){console.warn('BOOST Module 3 interest carry-forward unavailable',e)}
 }
 function reconcile(){
-  const d=state(),now=sig(),laterWork=hasLaterWork(),m2=mod('module2'),currentSocs=socs(),m2s=module2Socs(m2),m2Matches=m2s.length&&JSON.stringify(m2s)===JSON.stringify(currentSocs);
-  if(!laterWork){
-    delete d.review.module2;delete d.review.module3;delete d.review.module4;d.signature=now;
-  }else if(!d.signature){
-    d.signature=now;
-  }else if(d.signature!==now){
-    d.signature=now;
-    mark(d,'module2','Something you selected in Discover changed. Review Reality Check so it reflects your current career exploration.');
-    mark(d,'module3','Your Discover choices changed. Refresh Reality Check first, then review Career Mobility.');
-    mark(d,'module4','Your earlier career evidence changed. Review the highlighted steps before refreshing Decide.');
-  }
-  if(m2Matches&&moduleComplete('module2')){
-    const completed=ts(m2.completedAt||m2.originalModule2CompletedAt||m2.capturedAt);
-    if(d.review.module2&&completed>ts(d.review.module2.since)){delete d.review.module2}else if(!d.review.module2){d.module2AcceptedSignature=now}
-  }
-  const st=stores(),m3=mod('module3'),hasM3=meaningful(st.s?.module3)||meaningful(st.j?.modules?.module3)||!!st.j?.progress?.module3;if(d.review.module3&&!hasM3)delete d.review.module3;else if(d.review.module3&&!d.review.module2&&ts(m3.completedAt||m3.finalizedAt)>ts(d.review.module3.since))delete d.review.module3;
-  const m4=mod('module4'),hasM4=meaningful(st.s?.module4)||meaningful(st.j?.modules?.module4)||!!st.j?.progress?.module4;if(d.review.module4&&!hasM4)delete d.review.module4;else if(d.review.module4&&!d.review.module2&&!d.review.module3&&ts(m4.completedAt)>ts(d.review.module4.since))delete d.review.module4;
-  write(DK,d);mirrorModule2ForResume();mirrorModule3Interests();decorate();return d
+  // No browser-generated review marks: server-stored journey staleModules is authoritative.
+  // Historical local-only warnings remain in localStorage as evidence for staff reconciliation.
+  mirrorModule2ForResume();mirrorModule3Interests();decorate();
+  return state();
 }
 function css(){if(document.getElementById('pinalFreshCss'))return;const s=document.createElement('style');s.id='pinalFreshCss';s.textContent=`.pinalNeedsReview{outline:4px solid #e0a52f!important;box-shadow:0 0 0 7px #fff3cdcc!important;background:rgba(255,220,105,.10)!important}.pinalNeedsReview .complete-badge{display:none!important}.pinalReviewBadge{position:absolute;right:5px;top:5px;z-index:40;display:flex;align-items:center;gap:4px;padding:5px 7px;border-radius:999px;background:#9a6700;color:#fff;border:1px solid #ffe19a;box-shadow:0 3px 9px rgba(0,0,0,.25);font:900 9px/1.1 system-ui;white-space:nowrap}.pinalReviewBadge:before{content:'↻';font-size:13px;line-height:1}.pinalWaiting .pinalReviewBadge{background:#7b6331}.pinalReviewBanner{margin:12px auto;padding:14px 16px;border-radius:13px;background:#fff7dc;border:1px solid #e0b653;border-left:6px solid #d69a18;color:#4d3c13;max-width:1120px;font:600 14px/1.45 system-ui}.pinalReviewBanner a{font-weight:900;color:#174e70}.pinalUpdateGuide{margin:10px auto 18px;padding:14px 16px;max-width:1120px;border:1px solid #bdd6e1;border-left:6px solid #1d6f96;border-radius:13px;background:#f7fbfd;color:#294c60}.pinalUpdateGuide b{color:#173e57}`;document.head.appendChild(s)}
 function map(){['module2','module3','module4'].forEach(id=>{const el=document.querySelector(`[data-module-id="${id}"], [data-core="${id}"]`);if(!el)return;const st=status(id);el.classList.toggle('pinalNeedsReview',st!=='fresh');el.classList.toggle('pinalWaiting',st==='blocked');let b=el.querySelector('.pinalReviewBadge');if(st!=='fresh'){if(!b){b=document.createElement('span');b.className='pinalReviewBadge';el.appendChild(b)}b.textContent=st==='review'?'REVIEW':'WAITING';const label=el.querySelector('.hotspot-label');if(label)label.textContent=st==='review'?'Review this module — something you selected earlier changed':'Waiting — update the highlighted module first'}else{b?.remove();el.classList.remove('pinalWaiting')}})}
