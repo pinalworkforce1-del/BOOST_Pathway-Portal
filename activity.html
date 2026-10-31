@@ -392,6 +392,41 @@ async function finish(){
     if(receipt)target.searchParams.set('boost_nonce',receipt);
     location.assign(target.toString());return;
   }
+  if(m==='module3'){
+    const expectedOrigin=new URL(c.src).origin;
+    const evidence=await new Promise(resolve=>{
+      const requestId='m3-'+crypto.randomUUID();
+      const timeout=setTimeout(()=>{window.removeEventListener('message',onAnswer);resolve(null)},6000);
+      function onAnswer(event){
+        if(event.source!==frame.contentWindow||event.origin!==expectedOrigin||
+           event.data?.type!=='pinal-boost-module3-current'||event.data.requestId!==requestId)return;
+        clearTimeout(timeout);window.removeEventListener('message',onAnswer);resolve(event.data.error?null:event.data.module3||null);
+      }
+      window.addEventListener('message',onAnswer);
+      frame.contentWindow.postMessage({type:'pinal-boost-module3-collect',requestId},expectedOrigin);
+    });
+    if(!evidence?.reportCreated||!evidence.startingPoint?.soc){
+      window.BOOSTPortal?.toast?.('Create your Career Mobility Plan before saving. Your work has not been cleared.');
+      return false;
+    }
+    finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
+    const j=readJourney();j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.module3={...(j.modules.module3||{}),...evidence,completedAt:new Date().toISOString()};
+    j.progress.module3='complete';writeJourney(j);
+    let saved=false;
+    try{await window.PinalBOOSTCloud?.ready?.();saved=await window.PinalBOOSTCloud?.saveNow?.()===true}
+    catch(err){console.warn('Module 3 verified cloud save failed',err)}
+    if(!saved){
+      finishBtn.disabled=false;finishBtn.textContent='Retry Save & Return to BOOST';
+      window.BOOSTPortal?.toast?.('Cloud save was not confirmed. Your work remains in this browser. Please retry instead of leaving.');
+      return false;
+    }
+    const target=new URL(safeReturn);
+    target.searchParams.set('boost_complete',requestedModule);
+    if(receipt)target.searchParams.set('boost_nonce',receipt);
+    location.assign(target.toString());
+    return true;
+  }
   const evidence=extractSafeEvidence();
   if(!completionOkay(evidence)){window.BOOSTPortal?.toast?.('Finish the required activity in this module before saving completion.');return}
   finishBtn.disabled=true;finishBtn.textContent='Saving your BOOST journey…';
@@ -507,15 +542,27 @@ window.addEventListener('message',event=>{
   });
 });
 finishBtn.addEventListener('click',finish);
+window.addEventListener('message',event=>{
+ if(m!=='module3'||event.source!==frame.contentWindow||event.origin!==new URL(c.src).origin||
+    event.data?.type!=='pinal-boost-module3-finish-request')return;
+ if(finishBtn.disabled)return;
+ finish().catch(err=>{finishBtn.disabled=false;console.warn('Module 3 save request failed',err)});
+});
 if(backTopic)backTopic.addEventListener('click',event=>{
-  event.preventDefault();event.stopImmediatePropagation();
-  if(m!=='module3'){location.assign(safeReturn);return}
-  const j=readJourney(),done=j?.progress?.[requestedModule]==='complete'||j?.progress?.module3==='complete';
-  if(done){location.assign(safeReturn);return}
-  let ready=false;try{ready=completionOkay(extractSafeEvidence())}catch(_){}
-  if(!ready){location.assign(safeReturn);return}
-  if(confirm('Module 3 has not been saved as complete yet. Save Module 3 before returning to the BOOST map?'))finish();
-  else location.assign(safeReturn);
+ event.preventDefault();event.stopImmediatePropagation();
+ if(m!=='module3'){location.assign(safeReturn);return}
+ const j=readJourney(),done=j?.progress?.[requestedModule]==='complete'||j?.progress?.module3==='complete';
+ if(done){location.assign(safeReturn);return}
+ const ready=(()=>{try{return completionOkay(extractSafeEvidence())}catch(_){return false}})();
+ const question=ready
+   ?'Your Career Mobility Plan has not been saved to your BOOST account. Select OK to save before returning, or Cancel to keep working.'
+   :'You have not saved a completed Career Mobility Plan. Select OK to stay and finish your work, or Cancel to leave without saving.';
+ if(window.confirm(question)){
+   if(ready)finish().catch(err=>console.warn('Module 3 Back save failed',err));
+   else window.BOOSTPortal?.toast?.('Create your Career Mobility Plan and use Save Results & Return to BOOST when ready.');
+ }else if(window.confirm('Leave Module 3 without saving a completed plan? Your unsaved changes may be lost.')){
+   location.assign(safeReturn);
+ }
 },true);
 frame.src=m==='module4'?(c.src+(c.src.includes('?')?'&':'?')+'shell=20260910ghost4'):c.src;
 </script>
