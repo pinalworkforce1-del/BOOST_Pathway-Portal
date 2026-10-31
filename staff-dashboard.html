@@ -330,14 +330,16 @@ function module2CoachView(ev,discovery){
  const m=ev&&typeof ev==='object'?ev:{},valid=m.validationBySoc||{},careers=Array.isArray(m.careers)?m.careers:[],align=m.alignmentBySoc||{};
  const m1=discovery&&typeof discovery==='object'?discovery:{};
  const discoveryCareers=[m1.savedCareers,m1.careers,m1.selectedCareers,m1.selected].filter(Array.isArray).flat();
- const namedCareer=(x)=>x&&typeof x==='object'?(x.title||x.careerTitle||x.occupationTitle||x.name||x.label||''):(typeof x==='string'?x:'');
+ const namedCareer=x=>x&&typeof x==='object'?(x.title||x.careerTitle||x.occupationTitle||x.name||x.label||''):(typeof x==='string'?x:'');
  const findBySoc=(items,soc)=>items.find(x=>x&&typeof x==='object'&&String(x.soc||x.socCode||x.onetSoc||x.onetCode||x.code||'')===String(soc));
- const formatPostedWage=(w)=>{
+ const formatPostedWage=w=>{
   if(w===null||w===undefined||w==='')return '';
   if(typeof w==='object')return w.label||w.display||w.formatted||[w.amount,w.unit].filter(Boolean).join(' ')||'';
   const raw=String(w).trim(),number=Number(raw.replace(/[$,]/g,''));
-  if(!Number.isFinite(number)||!/^\\$?[\\d,]+(?:\\.\\d+)?$/.test(raw))return raw;
-  if(number>=1000)return '
+  if(!Number.isFinite(number)||!Number.isFinite(Number(raw.replace(/[$,]/g,''))))return raw;
+  if(number>=1000)return '$'+number.toLocaleString('en-US',{maximumFractionDigits:2})+' / year';
+  return '$'+number.toLocaleString('en-US',{maximumFractionDigits:2})+' / hour';
+ };
  const keys=[...new Set([...Object.keys(valid),...Object.keys(align)])];
  const value=(v)=>v===null||v===undefined||v===''?'Not recorded':String(v);
  const field=(label,v)=>v===null||v===undefined||v===''?'':'<div class="item"><b>'+esc(label)+'</b>'+esc(String(v))+'</div>';
