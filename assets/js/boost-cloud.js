@@ -15,6 +15,7 @@
   let client=null,saveTimer=null,saving=false,pending=false;
   // The first authenticated cloud read must finish before any background journey save.
   let cloudReady=false,cloudBaseline=null,cloudRevision=null;
+  let saveQueue=Promise.resolve(false), bootstrapPromise=Promise.resolve(false);
 
   function configured(){
     return !!(cfg.cloudEnabled&&cfg.supabaseUrl&&cfg.supabaseAnonKey&&window.supabase&&window.supabase.createClient);
@@ -99,7 +100,7 @@
     if(p.pathway)originalSetItem.call(localStorage,PATH_KEY,p.pathway);
     return true;
   }
-  async function saveNow(){
+  async function saveOnce(){
     const c=getClient();if(!c||!cloudReady)return false;
     const session=(await c.auth.getSession()).data.session;
     if(!session||!session.user)return false;
@@ -125,6 +126,13 @@
     if(stable(serverJourney)!==stable(payload))restore(serverJourney);
     window.dispatchEvent(new CustomEvent("boost-cloud-status",{detail:{state:"saved",region:REGION}}));
     return true;
+  }
+  // Serialize explicit module saves and automatic storage saves in the same tab.
+  // Otherwise two callers can race using the same revision token.
+  function saveNow(){
+    const next=saveQueue.then(()=>saveOnce(),()=>saveOnce());
+    saveQueue=next.catch(()=>false);
+    return next;
   }
   function queueSave(){
     if(!configured()||!cloudReady)return;
@@ -215,8 +223,8 @@
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
-  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore};
-  bootstrap();
+  window.PinalBOOSTCloud={configured:configured,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
+  bootstrapPromise=bootstrap();
 })();
 
 (function loadPinalAskRosie(){
