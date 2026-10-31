@@ -54,18 +54,17 @@
     const cl=c();if(!cl)return null;
     const {data:{session}}=await cl.auth.getSession();
     if(session?.user){
-      const {data,error}=await cl.rpc('boost_save_my_journey_for_region',{p_region:REGION,p_journey:j});
-      if(error){console.warn('Pinal BOOST authenticated save failed',error.message);return null}
-      if(data)localStorage.setItem(ID,String(data));
-      return data;
+      // A single revision-checked writer; old unconditional RPC must never run here.
+      if(typeof window.PinalBOOSTCloud?.saveNow!=='function'){
+        console.warn('Pinal BOOST verified cloud writer not ready. Retaining work on device.');
+        return null;
+      }
+      return await window.PinalBOOSTCloud.saveNow() || null;
     }
-    const cr=creds();
-    const {data,error}=await cl.rpc('pinal_boost_save_journey',{p_journey_id:cr.id,p_access_token:cr.token,p_journey:j});
-    if(error){console.warn('Pinal BOOST device-only save failed',error.message);return null}
-    if(data&&String(data)!==cr.id)localStorage.setItem(ID,String(data));
-    return data;
+    // Device-only progress remains on this device until a verified user signs in.
+    return null;
   }
-  function schedule(j){clearTimeout(timer);timer=setTimeout(()=>save(j),350)}
+  function schedule(j){clearTimeout(timer);timer=setTimeout(()=>save(j),650)}
   function isSafeStorageKey(k){return !!k && k!==J && k!==ID && k!==TOK && !k.startsWith('sb-') && !/access[_-]?token|refresh[_-]?token/i.test(k)}
   function snapshotStorage(){const out={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!isSafeStorageKey(k))continue;const v=localStorage.getItem(k);if(v!=null&&v.length<=250000)out[k]=v}return out}
   function storagePayloadTime(raw){
@@ -91,19 +90,35 @@
   async function loadMine(){
     const cl=c();if(!cl)return null;
     const {data:{session}}=await cl.auth.getSession();if(!session?.user)return null;
-    const {data,error}=await cl.rpc('boost_load_my_journey_for_region',{p_region:REGION});
-    if(error){console.warn('Pinal BOOST load failed',error.message);return null}
-    if(data){
-      const remote=reconcileFreshness(data),local=get();
-      const localTime=Date.parse(local?.updated_at||local?.updatedAt||'')||0,remoteTime=Date.parse(remote?.updated_at||remote?.updatedAt||'')||0;
-      const clean=localTime>remoteTime?Object.assign({},remote,local,{participant:Object.assign({},remote.participant||{},local.participant||{}),portal:Object.assign({},remote.portal||{},local.portal||{}),progress:Object.assign({},remote.progress||{},local.progress||{}),modules:Object.assign({},remote.modules||{},local.modules||{})}):remote;
-      localStorage.setItem(J,JSON.stringify(clean));restoreBrowserState(clean);return clean
+    // Cloud progress is authoritative; never merge by browser-maintained timestamps.
+    const {data,error}=await cl.rpc('boost_pinal_load_versioned');
+    if(error){console.warn('Pinal BOOST revision load failed',error.message);return null}
+    const remote=data?.journey||null;
+    if(remote){
+      if(typeof window.PinalBOOSTCloud?.restore==='function')window.PinalBOOSTCloud.restore(remote);
+      else {
+        // Do not overwrite an existing local journey without retaining its answers.
+        const local=get();
+        if(Object.keys(local.modules||{}).length){
+          localStorage.setItem('boost_pinal_browser_recovery_'+Date.now(),JSON.stringify({journey:local,saved_at:new Date().toISOString(),reason:'pre-restore-pinal-cloud'}));
+        }
+        localStorage.setItem(J,JSON.stringify(remote));
+      }
+      restoreBrowserState(remote);
     }
-    return null;
+    return remote;
   }
   async function signIn(email,name,redirectTo){const cl=c();if(!cl)throw new Error('Cloud unavailable');const parts=(name||'').trim().split(/\s+/);const first=parts.shift()||'',last=parts.join(' ');localStorage.setItem('pinal_boost_pending_name',name||'');localStorage.setItem('pinal_boost_pending_email',email||'');return cl.auth.signInWithOtp({email,options:{emailRedirectTo:redirectTo||cfg.authRedirect,data:{first_name:first,last_name:last,full_name:name,boost_region:REGION}}})}
   async function verify(email,code){return c().auth.verifyOtp({email,token:code,type:'email'})}
-  async function finishAuth(){const cl=c();if(!cl)return null;const {data:{session}}=await cl.auth.getSession();if(!session?.user)return null;let j=await loadMine()||get();j.participant=j.participant||{};j.participant.name=localStorage.getItem('pinal_boost_pending_name')||session.user.user_metadata?.full_name||j.participant.name||'';j.participant.email=session.user.email||localStorage.getItem('pinal_boost_pending_email')||j.participant.email||'';put(j);localStorage.removeItem('pinal_boost_pending_name');localStorage.removeItem('pinal_boost_pending_email');await save(j);return session}
+  async function finishAuth(){
+    const cl=c();if(!cl)return null;
+    const {data:{session}}=await cl.auth.getSession();if(!session?.user)return null;
+    // Verification is a read, not permission to overwrite cloud answers.
+    await loadMine();
+    localStorage.removeItem('pinal_boost_pending_name');
+    localStorage.removeItem('pinal_boost_pending_email');
+    return session;
+  }
   function captureModule(moduleId,extra){
     const j=get();j.progress=j.progress||{};j.modules=j.modules||{};
     const previous=j.modules[moduleId]||{},oldSig=dependencySignature(moduleId,previous);
