@@ -452,6 +452,7 @@ function state(j,id,blocked){
    if(id==='rapid-coach-prep')return hasEvidence(j,'jobsearch')?{label:'Ready — Prepare for Your Appointment',cls:'ok',block:false,canLaunch:true}:{label:'Available after 48-Hour Job Search',cls:'lock',block:true,canLaunch:false};
    if(['financial','ai'].includes(id)&&!postEnrollmentAccess.unlocked)return {label:postEnrollmentAccess.checked?'Available After Enrollment':'Verifying Enrollment',cls:'lock',block:false,canLaunch:false};
    if(id==='skillmobility'&&rapidDirection(j)==='return')return {label:'Not Required — Returning to Previous Occupation',cls:'ok',block:false,canLaunch:false};
+   if(id==='jobsearch'&&(hasEvidence(j,'skillmobility')||rapidDirection(j)==='return'))return hasEvidence(j,'jobsearch')?{label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true}:{label:'Available — Resume or Complete 48-Hour Plan',cls:'warn',block:true,canLaunch:true};
    const done=hasEvidence(j,id);
    if(id==='rapid-discover'&&done&&!j?.progress?.['rapid-discover'])return {label:'Completed — Original Module 1 Preserved',cls:'ok',block:false,canLaunch:true};
    if(done)return {label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true};
