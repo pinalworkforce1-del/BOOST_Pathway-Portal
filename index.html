@@ -70,6 +70,14 @@ async function acceptCompletionReceipt(client,region){
    completed_at:now,updated_at:now
  },{onConflict:'user_id,region,module_id'});
  if(error)return 'Completion confirmation failed: '+error.message;
+ // A completion receipt must persist the full module evidence, not only the progress marker.
+ // Keep the receipt retryable until the guarded versioned cloud write confirms success.
+ if(id==='skillmobility'){
+   try{
+     const saved=await window.PinalBOOSTCloud?.saveNow?.();
+     if(!saved)return 'Skill Mobility completion reached the server, but the job-search report has not been cloud-confirmed. Please retry this return.';
+   }catch(err){return 'Skill Mobility evidence save needs retry: '+(err?.message||'cloud error');}
+ }
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  history.replaceState({},'',clean.toString());
  return 'Saved completion validated for '+id+'. Progress refreshed.';
