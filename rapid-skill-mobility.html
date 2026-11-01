@@ -35,20 +35,26 @@
 <p class="error" id="rapidDecisionError" role="alert"></p>
 </section>
 <section id="rapidReturnResearch" class="rapidGate" hidden>
-<div class="step">Return-to-occupation pathway</div><h2>Validate your previous occupation against the labor market</h2>
+<div class="step">Return-to-work pathway</div><h2>Find three jobs you could pursue</h2>
 <p id="rapidRoleHeading"></p>
-<div class="explain">We won't invent current wages or demand. Check your occupation, location and data year using official sources; then record what you found. Use a current employer posting to validate the actual requirements before applying.</div>
-<div class="gridChoice"><article><h3>Local wages and employment</h3><p>Check Arizona Office of Economic Opportunity occupational employment and wage data.</p><a href="https://oeo.az.gov/labor-market/occupation-employment" target="_blank" rel="noopener">Open Arizona occupation data ↗</a></article><article><h3>Demand and openings</h3><p>Review Arizona occupational projections and employment outlook.</p><a href="https://oeo.az.gov/labor-market/employment-projections" target="_blank" rel="noopener">Open Arizona employment projections ↗</a></article><article><h3>Tasks and preparation</h3><p>Confirm occupation tasks, skills, typical preparation and O*NET code.</p><a href="https://www.onetonline.org/find/" target="_blank" rel="noopener">Find occupation in O*NET ↗</a></article></div>
-<div class="gridChoice">
-<label>Geography<select id="rapidLocation"><option>Pinal County</option><option>Arizona statewide</option><option>Other Arizona region</option></select></label>
-<label>Published local hourly wage (optional)<input id="rapidPublishedWage" type="number" min="0" step=".01" placeholder="Hourly wage from cited source"></label>
-<label>Annual openings (optional)<input id="rapidAnnualOpenings" type="number" min="0" step="1" placeholder="Published count"></label>
-<label>Data source and year<input id="rapidSource" placeholder="e.g., Arizona OEO, occupational projections 2025"></label>
+<div class="explain">You know this occupation. Now look for openings that match your needs. Choose up to three jobs and tell your career coach what happened. You do not have to apply to all three before continuing.</div>
+<div class="gridChoice"><article><h3>Search Indeed</h3><p>Explore current employer postings for your occupation near Pinal County.</p><a id="rapidIndeedLink" href="https://www.indeed.com/jobs" target="_blank" rel="noopener noreferrer">Find jobs on Indeed ↗</a></article><article><h3>Arizona Job Connection</h3><p>Search local openings and workforce opportunities.</p><a href="https://www.azjobconnection.gov/" target="_blank" rel="noopener noreferrer">Search Arizona Job Connection ↗</a></article></div>
+<div id="rapidJobEntries" class="gridChoice">
+<article class="rapidJobRow"><h3>Job 1</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article><article class="rapidJobRow"><h3>Job 2</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article><article class="rapidJobRow"><h3>Job 3</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article>
 </div>
-<label>Does returning to this work still fit your goals?<select id="rapidReturnFit"><option value="">Select your decision</option><option value="yes">Yes — the work and opportunities fit</option><option value="maybe">Possibly — I need coach guidance or more information</option><option value="no">No — I'd prefer to explore different occupations</option></select></label>
-<label>What did you discover about wages, openings, qualifications, schedule or commute?<textarea id="rapidValidationNotes" placeholder="Describe the evidence you reviewed and your conclusion"></textarea></label>
-<div class="actions"><button class="btn green" type="button" id="rapidValidateSave">Save occupation validation</button><button class="btn ghost" type="button" id="rapidSwitchToPivot">Explore other occupations instead</button><button class="btn ghost" type="button" id="rapidReturnBack">← Change starting decision</button></div>
-<div id="rapidReturnStatus" role="status"></div><div id="rapidReturnDone" hidden><button class="btn green" type="button" id="rapidReturnComplete">Save Completion & Return to BOOST →</button><button class="btn ghost" type="button" onclick="window.print()">Print / Save My Decision</button></div>
+<fieldset style="border:1px solid #bdd5df;border-radius:12px;padding:16px;margin:15px 0"><legend><strong>If you haven't applied, what's holding you back?</strong></legend>
+<div class="gridChoice">
+<label><input type="checkbox" class="rapidJobBarrier" value="Pay is too low"> Jobs I found don't pay enough</label>
+<label><input type="checkbox" class="rapidJobBarrier" value="Commute too far"> I couldn't find openings within a reasonable commute</label>
+<label><input type="checkbox" class="rapidJobBarrier" value="Missing required skills or experience"> I'm missing required skills or experience</label>
+<label><input type="checkbox" class="rapidJobBarrier" value="Schedule doesn't work"> The available schedules don't work for me</label>
+<label><input type="checkbox" class="rapidJobBarrier" value="Application support needed"> I need help with my résumé or applications</label>
+<label><input type="checkbox" class="rapidJobBarrier" value="Other"> Other</label>
+</div>
+<label>Anything else your coach should know? (optional)<textarea id="rapidJobNotes" placeholder="A quick note for your career coach"></textarea></label>
+</fieldset>
+<div class="actions"><button class="btn green" type="button" id="rapidValidateSave">Save My Job Search Check-In</button><button class="btn ghost" type="button" id="rapidSwitchToPivot">Explore other occupations instead</button><button class="btn ghost" type="button" id="rapidReturnBack">← Change starting decision</button></div>
+<div id="rapidReturnStatus" role="status"></div><div id="rapidReturnDone" hidden><button class="btn green" type="button" id="rapidReturnComplete">Save Completion & Return to BOOST →</button><button class="btn ghost" type="button" onclick="window.print()">Print / Save My Check-In</button></div>
 </section>
 <main id="rapidMobilityMain" hidden><div class="wrap">
 <section class="panel"><div class="step">Step 1 • Your starting point</div><h2>Start with what you already bring.</h2><p class="sub">Your Rapid Discover occupation, work preferences, and O*NET results carry forward. Review your latest wage and use your confirmed experience to explore new options.</p><div id="interestBox" class="interestBox">Loading your BOOST starting point…</div><div id="careerCards" class="matches" style="margin-top:14px"><div class="empty">Your Rapid Discover results will appear here…</div></div><div class="grid2" style="margin-top:13px"><label>Current / most recent hourly wage<input id="currentWage" type="number" min="0" step=".01" placeholder="18.50"></label><label>Minimum wage you would seriously consider<input id="minimumWage" type="number" min="0" step=".01" placeholder="20.00"></label></div></section>
@@ -78,7 +84,7 @@ function step(which){
  $('rapidDecisionGate').hidden=which!=='start';
  $('rapidReturnResearch').hidden=which!=='return';
  $('rapidMobilityMain').hidden=which!=='pivot';
- if(which==='return')$('rapidRoleHeading').textContent="Previous occupation: "+$('rapidPriorRole').value.trim();
+ if(which==='return'){const occupation=$('rapidPriorRole').value.trim();$('rapidRoleHeading').textContent="Previous occupation: "+occupation;const url=new URL('https://www.indeed.com/jobs');url.searchParams.set('q',occupation);url.searchParams.set('l','Pinal County, AZ');$('rapidIndeedLink').href=url.toString();}
  if(which==='pivot'){
    const profile=window.BOOST_RAPID_PROFILE?.();if(profile?.skillIds?.length){profile.skillIds.forEach(id=>{const box=document.getElementById('skill_'+id);if(box)box.checked=true;});}
    const resume=$('resumeText');
@@ -143,13 +149,15 @@ $('rapidReturnNo').addEventListener('click',()=>start('pivot'));
 $('rapidSwitchToPivot').addEventListener('click',()=>start('pivot'));
 $('rapidReturnBack').addEventListener('click',()=>step('start'));
 $('rapidValidateSave').addEventListener('click',()=>{
- const source=$('rapidSource').value.trim(),fit=$('rapidReturnFit').value,notes=$('rapidValidationNotes').value.trim();
- if(!source||!fit||!notes){$('rapidReturnStatus').textContent='Please enter the source and data year, choose a fit decision, and explain your conclusion.';return}
- const d={direction:'return',priorOccupation:$('rapidPriorRole').value.trim(),duties:$('rapidPriorDuties').value.trim(),validation:{geography:$('rapidLocation').value,wage:Number($('rapidPublishedWage').value)||null,annualOpenings:Number($('rapidAnnualOpenings').value)||null,source,fit,notes},considerations:[]};
- saveIntro();localStorage.setItem(key,JSON.stringify(d));
- $('rapidReturnStatus').textContent='✓ Return-to-occupation validation captured. If you decide the occupation does not fit, explore other options before finalizing.';
- $('rapidReturnDone').hidden=fit==='no';
- if(fit==='no')$('rapidReturnStatus').textContent+=' Select “Explore other occupations instead” to continue.';
+ const jobs=[...document.querySelectorAll('.rapidJobRow')].map((row,i)=>({number:i+1,title:row.querySelector('.rapidJobTitle').value.trim(),url:row.querySelector('.rapidJobUrl').value.trim(),applied:row.querySelector('.rapidJobApplied').value})).filter(job=>job.title);
+ const barriers=[...document.querySelectorAll('.rapidJobBarrier:checked')].map(x=>x.value);
+ const notes=$('rapidJobNotes').value.trim();
+ if(!jobs.length&&!barriers.length&&!notes){$('rapidReturnStatus').textContent='Record at least one job you found, a barrier, or a note about your search before continuing.';return;}
+ if(jobs.some(j=>!j.applied)){$('rapidReturnStatus').textContent='For each listed job, select whether you applied, did not apply, or plan to apply.';return;}
+ const d={direction:'return',priorOccupation:$('rapidPriorRole').value.trim(),duties:$('rapidPriorDuties').value.trim(),validation:{type:'job_search_readiness',geography:'Pinal County',jobs,barriers,notes,reviewedAt:new Date().toISOString()},considerations:[]};
+ saveIntro();localStorage.setItem(key,JSON.stringify({...safeRead(key),...d}));
+ $('rapidReturnStatus').textContent='✓ Job search check-in saved. Your coach can review the openings, applications and barriers you recorded.';
+ $('rapidReturnDone').hidden=false;
  $('rapidReturnComplete').onclick=()=>complete(d);
 });
 document.addEventListener('click',e=>{
