@@ -168,6 +168,63 @@
     saveQueue=next.catch(()=>false);
     return next;
   }
+  // Save Rapid handoffs as targeted changes to the latest authenticated journey.
+  // This avoids losing a return receipt when another tab has moved the cloud
+  // revision since the homepage's initial read.
+  function saveRapidEvidence(moduleId,evidence){
+    if(!['jobsearch','jobsearchDraft'].includes(moduleId)||!evidence||typeof evidence!=='object')return Promise.resolve(false);
+    if(moduleId==='jobsearch'&&(!evidence.completedAt||![1,2,3,4].every(n=>evidence.phases?.[n]===true)))return Promise.resolve(false);
+    if(moduleId==='jobsearchDraft'&&(!evidence.updatedAt||!evidence.state||!evidence.state.values||!evidence.state.lists))return Promise.resolve(false);
+    const c=getClient();
+    if(!c)return Promise.resolve(false);
+    const operation=async()=>{
+      const session=(await c.auth.getSession()).data?.session;
+      if(!session?.user?.email)return false;
+      for(let attempt=0;attempt<3;attempt++){
+        const current=await loadVersioned();
+        if(!current||!Object.prototype.hasOwnProperty.call(current,'revision'))return false;
+        const remote=current.journey&&typeof current.journey==='object'?current.journey:{};
+        const previous=remote.modules?.[moduleId];
+        const same=moduleId==='jobsearch'
+          ?previous?.completedAt===evidence.completedAt&&remote.progress?.jobsearch==='complete'
+          :previous?.updatedAt===evidence.updatedAt;
+        const newer=moduleId==='jobsearchDraft'&&previous?.updatedAt&&String(previous.updatedAt)>String(evidence.updatedAt);
+        if(same||newer){
+          cloudRevision=current.revision;cloudBaseline=stable(current.journey);cloudReady=true;
+          if(current.journey)restore(current.journey);
+          return true;
+        }
+        const base=mergeJourney({schema_version:2,region:REGION,participant:{email:session.user.email.toLowerCase()}},remote);
+        const payload=mergeJourney(base,{
+          modules:{[moduleId]:evidence},
+          ...(moduleId==='jobsearch'?{progress:{jobsearch:'complete'}}:{}),
+          updated_at:new Date().toISOString()
+        });
+        const result=await c.rpc('boost_pinal_save_if_revision',{p_journey:payload,p_revision:current.revision});
+        if(result.error){console.warn('Rapid evidence RPC failed',result.error.message);return false;}
+        if(result.data?.saved){
+          const saved=result.data.journey||payload;
+          const verified=moduleId==='jobsearch'
+            ?saved.modules?.jobsearch?.completedAt===evidence.completedAt&&saved.progress?.jobsearch==='complete'
+            :saved.modules?.jobsearchDraft?.updatedAt===evidence.updatedAt;
+          if(!verified)return false;
+          cloudRevision=result.data.revision;cloudBaseline=stable(saved);cloudReady=true;
+          if(stable(readJourney())!==stable(saved))retainBrowserCopy('rapid-evidence-cloud-rebase');
+          restore(saved);
+          window.dispatchEvent(new CustomEvent('boost-cloud-status',{detail:{state:'saved',region:REGION,moduleId}}));
+          return true;
+        }
+        if(result.data?.reason!=='revision_changed'){
+          console.warn('Rapid evidence save rejected',result.data?.reason||'unknown reason');
+          return false;
+        }
+      }
+      return false;
+    };
+    const next=saveQueue.then(operation,operation);
+    saveQueue=next.catch(()=>false);
+    return next;
+  }
   // Serialize explicit module saves and automatic storage saves in the same tab.
   // Otherwise two callers can race using the same revision token.
   function saveNow(){
@@ -267,7 +324,7 @@
     }
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",showGate);else showGate();
   }
-  window.PinalBOOSTCloud={configured:configured,saveIndustryCompletion:saveIndustryCompletion,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
+  window.PinalBOOSTCloud={configured:configured,saveIndustryCompletion:saveIndustryCompletion,saveRapidEvidence:saveRapidEvidence,saveNow:saveNow,loadMine:loadMine,getClient:getClient,restore:restore,ready:()=>bootstrapPromise};
   bootstrapPromise=bootstrap();
 })();
 
