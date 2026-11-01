@@ -59,7 +59,7 @@ async function acceptCompletionReceipt(client,region){
  // Keep return receipt in URL if validation fails so it can be retried.
  if(!nonce||sessionStorage.getItem('boost_completion_nonce:'+id)!==nonce)return 'Completion receipt not recognized. Saved work has not been changed.';
  const j=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
- const handoff=id==='skillmobility'?sessionStorage.getItem('boost_completion_payload:skillmobility'):null;
+ const handoff=['skillmobility','jobsearch'].includes(id)?sessionStorage.getItem('boost_completion_payload:'+id):null;
  let handoffEvidence=null;
  try{if(handoff)handoffEvidence=JSON.parse(handoff)}catch{}
  if(id==='skillmobility'&&handoffEvidence?.direction&&handoffEvidence?.completedAt){
@@ -68,6 +68,7 @@ async function acceptCompletionReceipt(client,region){
    j.progress.skillmobility='complete';
    localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
  }
+ if(id==='jobsearch'&&handoffEvidence?.completedAt){j.modules=j.modules||{};j.progress=j.progress||{};j.modules.jobsearch={...j.modules.jobsearch,...handoffEvidence};j.progress.jobsearch='complete';localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));}
  const payload=j?.modules?.[id];
  if(!payload||typeof payload!=='object'||!Object.keys(payload).length)return 'No saved module evidence found. Completion was not recorded.';
  const session=(await client.auth.getSession()).data?.session;
@@ -82,14 +83,14 @@ async function acceptCompletionReceipt(client,region){
  if(error)return 'Completion confirmation failed: '+error.message;
  // A completion receipt must persist the full module evidence, not only the progress marker.
  // Keep the receipt retryable until the guarded versioned cloud write confirms success.
- if(id==='skillmobility'){
+ if(id==='skillmobility'||id==='jobsearch'){
    try{
      const saved=await window.PinalBOOSTCloud?.saveNow?.();
      if(!saved)return 'Skill Mobility completion reached the server, but the job-search report has not been cloud-confirmed. Please retry this return.';
    }catch(err){return 'Skill Mobility evidence save needs retry: '+(err?.message||'cloud error');}
  }
  sessionStorage.removeItem('boost_completion_nonce:'+id);
- if(id==='skillmobility')sessionStorage.removeItem('boost_completion_payload:skillmobility');
+ if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
  history.replaceState({},'',clean.toString());
  return 'Saved completion validated for '+id+'. Progress refreshed.';
 }
