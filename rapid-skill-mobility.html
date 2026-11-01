@@ -18,6 +18,27 @@
 #rapidConsiderations{padding:14px 18px;background:#e9f4f7;border-radius:12px;margin:12px 0}
 .rapidConsider{background:#245e7a!important;color:#fff!important}
 @media print{#rapidDecisionGate{display:none!important}}
+
+/* Compact return-to-work check-in; overrides generic form input rules. */
+#rapidReturnResearch{max-width:1180px;margin:0 auto;padding:18px 16px 28px}
+#rapidReturnResearch .rapidJobSources{gap:10px;margin:12px 0}
+#rapidReturnResearch .rapidJobSources article{padding:12px 14px}
+#rapidReturnResearch .rapidJobSources h3{margin:0 0 3px;font-size:1rem}
+#rapidReturnResearch .rapidJobSources p{margin:3px 0 6px;font-size:.87rem}
+#rapidJobEntries{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:13px 0}
+#rapidJobEntries .rapidJobRow{min-width:0;padding:13px;border:1px solid #c9dbe6;border-radius:12px;background:#f9fcfe}
+#rapidJobEntries .rapidJobRow h3{margin:0 0 5px;font-size:1rem}
+#rapidJobEntries .rapidJobRow label{margin:8px 0;font-size:.8rem}
+#rapidJobEntries .rapidJobRow input,#rapidJobEntries .rapidJobRow select{padding:8px 9px;margin-top:4px}
+#rapidReturnResearch .rapidBarrierFieldset{border:1px solid #bdd5df;border-radius:12px;padding:12px 15px;margin:14px 0}
+#rapidReturnResearch .rapidBarrierFieldset legend{padding:0 6px;font-size:.96rem}
+#rapidReturnResearch .rapidBarrierGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 15px;margin:7px 0 11px}
+#rapidReturnResearch .rapidBarrierGrid label{display:flex;align-items:flex-start;gap:9px;margin:0;padding:7px 9px;border-radius:8px;background:#f5f9fb;font-size:.86rem;font-weight:600;line-height:1.4;cursor:pointer}
+#rapidReturnResearch .rapidBarrierGrid label input[type=checkbox]{display:inline-block;flex:0 0 17px;width:17px;height:17px;min-width:17px;margin:1px 0 0;padding:0;accent-color:#267b52}
+#rapidReturnResearch #rapidJobNotes{min-height:65px;max-height:150px}
+#rapidReturnResearch .rapidBarrierFieldset>label{margin:5px 0 0}
+#rapidReturnResearch .actions{gap:8px;margin-top:12px}
+@media(max-width:760px){#rapidJobEntries{grid-template-columns:1fr}#rapidReturnResearch .rapidBarrierGrid{grid-template-columns:1fr}}
 </style>
 <section id="rapidDecisionGate" class="rapidGate">
 <div class="step">Rapid Reemployment · Skill Mobility</div>
@@ -38,12 +59,12 @@
 <div class="step">Return-to-work pathway</div><h2>Find three jobs you could pursue</h2>
 <p id="rapidRoleHeading"></p>
 <div class="explain">You know this occupation. Now look for openings that match your needs. Choose up to three jobs and tell your career coach what happened. You do not have to apply to all three before continuing.</div>
-<div class="gridChoice"><article><h3>Search Indeed</h3><p>Explore current employer postings for your occupation near Pinal County.</p><a id="rapidIndeedLink" href="https://www.indeed.com/jobs" target="_blank" rel="noopener noreferrer">Find jobs on Indeed ↗</a></article><article><h3>Arizona Job Connection</h3><p>Search local openings and workforce opportunities.</p><a href="https://www.azjobconnection.gov/" target="_blank" rel="noopener noreferrer">Search Arizona Job Connection ↗</a></article></div>
+<div class="gridChoice rapidJobSources"><article><h3>Search Indeed</h3><p>Explore current employer postings for your occupation near Pinal County.</p><a id="rapidIndeedLink" href="https://www.indeed.com/jobs" target="_blank" rel="noopener noreferrer">Find jobs on Indeed ↗</a></article><article><h3>Arizona Job Connection</h3><p>Search local openings and workforce opportunities.</p><a href="https://www.azjobconnection.gov/" target="_blank" rel="noopener noreferrer">Search Arizona Job Connection ↗</a></article></div>
 <div id="rapidJobEntries" class="gridChoice">
 <article class="rapidJobRow"><h3>Job 1</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article><article class="rapidJobRow"><h3>Job 2</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article><article class="rapidJobRow"><h3>Job 3</h3><label>Employer and job title<input class="rapidJobTitle" placeholder="Employer · Position"></label><label>Job posting URL (optional)<input class="rapidJobUrl" type="url" placeholder="https://..."></label><label>Did you apply?<select class="rapidJobApplied"><option value="">Choose</option><option value="yes">Yes</option><option value="no">No</option><option value="planning">Planning to apply</option></select></label></article>
 </div>
-<fieldset style="border:1px solid #bdd5df;border-radius:12px;padding:16px;margin:15px 0"><legend><strong>If you haven't applied, what's holding you back?</strong></legend>
-<div class="gridChoice">
+<fieldset class="rapidBarrierFieldset"><legend><strong>If you haven't applied, what's holding you back?</strong></legend>
+<div class="rapidBarrierGrid">
 <label><input type="checkbox" class="rapidJobBarrier" value="Pay is too low"> Jobs I found don't pay enough</label>
 <label><input type="checkbox" class="rapidJobBarrier" value="Commute too far"> I couldn't find openings within a reasonable commute</label>
 <label><input type="checkbox" class="rapidJobBarrier" value="Missing required skills or experience"> I'm missing required skills or experience</label>
