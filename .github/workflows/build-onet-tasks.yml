@@ -1,0 +1,28 @@
+name: Build O-NET task suggestions
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/build-onet-core-tasks.py'
+      - '.github/workflows/build-onet-tasks.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build verified O-NET core tasks
+        run: python scripts/build-onet-core-tasks.py
+      - name: Commit generated task index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/onet-core-tasks-v31.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate official O-NET 31.0 core task index"
+            git push
+          fi
