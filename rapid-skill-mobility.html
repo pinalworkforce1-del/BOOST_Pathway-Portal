@@ -75,7 +75,7 @@
 </div>
 <label>Anything else your coach should know? (optional)<textarea id="rapidJobNotes" placeholder="A quick note for your career coach"></textarea></label>
 </fieldset>
-<div class="actions"><button class="btn green" type="button" id="rapidValidateSave">Save My Job Search Check-In</button><button class="btn ghost" type="button" id="rapidSwitchToPivot">Explore other occupations instead</button><button class="btn ghost" type="button" id="rapidReturnBack">← Change starting decision</button></div>
+<div class="actions"><button class="btn green" type="button" id="rapidValidateSave">Save Check-In & Continue to BOOST</button><button class="btn ghost" type="button" id="rapidSwitchToPivot">Explore other occupations instead</button><button class="btn ghost" type="button" id="rapidReturnBack">← Change starting decision</button></div>
 <div id="rapidReturnStatus" role="status"></div><div id="rapidReturnDone" hidden><button class="btn green" type="button" id="rapidReturnComplete">Save Completion & Return to BOOST →</button><button class="btn ghost" type="button" onclick="window.print()">Print / Save My Check-In</button></div>
 </section>
 <main id="rapidMobilityMain" hidden><div class="wrap">
@@ -178,9 +178,10 @@ $('rapidValidateSave').addEventListener('click',()=>{
  if(jobs.some(j=>!j.applied)){$('rapidReturnStatus').textContent='For each listed job, select whether you applied, did not apply, or plan to apply.';return;}
  const d={direction:'return',priorOccupation:$('rapidPriorRole').value.trim(),duties:$('rapidPriorDuties').value.trim(),validation:{type:'job_search_readiness',geography:'Pinal County',jobs,barriers,notes,reviewedAt:new Date().toISOString()},considerations:[]};
  saveIntro();localStorage.setItem(key,JSON.stringify({...safeRead(key),...d}));
- $('rapidReturnStatus').textContent='✓ Job search check-in saved. Your coach can review the openings, applications and barriers you recorded.';
- $('rapidReturnDone').hidden=false;
- $('rapidReturnComplete').onclick=()=>complete(d);
+ $('rapidReturnStatus').textContent='Saving your job search check-in and completing Skill Mobility…';
+ const button=$('rapidValidateSave');button.disabled=true;
+ try{complete(d)}catch(error){button.disabled=false;$('rapidReturnStatus').textContent='Unable to complete the BOOST handoff. Your responses remain saved. Please try again.';console.error('Rapid completion handoff',error)}
+
 });
 document.addEventListener('click',e=>{
  const removal=e.target.closest('.rapidRemove');
