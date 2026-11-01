@@ -52,6 +52,30 @@ function openModule(moduleId,tile){
  location.assign(activity.toString());
 }
 function industryId(id){return ['healthcare','trades','manufacturing','it','cdl'].includes(id)?'industry-'+id:id}
+function receiveRapidHandoff(){
+ const q=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.replace(/^#/,''));
+ const raw=hash.get('boost_handoff');
+ if(!raw)return null;
+ let transfer;try{transfer=JSON.parse(raw)}catch{return 'Malformed return handoff. Your saved work has not been changed.'}
+ const nonce=String(transfer?.nonce||'');
+ const module=String(transfer?.module||'');
+ if(module!=='jobsearch'||!nonce||nonce!==sessionStorage.getItem('boost_completion_nonce:jobsearch')||
+    q.get('boost_nonce')!==nonce||!['completion','draft'].includes(transfer.kind))
+   return 'Return verification failed. Your saved work has not been changed.';
+ if(transfer.kind==='completion'){
+   const e=transfer.evidence;
+   if(!e||typeof e!=='object'||!e.completedAt||!e.phases||![1,2,3,4].every(n=>e.phases[n]))
+     return 'The job-search planning evidence is incomplete. No completion has been recorded.';
+   sessionStorage.setItem('boost_completion_payload:jobsearch',JSON.stringify(e));
+ }else{
+   const d=transfer.draft;
+   if(!d||typeof d!=='object'||!d.state||!d.updatedAt)return 'Draft handoff was incomplete.';
+   sessionStorage.setItem('boost_jobsearch_draft_handoff',JSON.stringify(d));
+ }
+ const clean=new URL(location.href);clean.hash='';
+ history.replaceState({},'',clean.toString());
+ return null;
+}
 async function acceptCompletionReceipt(client,region){
  const q=new URLSearchParams(location.search),id=q.get('boost_complete'),nonce=q.get('boost_nonce');
  if(!id)return null;
@@ -68,7 +92,14 @@ async function acceptCompletionReceipt(client,region){
    j.progress.skillmobility='complete';
    localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
  }
- if(id==='jobsearch'&&handoffEvidence?.completedAt){j.modules=j.modules||{};j.progress=j.progress||{};j.modules.jobsearch={...j.modules.jobsearch,...handoffEvidence};j.progress.jobsearch='complete';localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));}
+ if(id==='jobsearch'){
+   if(!handoffEvidence?.completedAt||![1,2,3,4].every(n=>handoffEvidence.phases?.[n]))
+     return 'Complete the four planning phases before confirming your 48-Hour Job Search.';
+   j.modules=j.modules||{};j.progress=j.progress||{};
+   j.modules.jobsearch={...j.modules.jobsearch,...handoffEvidence};
+   j.progress.jobsearch='complete';
+   localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
+ }
  const payload=j?.modules?.[id];
  if(!payload||typeof payload!=='object'||!Object.keys(payload).length)return 'No saved module evidence found. Completion was not recorded.';
  const session=(await client.auth.getSession()).data?.session;
@@ -86,8 +117,8 @@ async function acceptCompletionReceipt(client,region){
  if(id==='skillmobility'||id==='jobsearch'){
    try{
      const saved=await window.PinalBOOSTCloud?.saveNow?.();
-     if(!saved)return 'Skill Mobility completion reached the server, but the job-search report has not been cloud-confirmed. Please retry this return.';
-   }catch(err){return 'Skill Mobility evidence save needs retry: '+(err?.message||'cloud error');}
+     if(!saved)return 'Completion needs cloud confirmation. Your work is preserved; please retry the return before moving on.';
+   }catch(err){return 'Completion evidence save needs retry: '+(err?.message||'cloud error');}
  }
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
@@ -216,7 +247,13 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
  const raw=[...asArray(mob.confirmedSkills),...asArray(mob.skillAssessment?.confirmedSkills),...asArray(mob.confirmedPriorSkillIds)];
  const skills=[...new Set(raw.map(x=>typeof x==='string'?x:(x?.label||x?.name||'')).map(x=>skillLabels[x]||x).filter(x=>typeof x==='string'&&x.trim()&&x.length<100))].slice(0,3);
  const packet={name:String(j.participant?.name||j.participant_name||'').slice(0,100),target:String(mob.considerations?.[0]?.title||mob.priorOccupation||discover.priorOccupation||'').slice(0,120),skills};
- url.hash='boost_prefill='+encodeURIComponent(JSON.stringify(packet));
+ const draft=j.modules?.jobsearchDraft;
+ if(draft?.state?.values&&draft?.state?.lists){
+   const h=new URLSearchParams();
+   h.set('boost_prefill',JSON.stringify(packet));
+   h.set('boost_draft_state',JSON.stringify(draft));
+   url.hash=h.toString();
+ }else url.hash='boost_prefill='+encodeURIComponent(JSON.stringify(packet));
  e.preventDefault();location.assign(url.toString());}catch(error){console.error('48-Hour launch handoff failed; opening module directly',error);window.location.assign('https://pinalworkforce1-del.github.io/48_hour_job_search/');}return;}if(key==='rapid'&&moduleId==='skillmobility'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:skillmobility',nonce);const url=new URL('rapid-skill-mobility.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','skillmobility');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','skillmobility');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}});
       body.append(a);
     }else{
@@ -630,6 +667,8 @@ document.getElementById('choices').addEventListener('click',(event)=>{
 },true);
 el('b2all').onclick=()=>document.querySelector('#choices').scrollIntoView({behavior:'smooth'});
 el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!((location.hostname==='pinalworkforce1-del.github.io'&&location.pathname.startsWith('/BOOST_Pathway-Portal/'))||(location.hostname==='pinal.boostpathways.org'&&(location.pathname==='/'||location.pathname==='/index.html'))))throw Error('Open BOOST from its official portal address to sign in.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};if(!window.PinalBOOSTCloud)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-cloud.js?v=pinal-safe-revision-1';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});await window.PinalBOOSTCloud?.ready?.();const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});boostPathSaveClient=client;boostPathSaveRegion=cfg.region||'Pinal County';const result=await client.auth.getSession();authUser=null;if(result.data?.session){const verified=await client.auth.getUser();if(!verified.error&&verified.data?.user){authUser=verified.data.user;}else{await client.auth.signOut({scope:'local'}).catch(()=>{});el('b2message').textContent='Your previous sign-in is no longer valid. Please sign in with your email to continue.';}}if(!authUser){document.body.classList.add('boost2-auth-gate');document.documentElement.classList.remove('boost2-module-return');if(boost2PathwayRequested||requestedBoostPath())showBoostSignIn(client);else el('b2message').textContent='Select a BOOST pathway below to begin.';return;}mount.classList.remove('boost2-awaiting-auth');
+const handoffError=receiveRapidHandoff();
+if(handoffError){el('b2message').textContent=handoffError;return;}
 const draftRequested=new URLSearchParams(location.search).get('boost_draft')==='jobsearch';
 if(draftRequested){
  const draftRaw=sessionStorage.getItem('boost_jobsearch_draft_handoff');
