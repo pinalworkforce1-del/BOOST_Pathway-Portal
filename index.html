@@ -105,13 +105,6 @@ async function acceptCompletionReceipt(client,region){
  const session=(await client.auth.getSession()).data?.session;
  if(!session?.user)return 'Sign-in is required to confirm module completion.';
  const now=new Date().toISOString();
- const {error}=await client.from('boost_module_progress').upsert({
-   user_id:session.user.id,region,module_id:id,
-   pathway:id==='module1'?'shared':id.startsWith('industry-')||id==='module5'?'career':(new URLSearchParams(location.search).get('boost2_path')||sessionStorage.getItem('boost2_return_pathway'))==='rapid'?'rapid':'career',
-   status:'completed',evidence:{source:'module_completion_return',version:2,journey_payload_saved:true,...(id==='rapid-discover'?{direction:payload.direction,occupationSoc:payload.occupationSoc||null,priorOccupation:payload.priorOccupation||null}:{})},
-   completed_at:now,updated_at:now
- },{onConflict:'user_id,region,module_id'});
- if(error)return 'Completion confirmation failed: '+error.message;
  // A completion receipt must persist the full module evidence, not only the progress marker.
  // Keep the receipt retryable until the guarded versioned cloud write confirms success.
  if(id==='skillmobility'||id==='jobsearch'){
@@ -120,6 +113,13 @@ async function acceptCompletionReceipt(client,region){
      if(!saved)return 'Completion needs cloud confirmation. Your work is preserved; please retry the return before moving on.';
    }catch(err){return 'Completion evidence save needs retry: '+(err?.message||'cloud error');}
  }
+ const {error}=await client.from('boost_module_progress').upsert({
+   user_id:session.user.id,region,module_id:id,
+   pathway:id==='module1'?'shared':id.startsWith('industry-')||id==='module5'?'career':(new URLSearchParams(location.search).get('boost2_path')||sessionStorage.getItem('boost2_return_pathway'))==='rapid'?'rapid':'career',
+   status:'completed',evidence:{source:'module_completion_return',version:2,journey_payload_saved:true,...(id==='rapid-discover'?{direction:payload.direction,occupationSoc:payload.occupationSoc||null,priorOccupation:payload.priorOccupation||null}:{})},
+   completed_at:now,updated_at:now
+ },{onConflict:'user_id,region,module_id'});
+ if(error)return 'Completion confirmation failed: '+error.message;
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
  history.replaceState({},'',clean.toString());
