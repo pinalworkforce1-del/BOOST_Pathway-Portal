@@ -59,9 +59,13 @@ function renderLmi(){
  const flag=v=>String(v||'').trim().toLowerCase()==='positive';
  const skill=h3?(flag(h3[2])?'Higher-level skills':'Not classified as high skill'):'Not available';
  const earnings=h3?(flag(h3[3])?'High wage potential':'Below the local high-wage benchmark'):'Not available';
- const onet=window.BOOST_ONET_OUTLOOK_BY_SOC?.[String(matched.soc||'')]||null;
- const bright=onet?.bright===true?'Bright Outlook — O*NET':onet?.bright===false?'Not designated Bright Outlook — O*NET':'O*NET outlook pending';
- const future=onet?.description||'National growth information is not yet connected.';
+ const source=window.BOOST_ONET_OUTLOOK_BY_SOC;
+ const code=String(matched.soc||'').trim();
+ const onet=source?.[code]||(!code.includes('.')?source?.[code+'.00']:null)||null;
+ const bright=onet?'Bright Outlook — O*NET':source?'Not designated Bright Outlook — O*NET':'O*NET outlook pending';
+ const reasons=onet?.reasons||[];
+ const descriptions={'Rapid Growth':'Faster-than-average national employment growth projected for 2025–2035.','Numerous Job Openings':'Large numbers of national openings projected for 2025–2035.','New and Emerging':'Identified as a new or emerging occupation.'};
+ const future=onet?(reasons.length?reasons.map(x=>descriptions[x]||x).join(' '):'O*NET identifies this occupation as Bright Outlook for 2025–2035.'):source?'Not on the current national Bright Outlook list; this does not mean local jobs are unavailable.':'National Bright Outlook data has not yet been published to BOOST.';
  const tile=(title,label,note)=>'<div style="padding:13px;border:1px solid #c9dce7;border-radius:12px;background:white"><strong>'+esc(title)+'</strong><div style="font-weight:750;margin:5px 0">'+esc(label)+'</div><small>'+esc(note)+'</small></div>';
  $('returnLmi').innerHTML='<div class="tags"><span>Regional jobs estimate: '+nfmt(matched.jobs)+'</span><span>Annual openings estimate: '+nfmt(matched.openings)+'</span><span>Entry estimate: '+money(matched.p25)+'/hr</span><span>Median estimate: '+money(matched.median)+'/hr</span><span>Typical preparation: '+esc([matched.education,matched.ojt].filter(Boolean).join(' · ')||'Verify locally')+'</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:15px 0">'+tile('Pinal career rating',labels[rating]||'H3 rating unavailable',detail[rating]||'No matching local classification was found.')+tile('Earnings potential',earnings,'Based on the local H3 wage criterion.')+tile('Skill requirements',skill,'Based on the local H3 skill criterion.')+tile('Future outlook',bright,future)+'</div><p class="foot">Pinal classifications: H3 source (2023–2025). National future outlook: O*NET when available. Local employment and wages above are estimates, not live job postings. Your career direction remains your decision.</p>';
 }
