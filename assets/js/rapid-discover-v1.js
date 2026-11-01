@@ -52,31 +52,18 @@ async function comparison(){
 function decide(direction){decision=direction;document.querySelectorAll('.choice').forEach(x=>x.classList.toggle('selected',x.id===(direction==='return'?'chooseReturn':'choosePivot')));$('returnValidation').classList.toggle('hidden',direction!=='return');$('decisionStatus').textContent=direction==='return'?'Review the regional evidence below, then save your return-to-work direction.':'Your occupation, preferences, and interest results can carry into Skill Mobility to explore transferable occupations.';persist();$('returnValidation').classList.contains('hidden')||renderLmi()}
 function renderLmi(){
  if(!matched)return;
- const soc=String(matched.soc||'').slice(0,7);
- const h3=window.BOOST_PINAL_H3_2023_25?.[soc]||null;
- const flags=h3?[h3[1],h3[2],h3[3]].map(v=>String(v||'').trim().toLowerCase()==='positive'):null;
+ const soc=String(matched.soc||'').slice(0,7),h3=window.BOOST_PINAL_H3_2023_25?.[soc]||null;
  const rating=String(h3?.[0]||'').trim();
- const phrases=[];
- if(flags){
-  if(flags[0])phrases.push('Shows strong local demand');
-  if(flags[1])phrases.push('Requires higher-level skills or preparation');
-  if(flags[2])phrases.push('Meets the local high-wage benchmark');
- }
- const headlines={
-  '3H':'Strong local career opportunity',
-  '2H':'In-demand, skilled occupation',
-  '+H':'Some promising workforce indicators',
-  '-H':'Local opportunity may be more limited'
- };
- const strength=headlines[rating]||(flags?'Regional workforce outlook':'Regional workforce rating unavailable');
- const positives=phrases.length?phrases.join(' · ')+'. ':'';
- const limitations=rating==='-H'?'The local H3 classification does not identify this occupation as in-demand. ':rating==='+H'?'The H3 results are mixed and do not establish an in-demand designation. ':rating==='2H'?'Its wage level is below the chart’s high-wage benchmark. ':'';
- const details=flags?positives+limitations:'A matching Pinal rating was not available.';
- const growth=Number(h3?.[6]);
- const growthNote=h3&&h3[6]!==''&&Number.isFinite(growth)?(growth>0?'The chart also projects additional jobs during 2023–2025. ':growth<0?'The chart projects a decline during 2023–2025. ':'The chart projects little net change during 2023–2025. '):'';
- const hasLocal=Number.isFinite(Number(matched.jobs))&&Number(matched.jobs)>0;
- const outlook=hasLocal?'The BOOST occupation dataset reports regional employment and openings, but these figures are estimates, not current vacancies.':'Regional estimates are insufficient to establish current opportunities.';
- $('returnLmi').innerHTML='<div class="tags"><span>Regional jobs estimate: '+nfmt(matched.jobs)+'</span><span>Annual openings estimate: '+nfmt(matched.openings)+'</span><span>Entry estimate: '+money(matched.p25)+'/hr</span><span>Median estimate: '+money(matched.median)+'/hr</span><span>Typical preparation: '+esc([matched.education,matched.ojt].filter(Boolean).join(' · ')||'Verify locally')+'</span></div><p><strong>What this means in Pinal:</strong> '+esc(strength)+'. '+esc(details)+' '+esc(growthNote)+'</p><p><strong>BOOST outlook:</strong> '+esc(outlook)+' You may continue pursuing this occupation or explore other options; the H3 rating alone does not determine your direction.</p><p class="foot">Workforce indicators: Pinal H3 chart (2023–2025). Employment and pay estimates: BOOST occupational dataset (year not independently verified). National O*NET growth outlook is not yet connected.</p>';
+ const labels={'3H':'Strong H3','2H':'H3 — Demand & Skill','+H':'H3 — Mixed Signals','-H':'H3 — Caution'};
+ const detail={'3H':'Strong local demand, higher skill requirements and high wage potential.','2H':'Strong local demand and higher skill requirements; wage potential is below the local high-wage benchmark.','+H':'Some favorable local indicators, but not a clear high-demand designation.','-H':'Not designated as in-demand under the local H3 framework. This does not mean there are no openings.'};
+ const flag=v=>String(v||'').trim().toLowerCase()==='positive';
+ const skill=h3?(flag(h3[2])?'Higher-level skills':'Not classified as high skill'):'Not available';
+ const earnings=h3?(flag(h3[3])?'High wage potential':'Below the local high-wage benchmark'):'Not available';
+ const onet=window.BOOST_ONET_OUTLOOK_BY_SOC?.[String(matched.soc||'')]||null;
+ const bright=onet?.bright===true?'Bright Outlook — O*NET':onet?.bright===false?'Not designated Bright Outlook — O*NET':'O*NET outlook pending';
+ const future=onet?.description||'National growth information is not yet connected.';
+ const tile=(title,label,note)=>'<div style="padding:13px;border:1px solid #c9dce7;border-radius:12px;background:white"><strong>'+esc(title)+'</strong><div style="font-weight:750;margin:5px 0">'+esc(label)+'</div><small>'+esc(note)+'</small></div>';
+ $('returnLmi').innerHTML='<div class="tags"><span>Regional jobs estimate: '+nfmt(matched.jobs)+'</span><span>Annual openings estimate: '+nfmt(matched.openings)+'</span><span>Entry estimate: '+money(matched.p25)+'/hr</span><span>Median estimate: '+money(matched.median)+'/hr</span><span>Typical preparation: '+esc([matched.education,matched.ojt].filter(Boolean).join(' · ')||'Verify locally')+'</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:15px 0">'+tile('Pinal career rating',labels[rating]||'H3 rating unavailable',detail[rating]||'No matching local classification was found.')+tile('Earnings potential',earnings,'Based on the local H3 wage criterion.')+tile('Skill requirements',skill,'Based on the local H3 skill criterion.')+tile('Future outlook',bright,future)+'</div><p class="foot">Pinal classifications: H3 source (2023–2025). National future outlook: O*NET when available. Local employment and wages above are estimates, not live job postings. Your career direction remains your decision.</p>';
 }
 function destination(){const q=new URLSearchParams(location.search);const returnUrl=q.get('boost_return'),nonce=q.get('boost_nonce'),module=q.get('boost_module');if(returnUrl&&nonce&&module==='rapid-discover'){let target;try{target=new URL(returnUrl,location.href);if(target.origin!==location.origin||!target.pathname.startsWith('/BOOST_Pathway-Portal/'))throw Error('invalid destination')}catch{return new URL('index.html?boost2_path=rapid',location.href)}target.searchParams.set('boost_complete','rapid-discover');target.searchParams.set('boost_nonce',nonce);return target;}return new URL('index.html?boost2_path=rapid',location.href)}
 function save(){if(!$('occupation').value.trim()||!$('duties').value.trim()||!$('confirmDuties').checked||!choices().length||!decision){$('decisionStatus').textContent='Enter your previous occupation, review and confirm your actual duties, choose at least one work preference, and select your employment direction.';return}if(!interestScores()){$('decisionStatus').textContent='Complete or refresh your O*NET assessment results before saving Rapid Discover. Your original Career Exploration completion will remain unchanged.';return}const scores=interestScores(),d={version:1,completedAt:new Date().toISOString(),source:'rapid-discover',priorOccupation:$('occupation').value.trim(),occupationSoc:matched?.soc||null,duties:$('duties').value.trim(),priorWage:Number($('priorWage').value)||null,workPreferences:choices(),dutiesConfirmed:true,avoid:$('avoid').value.trim(),onetScores:scores,direction:decision,validation:decision==='return'?{fit:'participant_selected_return',evidence:'Participant reviewed BOOST regional occupation estimates; no separate manual LMI research required',regionalJobs:matched?.jobs??null,annualOpenings:matched?.openings??null,p25:matched?.p25??null,median:matched?.median??null,source:'BOOST Pinal occupational dataset',dataYear:'Not independently verified',h3:window.BOOST_PINAL_H3_2023_25?.[String(matched?.soc||'').slice(0,7)]?.[0]||'Not found',h3Source:'Pinal H3 chart (2023–2025)',onetOutlook:'Not yet connected'}:null};
