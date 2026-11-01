@@ -213,7 +213,19 @@ if(discover.priorOccupation||discover.role){
    note.textContent='Already captured in Module 1. To change your occupation, update Rapid Discover first.';
    label.appendChild(note);
  }
- if(discover.duties&&!old.duties)$('rapidPriorDuties').value=discover.duties;
+ if(discover.duties){
+ const confirmed=$('rapidPriorDuties');
+ confirmed.value=discover.duties;
+ confirmed.readOnly=true;
+ confirmed.setAttribute('aria-label','Confirmed previous duties carried forward from Rapid Discover');
+ const dutyLabel=confirmed.closest('label');
+ if(dutyLabel){
+   dutyLabel.firstChild.textContent='Confirmed duties — carried forward from Rapid Discover';
+   const dutyNote=document.createElement('small');
+   dutyNote.textContent='Your confirmed work experience is preserved. You can add other experience in the optional supporting-experience section below.';
+   dutyLabel.appendChild(dutyNote);
+ }
+}
 }
 
 if(discover.direction==='pivot'&&(discover.priorOccupation||discover.role)){
