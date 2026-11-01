@@ -156,6 +156,8 @@ function complete(d){
  prior.portal.map.complete['m:skillmobility']=true;
  localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(prior));
  localStorage.setItem('pinal_boost_rapid_skill_mobility_decision_v2',JSON.stringify({...d,completedAt:new Date().toISOString()}));
+ // Preserve exact report across the portal cloud bootstrap, which may refresh local storage.
+ sessionStorage.setItem('boost_completion_payload:skillmobility',JSON.stringify(prior.modules.skillmobility));
  const q=new URLSearchParams(location.search),back=q.get('boost_return'),nonce=q.get('boost_nonce'),module=q.get('boost_module');
  if(back&&nonce&&module==='skillmobility'){
    let url;
