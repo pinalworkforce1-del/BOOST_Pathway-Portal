@@ -1,0 +1,30 @@
+name: Refresh O-NET Bright Outlook
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '25 13 7 * *'
+  push:
+    paths:
+      - 'scripts/build-onet-bright-outlook.py'
+      - '.github/workflows/refresh-onet-bright.yml'
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate official O-NET outlook index
+        run: python scripts/build-onet-bright-outlook.py
+      - name: Publish verified index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/data/onet-bright-outlook-2025-35.js
+          if ! git diff --cached --quiet; then
+            git commit -m "Update O-NET Bright Outlook index"
+            git push
+          fi
