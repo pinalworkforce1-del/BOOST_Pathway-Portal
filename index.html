@@ -720,7 +720,12 @@ el('b2all').onclick=showAllBoostPathways;
 el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!((location.hostname==='pinalworkforce1-del.github.io'&&location.pathname.startsWith('/BOOST_Pathway-Portal/'))||(location.hostname==='pinal.boostpathways.org'&&(location.pathname==='/'||location.pathname==='/index.html'))))throw Error('Open BOOST from its official portal address to sign in.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};if(!window.PinalBOOSTCloud)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-cloud.js?v=rapid-session-20261102';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});await window.PinalBOOSTCloud?.ready?.();const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});boostPathSaveClient=client;boostPathSaveRegion=cfg.region||'Pinal County';const result=await client.auth.getSession();authUser=null;if(result.data?.session){const verified=await client.auth.getUser();if(!verified.error&&verified.data?.user){authUser=verified.data.user;}else{await client.auth.signOut({scope:'local'}).catch(()=>{});el('b2message').textContent='Your previous sign-in is no longer valid. Please sign in with your email to continue.';}}if(!authUser){document.body.classList.add('boost2-auth-gate');document.documentElement.classList.remove('boost2-module-return');if(boost2PathwayRequested||requestedBoostPath())showBoostSignIn(client);else el('b2message').textContent='Select a BOOST pathway below to begin.';return;}mount.classList.remove('boost2-awaiting-auth','boost2-pending-choice');
 // A previously completed plan without its original launch nonce can be
 // recovered only after the participant explicitly confirms while signed in.
-const recoveryRaw=new URLSearchParams(location.hash.replace(/^#/,'')).get('boost_recovery');
+const recoveryParams=new URLSearchParams(location.search);
+const recoveryInHash=new URLSearchParams(location.hash.replace(/^#/,'')).get('boost_recovery');
+if(recoveryParams.get('boost_recover')==='jobsearch'&&recoveryInHash){
+ try{sessionStorage.setItem('boost_pending_jobsearch_recovery',recoveryInHash);}catch(err){console.warn('Recovery storage unavailable',err)}
+}
+const recoveryRaw=recoveryInHash||(recoveryParams.get('boost_recover')==='jobsearch'?sessionStorage.getItem('boost_pending_jobsearch_recovery'):null);
 if(new URLSearchParams(location.search).get('boost_recover')==='jobsearch'&&recoveryRaw){
  try{
   const recovery=JSON.parse(recoveryRaw);
@@ -733,7 +738,7 @@ if(new URLSearchParams(location.search).get('boost_recover')==='jobsearch'&&reco
    msg.textContent='Your completed 48-Hour plan was recovered from the activity. Confirm that this is your own plan to save its completion to your signed-in BOOST record.';
    const button=document.createElement('button');button.type='button';button.textContent='Confirm My 48-Hour Plan & Save Completion';
    const reject=document.createElement('button');reject.type='button';reject.className='secondary';reject.textContent='Not My Plan — Cancel';
-   const clearRecovery=()=>{const u=new URL(location.href);u.hash='';u.searchParams.delete('boost_recover');history.replaceState({},'',u.toString());entry.remove();};
+   const clearRecovery=()=>{sessionStorage.removeItem('boost_pending_jobsearch_recovery');const u=new URL(location.href);u.hash='';u.searchParams.delete('boost_recover');history.replaceState({},'',u.toString());entry.remove();};
    reject.onclick=clearRecovery;
    button.onclick=async()=>{
     button.disabled=true;button.textContent='Verifying cloud save…';
