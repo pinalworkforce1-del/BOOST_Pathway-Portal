@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOOST — 48-Hour Job Search Strategy • Rosie Guided</title>
+<style>
+:root{
+  --navy:#0d2741;--navy2:#174f75;--blue:#2c78aa;--gold:#e4ad3b;--cream:#fbf6e9;
+  --paper:#fffdf7;--ink:#17222c;--muted:#5d6a74;--green:#347b4a;--green2:#4f965e;
+  --orange:#bd632a;--red:#a94242;--purple:#6e5294;--line:#d7e0e5;--shadow:0 16px 40px rgba(14,36,55,.14);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#eef4f7,#f8f3e8 52%,#edf3f6);color:var(--ink)}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(11,36,57,.97);color:#fff;border-bottom:3px solid var(--gold);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.topbar-inner{max-width:1180px;margin:auto;padding:11px 18px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center}
+.brand{font-weight:950;letter-spacing:.035em}.brand small{display:block;font-size:.66rem;color:#c8d9e5;letter-spacing:.08em;margin-top:1px}
+.progress-wrap{min-width:0}.progress-title{font-size:.78rem;color:#d7e6ef;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.progress-track{height:9px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#e0a72f,#f4d574);transition:width .25s ease}
+.progress-count{font-size:.72rem;color:#d7e6ef;text-align:right;margin-top:3px}
+.toplink{border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 12px;text-decoration:none;font-size:.8rem;font-weight:850;background:rgba(255,255,255,.07)}
+.shell{max-width:1180px;margin:auto;padding:22px 18px 70px}
+.hero{display:grid;grid-template-columns:minmax(240px,330px) 1fr;gap:24px;background:linear-gradient(135deg,#123b5b,#1e668d);color:#fff;border-radius:24px;overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(255,255,255,.18)}
+.rosie{position:relative;background:radial-gradient(circle at 45% 25%,rgba(255,255,255,.23),transparent 45%),linear-gradient(180deg,#ddecf4,#c9dee8);min-height:420px;display:flex;align-items:flex-end;justify-content:center}
+.rosie img{width:100%;max-height:440px;object-fit:contain;object-position:center bottom;display:block}.rosie-badge{position:absolute;top:14px;left:14px;padding:7px 10px;border-radius:999px;background:#163e5e;color:#fff;font-weight:900;font-size:.72rem;letter-spacing:.06em}
+.hero-copy{padding:28px 30px 28px 4px;align-self:center}.eyebrow{font-weight:900;letter-spacing:.09em;color:#f1c969;font-size:.72rem;text-transform:uppercase}.hero h1{font-size:clamp(2.05rem,5vw,4rem);line-height:.95;margin:7px 0 10px;letter-spacing:-.04em}.hero h1 span{display:block;color:#f4d471}.hero .lead{font-size:1.05rem;line-height:1.55;color:#e1edf4;max-width:720px}
+.speech{position:relative;margin:18px 0 14px;background:#fff;color:#21313d;border-radius:18px;padding:18px 19px;box-shadow:0 10px 28px rgba(0,0,0,.16);line-height:1.52}.speech:before{content:"";position:absolute;left:-17px;top:35px;border-width:10px 18px 10px 0;border-style:solid;border-color:transparent #fff transparent transparent}.speech strong{color:#164d71}
+.audio-ready{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}.audio-ready[hidden]{display:none}.audio-ready audio{width:100%;height:38px}.audio-label{font-size:.75rem;font-weight:800;color:#dbeaf2;margin-bottom:5px}
+.rosie-coach-card{display:grid;grid-template-columns:118px 1fr;gap:16px;align-items:center;margin:0 0 18px;padding:13px 15px;border:1px solid #cddde5;border-radius:16px;background:linear-gradient(135deg,#eef6f9,#fffaf0);box-shadow:0 7px 18px rgba(18,59,91,.08)}
+.rosie-coach-card img{width:110px;height:122px;object-fit:contain;object-position:center bottom;border-radius:14px;background:linear-gradient(180deg,#dcebf2,#cbdfe8)}
+.coach-kicker{font-size:.68rem;font-weight:950;letter-spacing:.075em;color:#8b6420;text-transform:uppercase}.coach-title{margin:2px 0 7px;font-weight:950;color:#173e59}.rosie-coach-card audio{width:100%;height:36px}.caption-tools{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;margin-top:7px}.caption-toggle{border:1px solid #bfd0d8;background:#fff;color:#244c63;border-radius:999px;padding:5px 9px;font-size:.68rem;font-weight:900}.caption-toggle.is-on{background:#173f5b;color:#fff;border-color:#173f5b}.caption-live{min-height:28px;padding:5px 8px;border-radius:8px;background:#f6f8f9;color:#44545e;font-size:.76rem;line-height:1.35}.audio-ready .caption-live{background:rgba(255,255,255,.12);color:#fff}.audio-ready .caption-toggle{border-color:rgba(255,255,255,.35)}
+@media(max-width:620px){.rosie-coach-card{grid-template-columns:78px 1fr}.rosie-coach-card img{width:72px;height:88px}.caption-tools{grid-template-columns:1fr}.caption-toggle{justify-self:start}}
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.btn{border:0;border-radius:999px;padding:11px 16px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}.btn.primary{background:#f1c657;color:#173248}.btn.secondary{background:#fff;color:#173d59}.btn.ghost{background:#eaf0f3;color:#23465d;border:1px solid #cfdce3}.btn.green{background:#347b4a;color:#fff}.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #efbe45;outline-offset:2px}
+.notice{margin:16px 0 0;color:#dbe8ef;font-size:.78rem}.notice strong{color:#fff}
+.section-head{margin:36px 0 16px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px}.section-head h2{margin:0;font-size:clamp(1.45rem,3vw,2.15rem);color:#133a56}.section-head p{margin:5px 0 0;color:var(--muted);max-width:760px;line-height:1.5}.tiny{font-size:.76rem;color:var(--muted)}
+.setup-card,.lesson,.pitch-card,.mistakes-card,.plan-card{background:rgba(255,255,255,.93);border:1px solid #d7e2e7;border-radius:20px;box-shadow:var(--shadow)}
+.setup-card{padding:20px}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field label,.stack-label{display:block;font-size:.79rem;font-weight:900;color:#294d63;margin-bottom:6px}.field input,.field textarea,.field select,.text-input{width:100%;border:1px solid #cbd8df;border-radius:11px;background:#fff;padding:10px 11px;color:#1b2a35}.field textarea{min-height:86px;resize:vertical}.hint{font-size:.72rem;color:#77838c;margin-top:5px;line-height:1.38}
+.roadmap{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:16px 0 0}.road-step{position:relative;padding:14px;border-radius:15px;color:#fff;min-height:122px;box-shadow:0 7px 18px rgba(0,0,0,.11)}.road-step:nth-child(1){background:linear-gradient(135deg,#315f7f,#447fa2)}.road-step:nth-child(2){background:linear-gradient(135deg,#5b4f86,#7e66a8)}.road-step:nth-child(3){background:linear-gradient(135deg,#a65c28,#ca7938)}.road-step:nth-child(4){background:linear-gradient(135deg,#326f46,#4e965d)}.road-step b{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;opacity:.85}.road-step strong{display:block;font-size:1rem;margin:5px 0}.road-step span{font-size:.76rem;line-height:1.35;opacity:.9}
+.lesson{margin-top:18px;overflow:hidden}.lesson-head{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:17px 19px;background:linear-gradient(90deg,#edf4f7,#fff)}.phase-badge{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:950;color:#fff;background:#1c5f87;box-shadow:0 6px 15px rgba(19,74,105,.2)}.lesson-head h3{margin:0;color:#123c59;font-size:1.23rem}.lesson-head p{margin:3px 0 0;color:#65717b;font-size:.82rem}.status-pill{border-radius:999px;padding:7px 10px;font-weight:900;font-size:.72rem;background:#e5ecef;color:#52616a}.lesson.is-complete .status-pill{background:#d7ecdc;color:#24603a}.lesson-body{padding:20px}.lesson-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.activity{border:1px solid #d9e3e8;border-radius:15px;padding:15px;background:#fff}.activity h4{margin:0 0 6px;color:#1d4f6f}.activity p{margin:0 0 11px;font-size:.84rem;line-height:1.48;color:#5b6871}.mini-list{margin:8px 0 12px;padding-left:19px;color:#4b5963;font-size:.83rem;line-height:1.5}.checklist{display:grid;gap:8px}.check{display:flex;gap:9px;align-items:flex-start;font-size:.83rem;line-height:1.35;color:#45535c}.check input{margin-top:3px;transform:scale(1.12)}
+.repeat-fields{display:grid;gap:8px}.repeat-fields input{width:100%;border:1px solid #ccd8df;border-radius:10px;padding:9px 10px}.preview{margin-top:10px;padding:11px 12px;border-radius:11px;background:#f4f0e4;border-left:4px solid #e2aa3b;font-size:.83rem;line-height:1.45;color:#3e4b54}.preview strong{color:#244f68}.phase-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:15px;padding-top:14px;border-top:1px solid #e4eaed}
+.quiz{display:grid;gap:9px}.quiz button{border:1px solid #cbd8df;border-radius:11px;background:#f9fbfc;padding:10px 11px;text-align:left;color:#334852;font-weight:760}.quiz button:hover{background:#edf4f8}.quiz button.correct{background:#dff1e3;border-color:#79ae87;color:#245a34}.quiz button.wrong{background:#fae5e2;border-color:#d89a93;color:#7d3330}.feedback{min-height:38px;margin-top:8px;padding:9px 10px;border-radius:10px;background:#f2f5f6;color:#4f5d66;font-size:.8rem;line-height:1.4}.feedback.good{background:#e4f2e7;color:#285f39}.feedback.bad{background:#f9e7e5;color:#783735}
+.pitch-card,.mistakes-card,.plan-card{padding:20px;margin-top:18px}.pitch-layout{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.pitch-output{padding:16px;border-radius:15px;background:#123b5b;color:#fff;min-height:100%}.pitch-output h4{margin:0 0 10px;color:#f4d16b}.pitch-output p{line-height:1.6;margin:0}.char-count{font-size:.72rem;color:#cfe0ea;margin-top:9px}
+.mistake-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:15px}.mistake-chip{border:1px solid #d4dfe4;border-radius:12px;padding:10px;background:#f7fafb;font-size:.76rem;font-weight:850;color:#40535f;text-align:center}.mistake-chip.done{background:#dff0e3;border-color:#9ac5a5;color:#275d37}.mistake-question{border-top:1px solid #e1e8eb;padding-top:15px}.mistake-question h4{margin:0 0 10px;color:#1b4a68}.mistake-choices{display:grid;gap:8px}.mistake-choices button{border:1px solid #cbd8df;border-radius:10px;padding:10px 11px;background:#fff;text-align:left;color:#324750}.mistake-choices button:hover{background:#f0f5f7}.mistake-result{margin-top:10px;font-size:.82rem;line-height:1.45;color:#52616a;min-height:42px}.mistake-result.good{color:#2a643d}.mistake-result.bad{color:#843b36}
+.plan-card{background:linear-gradient(180deg,#fff,#fbf7ec)}.plan-toolbar{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}.plan-output{margin-top:14px;border:1px solid #d7e1e5;border-radius:16px;overflow:hidden;background:#fff}.plan-title{background:linear-gradient(90deg,#123b5b,#246d94);color:#fff;padding:18px}.plan-title h3{margin:0;font-size:1.45rem}.plan-title p{margin:5px 0 0;color:#dcebf2;font-size:.83rem}.plan-phase{padding:15px 17px;border-top:1px solid #e2e9ec}.plan-phase h4{margin:0 0 8px;color:#184866}.plan-phase ul{margin:0;padding-left:20px;font-size:.84rem;line-height:1.55;color:#46555f}.plan-empty{padding:24px;text-align:center;color:#74818a}.save-note{font-size:.95rem;line-height:1.5;color:#426277;margin-top:10px}.commit-box{margin-top:14px;padding:14px;border-radius:13px;background:#e6f0f5;border-left:5px solid #1c658e}.commit-box strong{color:#184f70}.final-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.completion-banner{display:none;margin-top:16px;padding:14px;border-radius:14px;background:#dff1e3;color:#225d36;font-weight:850}.completion-banner.show{display:block}
+.footer{margin-top:30px;text-align:center;color:#68757e;font-size:.75rem;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:18px;z-index:99;transform:translate(-50%,20px);opacity:0;background:#0f2f49;color:#fff;padding:11px 15px;border-radius:12px;font-weight:800;font-size:.82rem;box-shadow:0 12px 28px rgba(0,0,0,.25);transition:.2s ease;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:900px){.hero{grid-template-columns:1fr}.rosie{min-height:330px}.rosie img{width:auto;max-width:100%;max-height:360px}.hero-copy{padding:22px}.speech:before{display:none}.roadmap{grid-template-columns:1fr 1fr}.lesson-grid,.pitch-layout{grid-template-columns:1fr}.mistake-grid{grid-template-columns:1fr 1fr 1fr}.topbar-inner{grid-template-columns:auto 1fr}.toplink{display:none}}
+@media(max-width:620px){.shell{padding:12px 9px 52px}.hero{border-radius:16px}.roadmap,.field-grid{grid-template-columns:1fr}.mistake-grid{grid-template-columns:1fr 1fr}.lesson-head{grid-template-columns:auto 1fr}.status-pill{grid-column:1/-1;justify-self:start}.lesson-body,.pitch-card,.mistakes-card,.plan-card{padding:14px}.hero h1{font-size:2.4rem}.topbar-inner{padding:9px 10px}.phase-badge{width:48px;height:48px}}
+@media print{body{background:#fff}.topbar,.hero,.setup-card,.roadmap,.lesson,.pitch-card,.mistakes-card,.section-head,.footer,.toast,.plan-toolbar,.final-actions,.completion-banner{display:none!important}.shell{max-width:none;padding:0}.plan-card{display:block!important;box-shadow:none;border:0;padding:0}.plan-output{border:0}.plan-title{-webkit-print-color-adjust:exact;print-color-adjust:exact}.plan-phase{break-inside:avoid}}
+
+/* Readability: improve small instructional copy without changing the module layout. */
+body{font-size:16px}
+.activity p,.lesson-head p,.lesson-body p,.sub,.section-head p,.setup-card p{font-size:1rem;line-height:1.6}
+.activity h4{font-size:1.15rem;line-height:1.35}
+.activity label,.activity .field label,.checklist label,.check,.field label{font-size:.98rem;line-height:1.5}
+.activity input,.activity textarea,.activity select,.field input,.field textarea,.field select{font-size:1rem}
+.activity .preview,.activity .hint,.activity small,.lesson-body small{font-size:.9rem;line-height:1.5}
+.rosie-coach-card p,.rosie-coach-card .eyebrow{font-size:.93rem}
+.phase-actions .btn,.activity .btn{font-size:1rem}
+@media(max-width:620px){.activity p,.lesson-body p{font-size:.98rem}.activity label,.checklist label{font-size:.96rem}}
+
+/* Action-oriented 48-hour printable plan */
+.action-intro{font-size:1rem;line-height:1.6;margin:6px 0 12px}
+.action-header,.action-row{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.action-header{background:#e7f0f5;padding:10px 12px;font-size:.84rem;font-weight:800;color:#184866}
+.action-row{padding:13px 12px;border-bottom:1px solid #dce5ea;font-size:.94rem;line-height:1.5}
+.action-row:nth-of-type(odd){background:#f8fafb}
+.action-main strong{font-weight:700}
+.action-when{font-size:.79rem;font-weight:850;color:#23678d;margin-bottom:4px}
+.action-reminder{margin-top:7px;color:#526673;font-size:.88rem}
+.action-who{font-weight:650;overflow-wrap:anywhere}
+.action-track{display:grid;gap:6px}
+.action-track label{display:grid;gap:3px;font-size:.8rem;font-weight:750}
+.action-track select,.action-track input{min-width:0;width:100%;padding:7px;border:1px solid #b8cbd7;border-radius:7px;font-size:.9rem;background:white}
+@media(max-width:720px){.action-header{display:none}.action-row{grid-template-columns:1fr;gap:8px}.action-who:before{content:'Who / where: ';font-weight:850}.action-track{grid-template-columns:1fr 1fr}}
+@media print{.action-track select,.action-track input{border:1px solid #aabac6}.action-row{break-inside:avoid}.action-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.plan-output.checklist-collapsed,.plan-toolbar.checklist-collapsed{display:none}
+@media print{.plan-output.checklist-collapsed{display:block!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">BOOST <small>48-HOUR JOB SEARCH STRATEGY</small></div>
+    <div class="progress-wrap">
+      <div class="progress-title" data-progress-title>Build your plan • Phase 1 of 4</div>
+      <div class="progress-track" aria-label="Module progress"><div class="progress-fill" data-progress-fill></div></div>
+      <div class="progress-count" data-progress-count>0 of 7 activities complete</div>
+    </div>
+    <a class="toplink" href="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/">← BOOST Pathways</a>
+  </div>
+</header>
+
+<main class="shell">
+<div id="boostLegacy48Recovery" style="max-width:1040px;margin:10px auto;padding:12px 16px;background:#eff7fb;color:#163955;border:1px solid #a6ccda;border-radius:10px;font-size:14px">Completed this activity on the previous website? Your older answers are still there. <a href="https://pinalworkforce1-del.github.io/48_hour_job_search/" target="_blank" rel="noopener" style="font-weight:800;color:#135477">Open your previously saved 48-Hour plan</a> and choose Complete Module &amp; Return to BOOST to recover it.</div>
+  <section class="hero" id="start">
+    <div class="rosie">
+      <span class="rosie-badge">ROSIE • BOOST GUIDE</span>
+      <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie, the BOOST guide, welcoming the participant to the 48-Hour Job Search Strategy">
+    </div>
+    <div class="hero-copy">
+      <div class="eyebrow">Rapid Employment Pathway</div>
+      <h1>Your Next <span>48 Hours</span></h1>
+      <p class="lead">Turn urgency into a practical plan: prepare, reach out, follow up, and build a job-search system you can keep using.</p>
+      <div class="speech">
+        <strong>Rosie:</strong> Welcome to the 48-Hour Job Search Strategy. This is not about finding a job in two days. It is about using your first 48 hours to create momentum instead of waiting, guessing, or applying everywhere at once.<br><br>
+        Over the next few minutes, you are going to turn what you already know about your needs, your strengths, and the kind of work you are targeting into a practical job-search plan. You do not have to make every part perfect. Your goal is to leave with your next actions clear and a plan you can actually use.<br><br>
+        <strong>Ready? Let’s build your next 48 hours.</strong>
+      </div>
+      <div class="audio-ready" data-audio-ready data-rosie-player>
+        <div class="audio-label">Listen to Rosie’s introduction</div>
+        <audio controls preload="metadata" data-rosie-audio>
+          <source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-01-intro.mp3" type="audio/mpeg">
+          <track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-01-intro.vtt" srclang="en" label="English">
+        </audio>
+        <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+      </div>
+      <div class="cta-row"><a class="btn primary" href="#setup">Start My 48 Hours ↓</a><button class="btn secondary" type="button" data-resume>Resume Saved Work</button></div>
+      <div class="notice"><strong>Privacy:</strong> Your answers are saved only on this browser unless you print or save your final plan.</div>
+    </div>
+  </section>
+
+  <section id="setup">
+    <div class="section-head"><div><h2>First, make the plan yours.</h2><p>Give the module just enough context to turn the activities into a usable job-search plan.</p></div></div>
+    <div class="setup-card">
+      <div class="field-grid">
+        <div class="field"><label for="participantName">Your name or initials</label><input id="participantName" data-save="participantName" placeholder="Optional"></div>
+        <div class="field"><label for="targetRole">Role or type of work you are targeting</label><input id="targetRole" data-save="targetRole" placeholder="Example: Production Technician"></div>
+      </div>
+      <div class="roadmap" aria-label="48-hour roadmap">
+        <div class="road-step"><b>Phase 1 • Hours 0–8</b><strong>Mindset & Inventory</strong><span>Stabilize, assess your assets, and identify people who can help.</span></div>
+        <div class="road-step"><b>Phase 2 • Hours 8–20</b><strong>Resume & Digital Presence</strong><span>Get your materials ready and identify target employers.</span></div>
+        <div class="road-step"><b>Phase 3 • Hours 20–36</b><strong>The Outreach Blitz</strong><span>Activate your network and apply strategically.</span></div>
+        <div class="road-step"><b>Phase 4 • Hours 36–48</b><strong>Follow-Up & Systems</strong><span>Track, follow up, and build routines that sustain momentum.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lesson" data-phase="1" id="phase1">
+    <div class="lesson-head"><div class="phase-badge">0–8</div><div><h3>Phase 1 — Mindset & Inventory</h3><p>Preparation first. Before you start applying, know your situation, your value, and your people.</p></div><span class="status-pill" data-status>Not complete</span></div>
+    <div class="lesson-body">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing Phase 1, Mindset and Inventory">
+        <div><div class="coach-kicker">ROSIE • PHASE GUIDE</div><div class="coach-title">Hours 0–8 • Know What You’re Working With</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-02-phase-1.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-02-phase-1.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+      <div class="lesson-grid">
+        <div class="activity"><h4>1. Shift from reaction to action</h4><p>Job loss or income disruption can create urgency. Give yourself room to process what happened, then choose a concrete point when you will shift into action mode.</p>
+          <div class="field"><label for="actionStart">My action-start commitment</label><input id="actionStart" data-save="actionStart" placeholder="Example: I start my job-search plan today at 3:00 PM"></div>
+        </div>
+        <div class="activity"><h4>2. Skills inventory</h4><p>Identify the strengths and accomplishments you can put to work immediately. Start with three skills and two results you are proud of.</p>
+          <div class="repeat-fields"><input data-list="skills" data-index="0" placeholder="Skill 1"><input data-list="skills" data-index="1" placeholder="Skill 2"><input data-list="skills" data-index="2" placeholder="Skill 3"><input data-list="accomplishments" data-index="0" placeholder="Accomplishment 1"><input data-list="accomplishments" data-index="1" placeholder="Accomplishment 2"></div>
+        </div>
+        <div class="activity"><h4>3. Network audit</h4><p>You are not asking these people for a job. You are identifying people who may offer perspective, introductions, employer knowledge, or encouragement.</p>
+          <div class="repeat-fields"><input data-list="contacts" data-index="0" placeholder="Inner circle contact"><input data-list="contacts" data-index="1" placeholder="Former coworker / supervisor"><input data-list="contacts" data-index="2" placeholder="Mentor / professional contact"><input data-list="contacts" data-index="3" placeholder="Loose connection in a target field"><input data-list="contacts" data-index="4" placeholder="Another person I can contact"></div>
+        </div>
+        <div class="activity"><h4>4. Put your BOOST work to use</h4><p>Rapid Discover helped you identify your previous occupation and work preferences. Skill Mobility helped you confirm your experience and decide whether to return to familiar work or explore another direction.</p>
+          <p>Use that starting point in your 48-Hour Job Search: focus on roles that fit, highlight your transferable skills, and use what you learned about applications and barriers. You don't need to repeat those activities here.</p>
+        </div>
+      </div>
+      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="1">Complete Phase 1 ✓</button></div>
+    </div>
+  </section>
+
+  <section class="lesson" data-phase="2" id="phase2">
+    <div class="lesson-head"><div class="phase-badge">8–20</div><div><h3>Phase 2 — Resume & Digital Presence</h3><p>Get to “ready enough to use.” The goal is not endless polishing; it is credible, targeted material you can deploy.</p></div><span class="status-pill" data-status>Not complete</span></div>
+    <div class="lesson-body">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing Phase 2, Resume and Digital Presence">
+        <div><div class="coach-kicker">ROSIE • PHASE GUIDE</div><div class="coach-title">Hours 8–20 • Get Ready to Be Seen</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-03-phase-2.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-03-phase-2.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+      <div class="lesson-grid">
+        <div class="activity"><h4>1. The 30-minute résumé fix</h4><p>Turn a job duty into a résumé accomplishment: <strong>Action + What You Did + Result.</strong> For example: <em>Reorganized the stockroom, making supplies easier to find and reducing order delays.</em> Include a number when you know it, but don't invent one.</p>
+          <div class="field"><label for="resumeAction">Action verb</label><input id="resumeAction" data-save="resumeAction" placeholder="Improved, coordinated, reduced, trained..."></div>
+          <div class="field" style="margin-top:8px"><label for="resumeWork">What did you do?</label><input id="resumeWork" data-save="resumeWork" placeholder="Example: reorganized the receiving process"></div>
+          <div class="field" style="margin-top:8px"><label for="resumeResult">What changed or improved?</label><input id="resumeResult" data-save="resumeResult" placeholder="Example: cut misplaced inventory and saved time"></div>
+          <div class="preview" data-resume-preview><strong>Preview:</strong> Add the three pieces above to build an accomplishment statement.</div>
+        </div>
+        <div class="activity"><h4>2. Digital presence quick check</h4><p>Make sure the professional story employers find online supports the story in your résumé.</p><div class="checklist">
+          <label class="check"><input type="checkbox" data-save-check="digitalResume"> My résumé contact information is current.</label>
+          <label class="check"><input type="checkbox" data-save-check="digitalProfile"> My professional profile or online presence is current.</label>
+          <label class="check"><input type="checkbox" data-save-check="digitalDates"> Dates, titles, and key details are consistent.</label>
+          <label class="check"><input type="checkbox" data-save-check="digitalSearch"> I have searched my own name to see what an employer may find.</label>
+        </div></div>
+        <div class="activity"><h4>3. Target employers</h4><p>Stop treating the entire internet as your job search. Name three employers worth investigating first.</p><div class="repeat-fields"><input data-list="employers" data-index="0" placeholder="Target employer 1"><input data-list="employers" data-index="1" placeholder="Target employer 2"><input data-list="employers" data-index="2" placeholder="Target employer 3"></div></div>
+        <div class="activity"><h4>4. Strategic research checklist</h4><p>For each target employer, look beyond the posting before you apply.</p><div class="checklist"><label class="check"><input type="checkbox" data-save-check="researchOpenings"> Check current openings or the careers page.</label><label class="check"><input type="checkbox" data-save-check="researchCompany"> Learn what the employer does and what seems to matter to them.</label><label class="check"><input type="checkbox" data-save-check="researchPeople"> Look for someone in your network who may know the company or field.</label></div></div>
+      </div>
+      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="2">Complete Phase 2 ✓</button></div>
+    </div>
+  </section>
+
+  <section class="lesson" data-phase="3" id="phase3">
+    <div class="lesson-head"><div class="phase-badge">20–36</div><div><h3>Phase 3 — The Outreach Blitz</h3><p>This is where preparation becomes movement: people, targeted opportunities, and specific asks.</p></div><span class="status-pill" data-status>Not complete</span></div>
+    <div class="lesson-body">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing Phase 3, the Outreach Blitz">
+        <div><div class="coach-kicker">ROSIE • PHASE GUIDE</div><div class="coach-title">Hours 20–36 • Make the Search Active</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-04-phase-3.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-04-phase-3.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+      <div class="lesson-grid">
+        <div class="activity"><h4>1. Quick decision: what is the strongest outreach?</h4><p>You contact a former supervisor who knows your work well. Which opening is strongest?</p>
+          <div class="quiz" data-quiz="outreach"><button data-answer="wrong">“Do you know of any jobs? I need something as soon as possible.”</button><button data-answer="correct">“I’m exploring my next move in operations. Could I get 15 minutes of your perspective on where my experience may fit?”</button><button data-answer="wrong">“Can you send my résumé to everyone you know?”</button></div><div class="feedback" data-feedback="outreach">Choose the option that asks for perspective and makes it easy for the other person to help.</div>
+        </div>
+        <div class="activity"><h4>2. Build one outreach message</h4><p>Keep the situation brief. Name your target. Ask for perspective or a short conversation rather than putting someone on the spot for a job.</p>
+          <div class="field"><label for="outreachName">Who are you contacting?</label><input id="outreachName" data-save="outreachName" placeholder="Name"></div>
+          <div class="field" style="margin-top:8px"><label for="outreachShared">Shared connection or experience</label><input id="outreachShared" data-save="outreachShared" placeholder="Example: working together on the warehouse reset"></div>
+          <div class="field" style="margin-top:8px"><label for="outreachAsk">Your specific ask</label><input id="outreachAsk" data-save="outreachAsk" placeholder="Example: 15 minutes to get your perspective this week"></div>
+          <div class="preview" data-outreach-preview><strong>Draft:</strong> Add the fields above and I’ll assemble a starting message.</div>
+        </div>
+        <div class="activity"><h4>3. Strategic applications</h4><p>Use quality over volume. Apply where the role and employer make sense, then connect the application to human outreach when possible.</p><div class="checklist"><label class="check"><input type="checkbox" data-save-check="appMatch"> I will focus first on roles that match my skills and target direction.</label><label class="check"><input type="checkbox" data-save-check="appTailor"> I will tailor the opening / summary / most relevant résumé content rather than sending the same generic version everywhere.</label><label class="check"><input type="checkbox" data-save-check="appHuman"> When possible, I will identify a person or recruiter connected to the opportunity.</label></div></div>
+        <div class="activity"><h4>4. Recruiter / staffing outreach</h4><p>Add one recruiter, staffing firm, or workforce contact that may have access to opportunities beyond the postings you see yourself.</p><div class="field"><label for="recruiterTarget">My recruiter / staffing / workforce contact</label><input id="recruiterTarget" data-save="recruiterTarget" placeholder="Name, agency, or contact to research"></div></div>
+      </div>
+      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="3">Complete Phase 3 ✓</button></div>
+    </div>
+  </section>
+
+  <section class="lesson" data-phase="4" id="phase4">
+    <div class="lesson-head"><div class="phase-badge">36–48</div><div><h3>Phase 4 — Follow-Up & Systems</h3><p>The first 48 hours create momentum. Your system keeps that momentum from disappearing next week.</p></div><span class="status-pill" data-status>Not complete</span></div>
+    <div class="lesson-body">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing Phase 4, Follow-Up and Systems">
+        <div><div class="coach-kicker">ROSIE • PHASE GUIDE</div><div class="coach-title">Hours 36–48 • Build a System</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-05-phase-4.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-05-phase-4.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+      <div class="lesson-grid">
+        <div class="activity"><h4>1. Create the first row of your tracker</h4><p>Track the company, role, contact, follow-up date, and status so opportunities do not disappear into memory.</p>
+          <div class="field-grid"><div class="field"><label for="trackCompany">Company</label><input id="trackCompany" data-save="trackCompany"></div><div class="field"><label for="trackRole">Role</label><input id="trackRole" data-save="trackRole"></div><div class="field"><label for="trackContact">Contact</label><input id="trackContact" data-save="trackContact"></div><div class="field"><label for="trackFollow">Follow-up date</label><input id="trackFollow" type="date" data-save="trackFollow"></div></div>
+        </div>
+        <div class="activity"><h4>2. Follow-up habit</h4><p>Everyone who gives you time or useful information should get a brief, personalized thank-you.</p><div class="field"><label for="thankYou">Write the sentence you will personalize</label><textarea id="thankYou" data-save="thankYou" placeholder="Thank you for taking the time to speak with me. I especially appreciated..."></textarea></div></div>
+        <div class="activity"><h4>3. Build a daily routine</h4><p>Plan a realistic daily job-search block. For example: spend 20 minutes contacting people in your network, 45 minutes applying to well-matched jobs, and 15 minutes improving your résumé or interview skills. Adjust the times to fit your schedule.</p><div class="field"><label for="dailyRoutine">My daily job-search block</label><select id="dailyRoutine" data-save="dailyRoutine"><option value="">Choose a starting routine</option><option>90 minutes — 30 min networking, 30 min applications, 30 min skill-building</option><option>2 hours — 40 min networking, 40 min applications, 40 min skill-building</option><option>3 hours — 1 hour networking, 1 hour applications, 1 hour skill-building</option><option>Custom routine — I will define it below</option></select></div><div class="field" style="margin-top:8px"><label for="routineCustom">Custom note</label><input id="routineCustom" data-save="routineCustom" placeholder="Example: 9–11 AM weekdays after school drop-off"></div></div>
+        <div class="activity"><h4>4. Set weekly process goals</h4><p>Track actions you control, not only outcomes you cannot control.</p><div class="field-grid"><div class="field"><label for="weeklyApps">Targeted applications / week</label><input id="weeklyApps" type="number" min="0" data-save="weeklyApps" placeholder="5"></div><div class="field"><label for="weeklyConvos">Career conversations / week</label><input id="weeklyConvos" type="number" min="0" data-save="weeklyConvos" placeholder="3"></div><div class="field"><label for="weeklyLearning">Skill-building activities / week</label><input id="weeklyLearning" type="number" min="0" data-save="weeklyLearning" placeholder="1"></div><div class="field"><label for="accountability">Accountability person / method</label><input id="accountability" data-save="accountability" placeholder="Person, coach, calendar reminder..."></div></div></div>
+      </div>
+      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="4">Complete Phase 4 ✓</button></div>
+    </div>
+  </section>
+
+  <div class="section-head"><div><h2>Build your 60-second networking introduction.</h2><p>Build your introduction in four parts: who you are, what you do well, the job you want, and a specific request. For example: “I'm a cashier with customer service and cash-handling experience. I'm looking for retail work nearby. Do you know anyone who's hiring?”</p></div></div>
+  <section class="pitch-card" id="pitch" data-activity="pitch">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing the Networking Introduction Builder">
+        <div><div class="coach-kicker">ROSIE • CONVERSATION COACH</div><div class="coach-title">Build a Networking Introduction</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-06-networking-intro.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-06-networking-intro.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+    <div class="pitch-layout">
+      <div><div class="field-grid"><div class="field"><label for="pitchWho">1. Who you are</label><input id="pitchWho" data-save="pitchWho" placeholder="I’m a..."></div><div class="field"><label for="pitchBest">2. What you do best</label><input id="pitchBest" data-save="pitchBest" placeholder="I’m strongest at..."></div><div class="field"><label for="pitchLooking">3. What you’re looking for</label><input id="pitchLooking" data-save="pitchLooking" placeholder="I’m exploring..."></div><div class="field"><label for="pitchAsk">4. The ask</label><input id="pitchAsk" data-save="pitchAsk" placeholder="Could I get your perspective on..."></div></div><div class="phase-actions"><button class="btn green" type="button" data-complete-activity="pitch">Save My Introduction ✓</button></div></div>
+      <div class="pitch-output"><h4>My Networking Introduction</h4><p data-pitch-output>Add the four pieces and your introduction will assemble here.</p><div class="char-count" data-pitch-count>0 characters</div></div>
+    </div>
+  </section>
+
+  <div class="section-head"><div><h2>Avoid the traps.</h2><p>Five common patterns can make a job search feel busy without creating much movement. Work through the quick challenge.</p></div></div>
+  <section class="mistakes-card" id="mistakes" data-activity="mistakes">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie signaling a pause before the Avoid the Traps challenge">
+        <div><div class="coach-kicker">ROSIE • QUICK COACHING</div><div class="coach-title">Before You Build the Final Plan</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-07-avoid-traps.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-07-avoid-traps.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+    <div class="mistake-grid"><div class="mistake-chip" data-chip="0">Applying to everything</div><div class="mistake-chip" data-chip="1">Hiding from your network</div><div class="mistake-chip" data-chip="2">Perfecting forever</div><div class="mistake-chip" data-chip="3">Neglecting recovery</div><div class="mistake-chip" data-chip="4">Going it alone</div></div>
+    <div class="mistake-question"><h4 data-mistake-title></h4><div class="mistake-choices" data-mistake-choices></div><div class="mistake-result" data-mistake-result>Choose the strongest next move.</div></div>
+  </section>
+
+  <div class="section-head"><div><h2>Your 48-Hour Action Plan</h2><p>This is the payoff: turn what you entered above into a plan you can print, save, and act on.</p></div><div class="tiny">The plan updates as you type.</div></div>
+  <section class="plan-card" id="plan" data-activity="plan">
+      <div class="rosie-coach-card" data-rosie-player>
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie giving a thumbs-up before the participant starts their 48-hour plan">
+        <div><div class="coach-kicker">ROSIE • FINAL COACHING</div><div class="coach-title">Your 48 Hours Start Now</div>
+          <audio controls preload="metadata"><source src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/audio/rosie-48hr-08-start-now.mp3" type="audio/mpeg"><track kind="captions" src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/captions/rosie-48hr-08-start-now.vtt" srclang="en" label="English"></audio>
+          <div class="caption-tools"><button class="caption-toggle is-on" type="button" data-caption-toggle aria-pressed="true">CC On</button><div class="caption-live" data-caption-output aria-live="polite"></div></div>
+        </div>
+      </div>
+    <div class="plan-toolbar checklist-collapsed"><button class="btn ghost" type="button" data-copy-plan>Copy Plan</button><button class="btn ghost" type="button" data-print>Print / Save PDF</button></div>
+    <div class="plan-output checklist-collapsed" data-plan-output><div class="plan-empty">Complete the activities above and your personalized plan will appear here.</div></div>
+    <div class="commit-box"><strong>My next 24-hour commitment:</strong><div class="field" style="margin-top:8px"><input id="commitment" data-save="commitment" placeholder="Example: Rewrite my top three résumé bullets by 7 PM tonight"></div></div>
+    <div class="final-actions"><button class="btn secondary" type="button" data-save-stay>Save Progress &amp; Stay Here</button><button class="btn secondary" type="button" data-save-return>Save Progress &amp; Return to BOOST</button><button class="btn secondary" type="button" data-view-checklist hidden aria-expanded="false">View My 48-Hour Checklist</button><button class="btn" type="button" data-finish style="background:#177a45;color:#fff;border-color:#126137">Complete Module &amp; Return to BOOST</button><button class="btn ghost" type="button" data-reset>Restart This Module</button></div><p class="save-note" data-save-feedback role="status" aria-live="polite">Progress saves automatically on this browser. Use either Save Progress button to preserve a draft without marking this module complete.</p>
+    <div class="completion-banner" data-completion>Your 48-Hour Job Search Plan is ready. You can keep working on the checklist and review your progress or assistance needs with your coach.</div>
+  </section>
+
+  <div class="footer">BOOST • 48-Hour Job Search Strategy • Rosie Guided<br>This lesson turns the original facilitator content into an active participant plan. Use your Career Coach, workforce staff, and trusted contacts as part of the process.</div>
+</main>
+<div class="toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+  let checklistOpen=false;
+  const MODULE_KEY='boost48JobSearchV11';
+  const JOURNEY_KEY='pinal_boost_journey_v1';
+  const PATHWAY_KEY='boostPathwaysV29';
+  const LEGACY_PATHWAY_KEY='boostPathwaysV28';
+  let state={values:{},lists:{skills:['','',''],accomplishments:['',''],contacts:['','','','',''],employers:['','','']},checks:{},phases:{},activities:{pitch:false,mistakes:false,plan:false},mistakeIndex:0,mistakeDone:[false,false,false,false,false],completed:false,planTasks:{}};
+  try{const saved=JSON.parse(localStorage.getItem(MODULE_KEY)||'null');if(saved)state={...state,...saved,values:{...state.values,...(saved.values||{})},lists:{...state.lists,...(saved.lists||{})},checks:{...state.checks,...(saved.checks||{})},phases:{...state.phases,...(saved.phases||{})},activities:{...state.activities,...(saved.activities||{})},planTasks:{...(saved.planTasks||{})}}}catch(e){}
+  // On return from BOOST, restore the saved draft when the browser-only module state is absent.
+  try{
+    const journey=JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}');
+    // A custom-domain BOOST portal can pass a cloud-saved draft in a URL fragment.
+    const fragment=new URLSearchParams(location.hash.replace(/^#/, ''));
+    let transferredDraft=null;
+    try{transferredDraft=JSON.parse(fragment.get('boost_draft_state')||'null')}catch(e){}
+    const draft=(transferredDraft?.state?.values&&transferredDraft?.state?.lists?
+      transferredDraft.state:journey.modules?.jobsearchDraft?.state);
+    const hasWork=Object.values(state.phases||{}).some(Boolean)||
+      Object.values(state.values||{}).some(v=>String(v||'').trim())||
+      Object.values(state.lists||{}).some(v=>Array.isArray(v)&&v.some(x=>String(x||'').trim()));
+    if(!hasWork&&draft?.values&&draft?.lists){
+      state={...state,...draft,values:{...state.values,...draft.values},lists:{...state.lists,...draft.lists},
+        phases:{...state.phases,...(draft.phases||{})},activities:{...state.activities,...(draft.activities||{})},
+        planTasks:{...state.planTasks,...(draft.planTasks||{})}};
+      localStorage.setItem(MODULE_KEY,JSON.stringify(state));
+    }
+  }catch(err){console.warn('BOOST draft restoration unavailable',err)}
+  const toast=document.querySelector('.toast');let toastTimer;
+  function showToast(msg){clearTimeout(toastTimer);toast.textContent=msg;toast.classList.add('show');toastTimer=setTimeout(()=>toast.classList.remove('show'),2300)}
+  function readJourney(){try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}catch{return{}}}
+  function saveJourneyEvidence(){
+    if(!state.completed)return null;
+    const j=readJourney(),completedAt=state.completedAt||new Date().toISOString();
+    state.completedAt=completedAt;
+    j.schema_version=Math.max(Number(j.schema_version)||0,2);j.region='Pinal County';j.modules=j.modules||{};j.progress=j.progress||{};
+    j.modules.jobsearch={module:'jobsearch',source:'pinal_48_hour_job_search',version:2,completedAt,values:state.values||{},lists:state.lists||{},checks:state.checks||{},phases:state.phases||{},activities:state.activities||{},mistakeDone:state.mistakeDone||[]};
+    j.progress.jobsearch='complete';j.updated_at=completedAt;localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));return j.modules.jobsearch
+  }
+  function save(){localStorage.setItem(MODULE_KEY,JSON.stringify(state));if(state.completed)saveJourneyEvidence();updateAll()}
+  function val(k){return (state.values[k]||'').trim()}
+  function nonempty(arr){return (arr||[]).map(x=>(x||'').trim()).filter(Boolean)}
+  document.querySelectorAll('[data-save]').forEach(el=>{const k=el.dataset.save;el.value=state.values[k]||'';el.addEventListener('input',()=>{state.values[k]=el.value;save()});el.addEventListener('change',()=>{state.values[k]=el.value;save()})});
+  document.querySelectorAll('[data-list]').forEach(el=>{const list=el.dataset.list,i=Number(el.dataset.index);if(!state.lists[list])state.lists[list]=[];el.value=state.lists[list][i]||'';el.addEventListener('input',()=>{state.lists[list][i]=el.value;save()})});
+  document.querySelectorAll('[data-save-check]').forEach(el=>{const k=el.dataset.saveCheck;el.checked=!!state.checks[k];el.addEventListener('change',()=>{state.checks[k]=el.checked;save()})});
+
+  const mistakes=[
+    {title:'You have sent the same résumé to 30 unrelated jobs today. What is the stronger next move?',choices:[['Keep going until you reach 50 applications.',false],['Pause and focus on a smaller set of roles that actually match your skills and target direction.',true],['Rewrite your résumé from scratch before doing anything else.',false]],good:'Right. Targeted effort gives you a better chance to align your résumé, outreach, and follow-up with a real opportunity.',bad:'That keeps you busy, but it does not improve the quality of your search. Focus first on relevant, target opportunities.'},
+    {title:'You have not told anyone you are looking because you do not want to bother people. What should you do?',choices:[['Pick a few trusted contacts and ask for perspective or introductions.',true],['Wait until you have an interview before telling anyone.',false],['Only post publicly and hope someone notices.',false]],good:'Exactly. Your network cannot help if it does not know what you are exploring. Ask for perspective, not rescue.',bad:'The stronger move is to activate a few trusted relationships with a clear, low-pressure ask.'},
+    {title:'You have spent three days changing fonts and wording on your résumé but have not used it. What now?',choices:[['Keep editing until it feels perfect.',false],['Get it credible and targeted enough to use, then improve it with real feedback.',true],['Delete it and start over.',false]],good:'Yes. The goal is a strong working résumé, not an endlessly unfinished résumé.',bad:'Perfection can turn into delay. Get the résumé ready enough to use and learn from real responses.'},
+    {title:'Your job search is taking over every waking hour and your concentration is getting worse. What is the better system?',choices:[['Add even more hours until something works.',false],['Build focused search blocks and protect time for sleep, movement, relationships, and recovery.',true],['Stop searching for a week without a plan.',false]],good:'Right. A sustainable routine helps you stay focused and make better decisions over time.',bad:'More unstructured hours usually do not solve burnout. Use focused blocks and protect recovery time.'},
+    {title:'You are doing everything by yourself and have no one checking your progress. What could strengthen the plan?',choices:[['Keep it private so nobody can judge you.',false],['Add an accountability person, Career Coach, group, or recurring check-in.',true],['Only track job offers, not the actions leading to them.',false]],good:'Exactly. Accountability and support help keep the process moving even when outcomes take time.',bad:'A job-search routine works better when you track actions and have support. For example, record applications and follow-ups each day, and arrange a weekly check-in with your career coach or a trusted contact.'}
+  ];
+
+  document.querySelectorAll('[data-quiz="outreach"] button').forEach(btn=>btn.addEventListener('click',()=>{const box=document.querySelector('[data-feedback="outreach"]');document.querySelectorAll('[data-quiz="outreach"] button').forEach(b=>b.classList.remove('correct','wrong'));if(btn.dataset.answer==='correct'){btn.classList.add('correct');box.className='feedback good';box.textContent='Strong choice. You named your direction, asked for perspective, and made the request specific and manageable.';state.activities.outreachQuiz=true}else{btn.classList.add('wrong');box.className='feedback bad';box.textContent='Try again. The strongest outreach asks for perspective or a short conversation instead of putting someone on the spot for a job.';state.activities.outreachQuiz=false}save()}));
+
+  document.querySelectorAll('[data-complete-phase]').forEach(btn=>btn.addEventListener('click',()=>{const p=btn.dataset.completePhase;state.phases[p]=true;localStorage.setItem(MODULE_KEY,JSON.stringify(state));const section=document.getElementById('phase'+p);if(section){section.classList.add('is-complete');const pill=section.querySelector('[data-status]');if(pill)pill.textContent='Complete ✓';}try{save()}catch(err){console.error('Phase '+p+' saved; refresh UI failed',err)}showToast(`Phase ${p} saved.`);const next=document.getElementById(p==='4'?'pitch':`phase${Number(p)+1}`);if(next)setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),250)}));
+  document.querySelector('[data-complete-activity="pitch"]').addEventListener('click',()=>{state.activities.pitch=true;save();showToast('Networking introduction saved.');document.getElementById('mistakes').scrollIntoView({behavior:'smooth',block:'start'})});
+
+  function renderMistake(){const i=Math.min(state.mistakeIndex||0,mistakes.length-1),q=mistakes[i];document.querySelector('[data-mistake-title]').textContent=`${i+1} of ${mistakes.length} — ${q.title}`;const wrap=document.querySelector('[data-mistake-choices]');wrap.innerHTML='';q.choices.forEach(([text,correct])=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.addEventListener('click',()=>{const out=document.querySelector('[data-mistake-result]');if(correct){state.mistakeDone[i]=true;out.className='mistake-result good';out.textContent=q.good;save();setTimeout(()=>{if(i<mistakes.length-1){state.mistakeIndex=i+1;save();renderMistake()}else{state.activities.mistakes=true;save();out.textContent='Challenge complete. You identified all five job-search traps.'}},650)}else{out.className='mistake-result bad';out.textContent=q.bad}});wrap.appendChild(b)});document.querySelectorAll('[data-chip]').forEach(c=>c.classList.toggle('done',!!state.mistakeDone[Number(c.dataset.chip)]))}
+
+  function updatePreviews(){
+    const action=val('resumeAction'),work=val('resumeWork'),result=val('resumeResult');document.querySelector('[data-resume-preview]').innerHTML=`<strong>Preview:</strong> ${[action,work,result].filter(Boolean).join(' ')||'Add the three pieces above to build an accomplishment statement.'}`;
+    const n=val('outreachName'),shared=val('outreachShared'),ask=val('outreachAsk'),role=val('targetRole')||'my target field';let msg='Add the fields above and I’ll assemble a starting message.';if(n||shared||ask){msg=`Hi ${n||'[Name]'}, ${shared?`I was thinking about ${shared}. `:''}I’m exploring my next move in ${role}. I’m not asking you for a job — I’d value your perspective. ${ask||'Would you have 15 minutes to talk this week?'}`};document.querySelector('[data-outreach-preview]').innerHTML=`<strong>Draft:</strong> ${escapeHtml(msg)}`;
+    const parts=[val('pitchWho'),val('pitchBest'),val('pitchLooking'),val('pitchAsk')].filter(Boolean);const pitch=parts.length?parts.join(' '):'Add the four pieces and your introduction will assemble here.';document.querySelector('[data-pitch-output]').textContent=pitch;document.querySelector('[data-pitch-count]').textContent=`${pitch==='Add the four pieces and your introduction will assemble here.'?0:pitch.length} characters`;
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]))}
+  function makePlan(){
+    const name=val('participantName')||'Participant',role=val('targetRole')||'your target occupation';
+    const skills=nonempty(state.lists.skills),people=nonempty(state.lists.contacts),employers=nonempty(state.lists.employers);
+    const accomplishment=[val('resumeAction'),val('resumeWork'),val('resumeResult')].filter(Boolean).join(' ');
+    const pitch=[val('pitchWho'),val('pitchBest'),val('pitchLooking'),val('pitchAsk')].filter(Boolean).join(' ');
+    const tasks=[];
+    const add=(id,phase,when,action,who,reminder)=>tasks.push({id,phase,when,action,who,reminder});
+    add('start',1,'Hours 0–2','Begin your search at '+(val('actionStart')||'a specific time you choose')+'. Set aside time and decide which jobs fit your needs.','You','Put the starting time on your calendar.');
+    add('skills',1,'Hours 2–4','Prepare examples of your transferable skills: '+(skills.slice(0,3).join(', ')||'identify three strengths to describe to employers')+'.','You','Connect each skill to something you actually did.');
+    add('network',1,'Hours 4–8','List five people to contact over the next few days. Ask about employers hiring for '+role+', potential referrals, and who else you should speak with.',people.slice(0,5).join(' • ')||'Add five professional or personal contacts','Start with a brief message. Do not ask everyone for a job; ask for leads and introductions.');
+    add('resume',2,'Hours 8–11','Update and target your résumé for '+role+'. '+(accomplishment?'Use this accomplishment: '+accomplishment+'.':'Write one accomplishment describing what you did and the result.'),'You','Check phone/email, recent experience, dates, and keywords from the job posting.');
+    add('presence',2,'Hours 11–14','Review your online profile and make sure public details match your résumé.','You','Search your own name and review the first results an employer may see.');
+    add('employers',2,'Hours 14–20','Look for open positions, compare pay, commute and qualifications, and shortlist roles to apply for.',employers.join(' • ')||'Choose three employers','Record each employer, job title, posting link and closing date.');
+    add('apply',3,'Hours 20–27','Submit tailored applications to well-matched positions.','Employers on your shortlist','Track the application date, contact information and next action.');
+    add('outreach',3,'Hours 27–31','Contact people on your list to discuss current openings and ask for an introduction. '+(val('outreachAsk')?'Your specific ask: '+val('outreachAsk')+'.':'Ask whether they know a hiring manager or employer seeking your skills.'),val('outreachName')||people.slice(0,5).join(' • ')||'Your network','Use a short introduction'+(pitch?': '+pitch:'. Explain what you bring and the role you want.') );
+    add('recruiter',3,'Hours 31–36','Contact a recruiter or staffing representative and ask about immediate openings.',val('recruiterTarget')||'Career coach / staffing agency','Request one specific next step or hiring lead.');
+    add('tracker',4,'Hours 36–40','Build your application tracker, beginning with '+([val('trackCompany'),val('trackRole')].filter(Boolean).join(' — ')||'your first application')+'.',val('trackContact')||'Employer contact','Capture dates, application status, next contact and outcomes.');
+    add('followup',4,'Hours 40–44','Schedule follow-ups on applications and conversations.',people.slice(0,3).join(' • ')||'Employers and people you contacted','Next follow-up: '+(val('trackFollow')||'select a realistic date')+'.');
+    add('routine',4,'Hours 44–48','Establish a repeatable routine: '+(val('dailyRoutine')||val('routineCustom')||'a daily block for applications, networking and skill-building')+'.',val('accountability')||'Your career coach or accountability partner','Weekly goals: '+(val('weeklyApps')||'set a target for')+' applications, '+(val('weeklyConvos')||'set a target for')+' conversations and '+(val('weeklyLearning')||'set a target for')+' learning activities.');
+    state.planTasks=state.planTasks||{};
+    const row=t=>{
+      const p=state.planTasks[t.id]||{},status=p.status||'incomplete',date=p.completedDate||'';
+      return '<div class="action-row"><div class="action-main"><div class="action-when">'+escapeHtml(t.when)+'</div><strong>'+escapeHtml(t.action)+'</strong><div class="action-reminder">Reminder: '+escapeHtml(t.reminder)+'</div></div>'+
+       '<div class="action-who">'+escapeHtml(t.who)+'</div>'+
+       '<div class="action-track"><label>Status<select data-action-status="'+t.id+'"><option value="incomplete"'+(status==='incomplete'?' selected':'')+'>Incomplete</option><option value="in-progress"'+(status==='in-progress'?' selected':'')+'>In progress</option><option value="complete"'+(status==='complete'?' selected':'')+'>Complete</option></select></label><label>Date completed<input type="date" data-action-date="'+t.id+'" value="'+escapeHtml(date)+'"></label></div></div>';
+    };
+    const phases=[
+      ['Hours 0–8 — Get ready','Establish your starting point, identify your strengths and make a realistic outreach list.'],
+      ['Hours 8–20 — Prepare and target','Get your résumé ready and identify jobs you would actually accept.'],
+      ['Hours 20–36 — Apply and connect','Act on the best opportunities, ask for leads and make direct contact.'],
+      ['Hours 36–48 — Track and follow through','Create a sustainable system for applications, follow-ups and accountability.']
+    ];
+    const complete=tasks.filter(t=>state.planTasks[t.id]?.status==='complete').length;
+    return '<div class="plan-title"><h3>'+escapeHtml(name)+' — My 48-Hour Job Search Action Tracker</h3><p>Target: '+escapeHtml(role)+' · '+complete+' of '+tasks.length+' actions completed</p><p>Use each action as a checklist. Set its status and completion date as you work through the next 48 hours.</p></div>'+
+      phases.map(([title,intro],i)=>'<section class="plan-phase"><h4>'+title+'</h4><p class="action-intro">'+intro+'</p><div class="action-header"><span>What to do / when</span><span>Who / where</span><span>Progress / date</span></div>'+tasks.filter(t=>t.phase===i+1).map(row).join('')+'</section>').join('')+
+      '<div class="plan-phase"><h4>My first commitment</h4><p class="action-intro">'+escapeHtml(val('commitment')||'Write one specific action you will take in the next 24 hours.')+'</p></div>';
+  }
+  document.querySelector('[data-plan-output]').addEventListener('change',e=>{
+    const status=e.target.closest('[data-action-status]'),date=e.target.closest('[data-action-date]');
+    if(!status&&!date)return;
+    const id=status?.dataset.actionStatus||date?.dataset.actionDate;
+    state.planTasks=state.planTasks||{};
+    const entry=state.planTasks[id]||{status:'incomplete',completedDate:''};
+    if(status){entry.status=status.value;if(status.value==='complete'&&!entry.completedDate)entry.completedDate=new Date().toISOString().slice(0,10);if(status.value!=='complete')entry.completedDate='';}
+    if(date){entry.completedDate=date.value;if(date.value)entry.status='complete';}
+    state.planTasks[id]=entry;save();
+  });
+
+  function updateProgress(){const phaseCount=[1,2,3,4].filter(p=>state.phases[p]).length;const extras=(state.activities.pitch?1:0)+(state.activities.mistakes?1:0)+(state.completed?1:0);const count=phaseCount+extras,total=7;document.querySelector('[data-progress-fill]').style.width=`${count/total*100}%`;document.querySelector('[data-progress-count]').textContent=`${count} of ${total} activities complete`;document.querySelector('[data-progress-title]').textContent=state.completed?'Plan complete • Start your 48 hours':phaseCount<4?`Build your plan • Phase ${Math.min(phaseCount+1,4)} of 4`:'Finish your networking introduction and challenge';document.querySelectorAll('[data-phase]').forEach(sec=>{const p=sec.dataset.phase,done=!!state.phases[p];sec.classList.toggle('is-complete',done);sec.querySelector('[data-status]').textContent=done?'Complete ✓':'Not complete'});document.querySelector('[data-completion]').classList.toggle('show',!!state.completed)}
+  function updateAll(){
+    updatePreviews();updateProgress();document.querySelector('[data-plan-output]').innerHTML=makePlan();renderMistake();
+    const ready=state.completed||[1,2,3,4].every(p=>!!state.phases[p]);
+    const view=document.querySelector('[data-view-checklist]');
+    const output=document.querySelector('[data-plan-output]');
+    const toolbar=document.querySelector('.plan-toolbar');
+    if(!ready)checklistOpen=false;
+    view.hidden=!ready;
+    view.setAttribute('aria-expanded',String(ready&&checklistOpen));
+    view.textContent=checklistOpen?'Hide My 48-Hour Checklist':'View My 48-Hour Checklist';
+    output.classList.toggle('checklist-collapsed',!checklistOpen);
+    toolbar.classList.toggle('checklist-collapsed',!checklistOpen);
+    const btn=document.querySelector('[data-finish]');
+    btn.disabled=!ready;
+    btn.title=ready?'Complete the BOOST planning module and return to your pathway.':'Complete all four planning phases first.';
+    btn.style.opacity=ready?'1':'.55';
+    document.querySelector('[data-save-feedback]').textContent=ready?
+      'Your plan is ready. View or print the checklist whenever you choose, or complete this BOOST module and return to Coach Appointment Prep. The 12 follow-through tasks can be worked on later.':
+      'Your answers save automatically. Finish the four planning phases to view your checklist and complete the BOOST module.';
+  }
+
+  document.querySelector('[data-view-checklist]').addEventListener('click',()=>{
+    checklistOpen=!checklistOpen;
+    updateAll();
+    if(checklistOpen)document.querySelector('[data-plan-output]').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  document.querySelector('[data-finish]').addEventListener('click',()=>{
+    const missing=[1,2,3,4].filter(p=>!state.phases[p]);
+    if(missing.length&&!state.completed){
+      showToast('Finish all four planning phases first.');
+      document.getElementById('phase'+missing[0]).scrollIntoView({behavior:'smooth'});
+      return;
+    }
+    state.completed=true;
+    state.completedAt=state.completedAt||new Date().toISOString();
+    state.activities.plan=true;
+    save();
+    const ps=(()=>{try{return JSON.parse(localStorage.getItem(PATHWAY_KEY)||localStorage.getItem(LEGACY_PATHWAY_KEY)||'null')||{}}catch{return {}}})();
+    ps.complete=ps.complete||{};
+    ps.complete['m:jobsearch']=true;
+    ps.pathway='rapid';
+    localStorage.setItem(PATHWAY_KEY,JSON.stringify(ps));
+    try{
+      boostReturnCompletion('jobsearch');
+    }catch(err){
+      console.error('BOOST completion return failed',err);
+      document.querySelector('[data-save-feedback]').textContent='Your plan is saved, but the BOOST return failed: '+err.message+'. Try Complete Module & Return again.';
+      showToast('Return failed; your plan is preserved.');
+    }
+  });
+  function saveDraftProgress(){
+    // Preserve the original learning-state key for resume; draft evidence must not mark completion.
+    state.updatedAt=new Date().toISOString();
+    localStorage.setItem(MODULE_KEY,JSON.stringify(state));
+    const j=readJourney();j.modules=j.modules||{};
+    j.modules.jobsearchDraft={source:'48_hour_job_search',version:1,updatedAt:state.updatedAt,state:JSON.parse(JSON.stringify(state))};
+    localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+    sessionStorage.setItem('boost_jobsearch_draft_handoff',JSON.stringify(j.modules.jobsearchDraft));
+    return state.updatedAt;
+  }
+  document.querySelector('[data-save-stay]').addEventListener('click',()=>{
+    try{saveDraftProgress();document.querySelector('[data-save-feedback]').textContent='Draft saved on this browser. You can keep editing; completion status is unchanged.';showToast('Progress saved.');}
+    catch(err){document.querySelector('[data-save-feedback]').textContent='Could not save progress: '+err.message;}
+  });
+  document.querySelector('[data-save-return]').addEventListener('click',()=>{
+    try{
+      saveDraftProgress();
+      const params=new URLSearchParams(location.search),fallback='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
+      const target=new URL(params.get('boost_return')||fallback,location.href);
+      const official=(target.hostname==='pinal.boostpathways.org'&&['/','/index.html'].includes(target.pathname))||
+        (target.hostname==='pinalworkforce1-del.github.io'&&target.pathname.startsWith('/BOOST_Pathway-Portal/'));
+      if(target.protocol!=='https:'||!official)throw Error('Unrecognized BOOST return address');
+      if(target.origin!==location.origin){
+        const nonce=params.get('boost_nonce');
+        if(!nonce)throw Error('Missing BOOST session handoff. Return through the pathway portal to save to the cloud.');
+        target.hash='boost_handoff='+encodeURIComponent(JSON.stringify({
+          kind:'draft',module:'jobsearch',nonce,
+          draft:readJourney().modules?.jobsearchDraft
+        }));
+      }
+      target.searchParams.set('boost_draft','jobsearch');
+      target.searchParams.set('boost2_path','rapid');
+      target.searchParams.set('boost2_from','jobsearch');
+      location.assign(target.toString());
+    }catch(err){document.querySelector('[data-save-feedback]').textContent='Progress saved locally. Automatic return unavailable: '+err.message;}
+  });
+  document.querySelector('[data-print]').addEventListener('click',()=>window.print());
+  document.querySelector('[data-copy-plan]').addEventListener('click',async()=>{const text=document.querySelector('[data-plan-output]').innerText;try{await navigator.clipboard.writeText(text);showToast('Plan copied.')}catch(e){showToast('Copy was blocked by this browser. Use Print / Save PDF instead.')}});
+  document.querySelector('[data-reset]').addEventListener('click',()=>{if(!confirm('Restart this 48-Hour Job Search module and erase answers saved on this browser?'))return;localStorage.removeItem(MODULE_KEY);location.reload()});
+  document.querySelector('[data-resume]').addEventListener('click',()=>{const first=[1,2,3,4].find(p=>!state.phases[p]);document.getElementById(first?`phase${first}`:(state.activities.pitch?'plan':'pitch')).scrollIntoView({behavior:'smooth'})});
+  // Rosie audio: one clip at a time, with visible VTT captions and a CC toggle.
+  const rosiePlayers=[...document.querySelectorAll('[data-rosie-player]')];
+  rosiePlayers.forEach(player=>{
+    const audio=player.querySelector('audio'),trackEl=player.querySelector('track'),out=player.querySelector('[data-caption-output]'),toggle=player.querySelector('[data-caption-toggle]');
+    if(!audio||!trackEl)return;
+    const track=trackEl.track; track.mode='hidden'; let captionsOn=true;
+    const renderCue=()=>{if(!out)return;const cue=track.activeCues&&track.activeCues[0];out.textContent=captionsOn&&cue?cue.text:''};
+    track.addEventListener('cuechange',renderCue);
+    audio.addEventListener('play',()=>rosiePlayers.forEach(other=>{const a=other.querySelector('audio');if(a&&a!==audio&&!a.paused)a.pause()}));
+    audio.addEventListener('ended',()=>{if(out)out.textContent=''});
+    audio.addEventListener('error',()=>{player.classList.add('audio-error');if(out)out.textContent='Audio could not be loaded.'});
+    if(toggle)toggle.addEventListener('click',()=>{captionsOn=!captionsOn;toggle.classList.toggle('is-on',captionsOn);toggle.setAttribute('aria-pressed',String(captionsOn));toggle.textContent=captionsOn?'CC On':'CC Off';renderCue()});
+  });
+  updateAll();
+})();
+
+function boostReturnCompletion(moduleId){
+  const root='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
+  const params=new URLSearchParams(location.search);
+  const requested=params.get('boost_module');
+  if(requested&&requested!==moduleId)throw Error('The launch identifies a different module');
+  const target=new URL(params.get('boost_return')||root,location.href);
+  const official=(target.hostname==='pinal.boostpathways.org'&&['/','/index.html'].includes(target.pathname))||
+    (target.hostname==='pinalworkforce1-del.github.io'&&target.pathname.startsWith('/BOOST_Pathway-Portal/'));
+  if(target.protocol!=='https:'||!official)throw Error('Unrecognized BOOST return address');
+  const j=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
+  const evidence=j.modules?.jobsearch;
+  if(!evidence?.completedAt)throw Error('Completion evidence was not saved');
+  const nonceKey='boost_completion_nonce:'+moduleId;
+  const nonce=params.get('boost_nonce')||sessionStorage.getItem(nonceKey);
+  // The 48-Hour activity is hosted on a different site from the authenticated
+  // custom BOOST domain. Storage and session data cannot cross that boundary.
+  // Use an explicit signed-in completion review, with the saved evidence.
+  // This also recovers already completed activity tabs with no launch nonce.
+  if(target.origin!==location.origin||!nonce){
+    const recovery=target.origin!==location.origin?target:new URL('https://pinal.boostpathways.org/');
+    recovery.searchParams.delete('boost_complete');
+    recovery.searchParams.delete('boost_nonce');
+    recovery.searchParams.set('boost2_path','rapid');
+    recovery.searchParams.set('boost2_from','jobsearch');
+    recovery.searchParams.set('boost_recover','jobsearch');
+    recovery.hash='boost_recovery='+encodeURIComponent(JSON.stringify({
+      module:moduleId,source:'pinal_48_hour_job_search',evidence
+    }));
+    location.assign(recovery.toString());
+    return;
+  }
+  sessionStorage.setItem(nonceKey,nonce);
+  sessionStorage.setItem('boost_completion_payload:'+moduleId,JSON.stringify(evidence));
+  target.searchParams.set('boost_complete',moduleId);
+  target.searchParams.set('boost_nonce',nonce);
+  target.searchParams.set('boost2_path','rapid');
+  target.searchParams.set('boost2_from','jobsearch');
+  location.assign(target.toString());
+}
+
+</script>
+<script>
+(function(){
+  // Same-origin BOOST-to-48-hour carry-forward. Does not change completed work.
+  function fill(){
+    const read=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')||{}}catch{return {}}};
+    const j=read('pinal_boost_journey_v1'), m=j.modules?.skillmobility||{},
+      d=j.modules?.['rapid-discover']||{}, existing=read('boost48JobSearchV11');
+    let packet={};
+    try{packet=JSON.parse(new URLSearchParams(location.hash.replace(/^#/,'')).get('boost_prefill')||'null')||{}}catch{}
+    const candidateName=packet.name||j.participant?.name||j.participant_name||'';
+    const candidateRole=packet.target||m.considerations?.[0]?.title||m.priorOccupation||d.priorOccupation||'';
+    const labels={customer:'Customer service',numbers:'Handling transactions and numbers',people:'Working with people',detail:'Attention to detail',adapt:'Adaptability',adaptability:'Adaptability',teamwork:'Teamwork and collaboration',accuracy:'Accuracy and quality',communication:'Communication',problem:'Problem solving',digital:'Digital skills',lead:'Leadership',hands:'Hands-on work'};
+    const raw=packet.skills?.length?packet.skills:[...(m.confirmedSkills||[]),...(m.confirmedPriorSkillIds||[])];
+    const skills=[...new Set(raw.map(x=>typeof x==='string'?x:(x?.label||x?.name||'')).map(x=>labels[x]||x).filter(Boolean))].slice(0,3);
+    let filled=0;
+    function put(selector,value,saved){
+      const el=document.querySelector(selector);
+      if(el&&value&&!el.value.trim()&&!saved){el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true}));filled++;}
+    }
+    put('[data-save="participantName"]',candidateName,existing.values?.participantName);
+    put('[data-save="targetRole"]',candidateRole,existing.values?.targetRole);
+    skills.forEach((skill,i)=>put('input[data-list="skills"][data-index="'+i+'"]',skill,existing.lists?.skills?.[i]));
+    const host=document.querySelector('input[data-list="skills"][data-index="2"]');
+    if(host&&!document.getElementById('boostCarryStatus')){
+      const status=document.createElement('p');
+      status.id='boostCarryStatus';status.style.cssText='font-size:.82rem;margin:10px 0;color:#285d75';
+      status.textContent=filled?'BOOST carried forward '+filled+' saved detail'+(filled===1?'':'s')+'. You can edit any of them.':(candidateRole||skills.length||candidateName)?'BOOST career details found; your existing entries were preserved.':'No prior BOOST career details found on this device. You can enter these fields manually.';
+      host.parentElement?.append(status);
+    }
+    if(packet.name||packet.target||packet.skills?.length)history.replaceState(null,'',location.pathname+location.search);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(fill,60),{once:true});else setTimeout(fill,60);
+})();
+</script>
+<script src="https://pinalworkforce1-del.github.io/48_hour_job_search/assets/skill-mobility-prefill.js?v=20261031d"></script>
+</body>
+</html>
