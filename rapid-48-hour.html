@@ -436,7 +436,7 @@ body{font-size:16px}
     updateAll();
     if(checklistOpen)document.querySelector('[data-plan-output]').scrollIntoView({behavior:'smooth',block:'start'});
   });
-  document.querySelector('[data-finish]').addEventListener('click',()=>{
+  document.querySelector('[data-finish]').addEventListener('click',async()=>{
     const missing=[1,2,3,4].filter(p=>!state.phases[p]);
     if(missing.length&&!state.completed){
       showToast('Finish all four planning phases first.');
@@ -453,7 +453,7 @@ body{font-size:16px}
     ps.pathway='rapid';
     localStorage.setItem(PATHWAY_KEY,JSON.stringify(ps));
     try{
-      boostReturnCompletion('jobsearch');
+      await boostReturnCompletion('jobsearch');
     }catch(err){
       console.error('BOOST completion return failed',err);
       document.querySelector('[data-save-feedback]').textContent='Your plan is saved, but the BOOST return failed: '+err.message+'. Try Complete Module & Return again.';
@@ -516,28 +516,22 @@ body{font-size:16px}
   updateAll();
 })();
 
-function boostReturnCompletion(moduleId){
-  const root='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
+async function boostReturnCompletion(moduleId){
   const params=new URLSearchParams(location.search);
-  const requested=params.get('boost_module');
-  if(requested&&requested!==moduleId)throw Error('The launch identifies a different module');
-  const target=new URL(params.get('boost_return')||root,location.href);
+  if(params.get('boost_module')&&params.get('boost_module')!==moduleId)
+    throw Error('This activity was launched for a different BOOST module.');
+  const target=new URL(params.get('boost_return')||'https://pinal.boostpathways.org/',location.href);
   const official=(target.hostname==='pinal.boostpathways.org'&&['/','/index.html'].includes(target.pathname))||
     (target.hostname==='pinalworkforce1-del.github.io'&&target.pathname.startsWith('/BOOST_Pathway-Portal/'));
-  if(target.protocol!=='https:'||!official)throw Error('Unrecognized BOOST return address');
+  if(target.protocol!=='https:'||!official)throw Error('Unrecognized BOOST return page.');
   const j=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
   const evidence=j.modules?.jobsearch;
-  if(!evidence?.completedAt)throw Error('Completion evidence was not saved');
-  const nonceKey='boost_completion_nonce:'+moduleId;
-  const nonce=params.get('boost_nonce')||sessionStorage.getItem(nonceKey);
-  // The 48-Hour activity is hosted on a different site from the authenticated
-  // custom BOOST domain. Storage and session data cannot cross that boundary.
-  // Use an explicit signed-in completion review, with the saved evidence.
-  // This also recovers already completed activity tabs with no launch nonce.
-  if(target.origin!==location.origin||!nonce){
-    const recovery=target.origin!==location.origin?target:new URL('https://pinal.boostpathways.org/');
-    recovery.searchParams.delete('boost_complete');
-    recovery.searchParams.delete('boost_nonce');
+  if(!evidence?.completedAt||![1,2,3,4].every(n=>evidence.phases?.[n]===true))
+    throw Error('All four planning phases must be saved before completion.');
+  // Existing activity tabs on the old GitHub Pages domain must recover their
+  // browser-local work through the authenticated custom BOOST domain.
+  if(location.origin!==target.origin||location.hostname!=='pinal.boostpathways.org'){
+    const recovery=new URL('https://pinal.boostpathways.org/');
     recovery.searchParams.set('boost2_path','rapid');
     recovery.searchParams.set('boost2_from','jobsearch');
     recovery.searchParams.set('boost_recover','jobsearch');
@@ -547,13 +541,54 @@ function boostReturnCompletion(moduleId){
     location.assign(recovery.toString());
     return;
   }
-  sessionStorage.setItem(nonceKey,nonce);
-  sessionStorage.setItem('boost_completion_payload:'+moduleId,JSON.stringify(evidence));
-  target.searchParams.set('boost_complete',moduleId);
-  target.searchParams.set('boost_nonce',nonce);
-  target.searchParams.set('boost2_path','rapid');
-  target.searchParams.set('boost2_from','jobsearch');
-  location.assign(target.toString());
+
+  // Same-origin module: write completed evidence against the signed-in user's
+  // latest cloud revision directly, with no fragile return nonce.
+  async function loadScript(src){
+    await new Promise((resolve,reject)=>{
+      const tag=document.createElement('script');
+      tag.src=src;tag.onload=resolve;
+      tag.onerror=()=>reject(Error('Could not load the BOOST save connection.'));
+      document.head.appendChild(tag);
+    });
+  }
+  if(!window.supabase?.createClient)
+    await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+  if(!window.BOOST_CONFIG)
+    await loadScript('assets/js/boost-config.js');
+  if(!window.PinalBOOSTCloud)
+    await loadScript('assets/js/boost-cloud.js?v=rapid-module-direct-20261102');
+  await window.PinalBOOSTCloud.ready();
+  const client=window.PinalBOOSTCloud.getClient();
+  if(!client)throw Error('BOOST cloud connection is unavailable.');
+  const userResult=await client.auth.getUser();
+  const user=userResult.data?.user;
+  if(userResult.error||!user)throw Error('BOOST sign-in is not available. Sign in through the BOOST homepage.');
+  const current=await client.rpc('boost_pinal_load_versioned');
+  if(current.error||!current.data?.journey)throw Error('Could not verify the signed-in participant journey.');
+  const owner=current.data.journey.participant?.name||current.data.journey.participant_name||'';
+  const planOwner=String(evidence.values?.participantName||'').trim();
+  const normalize=value=>String(value||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  if(owner&&planOwner&&normalize(owner)!==normalize(planOwner))
+    throw Error('The saved 48-Hour plan names a different participant ('+planOwner+'). No completion was posted.');
+  const saved=await window.PinalBOOSTCloud.saveRapidEvidence('jobsearch',evidence,client);
+  if(!saved)throw Error('Supabase has not confirmed your 48-Hour plan. Please retry this button.');
+  const now=new Date().toISOString();
+  const progress=await client.from('boost_module_progress').upsert({
+    user_id:user.id,region:'Pinal County',module_id:'jobsearch',pathway:'rapid',
+    status:'completed',
+    evidence:{source:'rapid_48_hour_same_origin_direct_save',version:4,journey_payload_saved:true},
+    completed_at:evidence.completedAt,updated_at:now
+  },{onConflict:'user_id,region,module_id'});
+  if(progress.error)throw Error('Plan saved, but progression confirmation failed: '+progress.error.message);
+  sessionStorage.removeItem('boost2_rapid_sync_error');
+  sessionStorage.removeItem('boost_completion_nonce:jobsearch');
+  sessionStorage.removeItem('boost_rapid_pending_handoff');
+  const back=new URL('https://pinal.boostpathways.org/');
+  back.searchParams.set('boost2_path','rapid');
+  back.searchParams.set('boost2_from','jobsearch');
+  back.searchParams.set('boost_saved','jobsearch');
+  location.assign(back.toString());
 }
 
 </script>
