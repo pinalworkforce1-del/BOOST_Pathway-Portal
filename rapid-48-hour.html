@@ -592,41 +592,79 @@ body{font-size:16px}
 })();
 
 async function boostReturnCompletion(moduleId){
+  // Finish on the same authenticated BOOST origin, without relying on
+  // a URL/nonce receipt to perform the cloud save after navigation.
+  if(moduleId!=='jobsearch')throw Error('Unexpected BOOST module.');
   const params=new URLSearchParams(location.search);
+  if(location.origin!=='https://pinal.boostpathways.org')
+    throw Error('Open Module 3 from https://pinal.boostpathways.org/ to finish saving.');
   if(params.get('boost_module')&&params.get('boost_module')!==moduleId)
     throw Error('This activity was launched for a different BOOST module.');
   const target=new URL(params.get('boost_return')||'https://pinal.boostpathways.org/',location.href);
-  const official=(target.hostname==='pinal.boostpathways.org'&&['/','/index.html'].includes(target.pathname))||
-    (target.hostname==='pinalworkforce1-del.github.io'&&target.pathname.startsWith('/BOOST_Pathway-Portal/'));
-  if(target.protocol!=='https:'||!official)throw Error('Unrecognized BOOST return page.');
-  const j=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
-  const evidence=j.modules?.jobsearch;
+  if(target.origin!==location.origin||!['/','/index.html'].includes(target.pathname))
+    throw Error('Unrecognized BOOST return page.');
+  const journey=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
+  const evidence=journey.modules?.jobsearch;
   if(!evidence?.completedAt||![1,2,3,4].every(n=>evidence.phases?.[n]===true))
     throw Error('All four planning phases must be saved before completion.');
-  // Existing activity tabs on the old GitHub Pages domain must recover their
-  // browser-local work through the authenticated custom BOOST domain.
-  if(location.origin!==target.origin||location.hostname!=='pinal.boostpathways.org'){
-    const recovery=new URL('https://pinal.boostpathways.org/');
-    recovery.searchParams.set('boost2_path','rapid');
-    recovery.searchParams.set('boost2_from','jobsearch');
-    recovery.searchParams.set('boost_recover','jobsearch');
-    recovery.hash='boost_recovery='+encodeURIComponent(JSON.stringify({
-      module:moduleId,source:'pinal_48_hour_job_search',evidence
-    }));
-    location.assign(recovery.toString());
-    return;
-  }
 
-  // Use the same same-origin completion receipt as Rapid Skill Mobility.
-  // BOOST validates the original launch nonce, persists the full module
-  // evidence to the signed-in journey, and confirms the progress row.
-  const nonce=params.get('boost_nonce');
-  if(params.get('boost_module')!==moduleId||!nonce||!params.has('boost_return'))
-    throw Error('Open this activity from the BOOST pathway to confirm completion.');
-  sessionStorage.setItem('boost_completion_payload:'+moduleId,JSON.stringify(evidence));
-  target.searchParams.set('boost_complete',moduleId);
-  target.searchParams.set('boost_nonce',nonce);
-  location.assign(target.toString());
+  const button=document.querySelector('[data-finish]');
+  const feedback=document.querySelector('[data-save-feedback]');
+  if(button)button.disabled=true;
+  if(feedback)feedback.textContent='Verifying your completed plan with Supabase…';
+  try{
+    const loadScript=src=>new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src=src;script.onload=resolve;
+      script.onerror=()=>reject(Error('Could not load the BOOST cloud connection.'));
+      document.head.appendChild(script);
+    });
+    if(!window.supabase?.createClient)
+      await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+    if(!window.BOOST_CONFIG)
+      await loadScript('assets/js/boost-config.js');
+    if(!window.PinalBOOSTCloud)
+      await loadScript('assets/js/boost-cloud.js');
+    await window.PinalBOOSTCloud.ready();
+    const client=window.PinalBOOSTCloud.getClient();
+    if(!client)throw Error('BOOST cloud connection is unavailable.');
+    const identity=await client.auth.getUser();
+    const user=identity.data?.user;
+    if(identity.error||!user)throw Error('BOOST sign-in needs to be verified.');
+
+    // Save the actual completed report using the proven revision-guarded writer.
+    const saved=await window.PinalBOOSTCloud.saveRapidEvidence('jobsearch',evidence,client);
+    if(!saved)throw Error('Supabase did not confirm the completed report.');
+    const check=await client.rpc('boost_pinal_load_versioned');
+    if(check.error||check.data?.journey?.modules?.jobsearch?.completedAt!==evidence.completedAt||
+       check.data?.journey?.progress?.jobsearch!=='complete')
+      throw Error('The completed report could not be verified on Supabase.');
+
+    // Coach View and progress-table consumers also need this completion row.
+    const now=new Date().toISOString();
+    const response=await client.from('boost_module_progress').upsert({
+      user_id:user.id,region:'Pinal County',module_id:'jobsearch',pathway:'rapid',
+      status:'completed',
+      evidence:{source:'rapid_48_hour_verified_same_origin',version:5,journey_payload_saved:true},
+      completed_at:evidence.completedAt,updated_at:now
+    },{onConflict:'user_id,region,module_id'}).select('module_id,status').single();
+    if(response.error||response.data?.module_id!=='jobsearch'||response.data?.status!=='completed')
+      throw Error('Module progression confirmation failed: '+(response.error?.message||'no confirmed row'));
+
+    sessionStorage.removeItem('boost_completion_payload:jobsearch');
+    sessionStorage.removeItem('boost_completion_nonce:jobsearch');
+    sessionStorage.removeItem('boost_rapid_pending_handoff');
+    sessionStorage.removeItem('boost2_rapid_sync_error');
+    // The cloud write is already complete, so do not invoke the old receipt path.
+    target.searchParams.delete('boost2_from');
+    target.searchParams.delete('boost_complete');
+    target.searchParams.delete('boost_nonce');
+    target.searchParams.delete('boost_draft');
+    target.searchParams.set('boost2_path','rapid');
+    location.assign(target.toString());
+  }finally{
+    if(button)button.disabled=false;
+  }
 }
 
 </script>
