@@ -164,7 +164,7 @@ body{font-size:16px}
           <p>Use that starting point in your 48-Hour Job Search: focus on roles that fit, highlight your transferable skills, and use what you learned about applications and barriers. You don't need to repeat those activities here.</p>
         </div>
       </div>
-      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="1">Complete Phase 1 ✓</button></div>
+      <div class="phase-actions"><button class="btn green" type="button" data-complete-phase="1">Complete Phase 1 ✓</button><p data-phase1-cloud-status role="status" aria-live="polite" style="margin:8px 0 0;font-size:.87rem;color:#24546d">Phase 1 saves locally. Click Complete Phase 1 to test the signed-in Supabase draft save.</p></div>
     </div>
   </section>
 
@@ -350,7 +350,80 @@ body{font-size:16px}
 
   document.querySelectorAll('[data-quiz="outreach"] button').forEach(btn=>btn.addEventListener('click',()=>{const box=document.querySelector('[data-feedback="outreach"]');document.querySelectorAll('[data-quiz="outreach"] button').forEach(b=>b.classList.remove('correct','wrong'));if(btn.dataset.answer==='correct'){btn.classList.add('correct');box.className='feedback good';box.textContent='Strong choice. You named your direction, asked for perspective, and made the request specific and manageable.';state.activities.outreachQuiz=true}else{btn.classList.add('wrong');box.className='feedback bad';box.textContent='Try again. The strongest outreach asks for perspective or a short conversation instead of putting someone on the spot for a job.';state.activities.outreachQuiz=false}save()}));
 
-  document.querySelectorAll('[data-complete-phase]').forEach(btn=>btn.addEventListener('click',()=>{const p=btn.dataset.completePhase;state.phases[p]=true;localStorage.setItem(MODULE_KEY,JSON.stringify(state));const section=document.getElementById('phase'+p);if(section){section.classList.add('is-complete');const pill=section.querySelector('[data-status]');if(pill)pill.textContent='Complete ✓';}try{save()}catch(err){console.error('Phase '+p+' saved; refresh UI failed',err)}showToast(`Phase ${p} saved.`);const next=document.getElementById(p==='4'?'pitch':`phase${Number(p)+1}`);if(next)setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),250)}));
+  // Phase 1 is an isolated cloud-draft test, not a module completion.
+  // Use BOOST's existing revision-protected writer, then independently read back
+  // the saved answers. Never announce success based on a local save alone.
+  async function testPhaseOneCloudSave(btn){
+    const status=document.querySelector('[data-phase1-cloud-status]');
+    const originalLabel=btn.textContent;
+    btn.disabled=true;
+    btn.textContent='Checking Supabase save…';
+    status.style.color='#24546d';
+    status.textContent='Phase 1 saved on this browser. Verifying the Supabase draft…';
+    try{
+      const params=new URLSearchParams(location.search);
+      if(location.origin!=='https://pinal.boostpathways.org'||params.get('boost_module')!=='jobsearch')
+        throw Error('Open Module 3 from your signed-in BOOST pathway at pinal.boostpathways.org.');
+      const updatedAt=saveDraftProgress();
+      const draft=readJourney().modules?.jobsearchDraft;
+      if(!draft||draft.updatedAt!==updatedAt)throw Error('Local Phase 1 draft could not be prepared.');
+      const loadScript=src=>new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src=src;
+        script.onload=resolve;
+        script.onerror=()=>reject(Error('The BOOST cloud connection script could not be loaded.'));
+        document.head.appendChild(script);
+      });
+      if(!window.supabase?.createClient)
+        await loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
+      if(!window.BOOST_CONFIG)
+        await loadScript('assets/js/boost-config.js');
+      if(!window.PinalBOOSTCloud)
+        await loadScript('assets/js/boost-cloud.js');
+      await window.PinalBOOSTCloud.ready();
+      const client=window.PinalBOOSTCloud.getClient();
+      if(!client)throw Error('BOOST cloud client is unavailable.');
+      const user=await client.auth.getUser();
+      if(user.error||!user.data?.user)throw Error('No verified BOOST sign-in exists on this page.');
+      const written=await window.PinalBOOSTCloud.saveRapidEvidence('jobsearchDraft',draft,client);
+      if(!written)throw Error('Supabase did not confirm the draft write.');
+      const check=await client.rpc('boost_pinal_load_versioned');
+      if(check.error)throw Error('Supabase read-back failed: '+check.error.message);
+      const saved=check.data?.journey?.modules?.jobsearchDraft;
+      const sameList=key=>JSON.stringify(saved?.state?.lists?.[key]||[])===JSON.stringify(draft.state.lists?.[key]||[]);
+      if(saved?.updatedAt!==draft.updatedAt||saved?.state?.phases?.['1']!==true||
+        saved?.state?.values?.actionStart!==draft.state.values?.actionStart||
+        !['skills','accomplishments','contacts'].every(sameList))
+        throw Error('Supabase read-back did not match the saved Phase 1 answers.');
+      status.style.color='#1b6942';
+      status.textContent='✓ Supabase CONFIRMED: Phase 1 draft and answers were read back successfully. Module 3 is still in progress.';
+      showToast('Supabase Phase 1 draft verified.');
+    }catch(error){
+      console.error('Phase 1 Supabase draft test:',error);
+      status.style.color='#a04032';
+      status.textContent='Cloud NOT confirmed — Phase 1 is saved on this browser only. '+(error?.message||String(error))+' Click Complete Phase 1 to retry.';
+      showToast('Phase 1 cloud save not confirmed.');
+    }finally{
+      btn.disabled=false;
+      btn.textContent=originalLabel;
+    }
+  }
+  document.querySelectorAll('[data-complete-phase]').forEach(btn=>btn.addEventListener('click',()=>{
+    const p=btn.dataset.completePhase;
+    state.phases[p]=true;
+    localStorage.setItem(MODULE_KEY,JSON.stringify(state));
+    const section=document.getElementById('phase'+p);
+    if(section){
+      section.classList.add('is-complete');
+      const pill=section.querySelector('[data-status]');
+      if(pill)pill.textContent='Complete ✓';
+    }
+    try{save()}catch(err){console.error('Phase '+p+' saved; refresh UI failed',err)}
+    if(p==='1'){void testPhaseOneCloudSave(btn);return;}
+    showToast(`Phase ${p} saved.`);
+    const next=document.getElementById(p==='4'?'pitch':`phase${Number(p)+1}`);
+    if(next)setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'start'}),250);
+  }));
   document.querySelector('[data-complete-activity="pitch"]').addEventListener('click',()=>{state.activities.pitch=true;save();showToast('Networking introduction saved.');document.getElementById('mistakes').scrollIntoView({behavior:'smooth',block:'start'})});
 
   function renderMistake(){const i=Math.min(state.mistakeIndex||0,mistakes.length-1),q=mistakes[i];document.querySelector('[data-mistake-title]').textContent=`${i+1} of ${mistakes.length} — ${q.title}`;const wrap=document.querySelector('[data-mistake-choices]');wrap.innerHTML='';q.choices.forEach(([text,correct])=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.addEventListener('click',()=>{const out=document.querySelector('[data-mistake-result]');if(correct){state.mistakeDone[i]=true;out.className='mistake-result good';out.textContent=q.good;save();setTimeout(()=>{if(i<mistakes.length-1){state.mistakeIndex=i+1;save();renderMistake()}else{state.activities.mistakes=true;save();out.textContent='Challenge complete. You identified all five job-search traps.'}},650)}else{out.className='mistake-result bad';out.textContent=q.bad}});wrap.appendChild(b)});document.querySelectorAll('[data-chip]').forEach(c=>c.classList.toggle('done',!!state.mistakeDone[Number(c.dataset.chip)]))}
