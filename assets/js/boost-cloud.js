@@ -171,22 +171,27 @@
   // Save Rapid handoffs as targeted changes to the latest authenticated journey.
   // This avoids losing a return receipt when another tab has moved the cloud
   // revision since the homepage's initial read.
-  function saveRapidEvidence(moduleId,evidence){
-    if(!['jobsearch','jobsearchDraft'].includes(moduleId)||!evidence||typeof evidence!=='object')return Promise.resolve(false);
+  function saveRapidEvidence(moduleId,evidence,authenticatedClient){
+    if(!['jobsearch','jobsearchDraft','skillmobility'].includes(moduleId)||!evidence||typeof evidence!=='object')return Promise.resolve(false);
+    if(moduleId==='skillmobility'&&(!evidence.completedAt||!evidence.direction))return Promise.resolve(false);
     if(moduleId==='jobsearch'&&(!evidence.completedAt||![1,2,3,4].every(n=>evidence.phases?.[n]===true)))return Promise.resolve(false);
     if(moduleId==='jobsearchDraft'&&(!evidence.updatedAt||!evidence.state||!evidence.state.values||!evidence.state.lists))return Promise.resolve(false);
-    const c=getClient();
+    const c=authenticatedClient||getClient();
     if(!c)return Promise.resolve(false);
     const operation=async()=>{
       const session=(await c.auth.getSession()).data?.session;
       if(!session?.user?.email)return false;
       for(let attempt=0;attempt<3;attempt++){
-        const current=await loadVersioned();
-        if(!current||!Object.prototype.hasOwnProperty.call(current,'revision'))return false;
+        const loaded=await c.rpc('boost_pinal_load_versioned');
+        if(loaded.error||!loaded.data){console.warn('Rapid evidence load failed',loaded.error?.message);return false;}
+        const current=loaded.data;
+        if(!Object.prototype.hasOwnProperty.call(current,'revision'))return false;
         const remote=current.journey&&typeof current.journey==='object'?current.journey:{};
         const previous=remote.modules?.[moduleId];
         const same=moduleId==='jobsearch'
           ?previous?.completedAt===evidence.completedAt&&remote.progress?.jobsearch==='complete'
+          :moduleId==='skillmobility'
+          ?previous?.completedAt===evidence.completedAt&&remote.progress?.skillmobility==='complete'
           :previous?.updatedAt===evidence.updatedAt;
         const newer=moduleId==='jobsearchDraft'&&previous?.updatedAt&&String(previous.updatedAt)>String(evidence.updatedAt);
         if(same||newer){
@@ -197,7 +202,7 @@
         const base=mergeJourney({schema_version:2,region:REGION,participant:{email:session.user.email.toLowerCase()}},remote);
         const payload=mergeJourney(base,{
           modules:{[moduleId]:evidence},
-          ...(moduleId==='jobsearch'?{progress:{jobsearch:'complete'}}:{}),
+          ...(['jobsearch','skillmobility'].includes(moduleId)?{progress:{[moduleId]:'complete'}}:{}),
           updated_at:new Date().toISOString()
         });
         const result=await c.rpc('boost_pinal_save_if_revision',{p_journey:payload,p_revision:current.revision});
@@ -206,6 +211,8 @@
           const saved=result.data.journey||payload;
           const verified=moduleId==='jobsearch'
             ?saved.modules?.jobsearch?.completedAt===evidence.completedAt&&saved.progress?.jobsearch==='complete'
+            :moduleId==='skillmobility'
+            ?saved.modules?.skillmobility?.completedAt===evidence.completedAt&&saved.progress?.skillmobility==='complete'
             :saved.modules?.jobsearchDraft?.updatedAt===evidence.updatedAt;
           if(!verified)return false;
           cloudRevision=result.data.revision;cloudBaseline=stable(saved);cloudReady=true;
