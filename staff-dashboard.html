@@ -370,6 +370,78 @@ function module2CoachView(ev){
  html+=box('Suggested coach follow-up','<div class="coachNote">Review actual local postings and entry wages; confirm credentials and experience required; explore employment-first or paid training options; discuss commute, schedule and financial fit; agree on the next action.</div>');
  return html+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Technical evidence (reference only)</summary>'+detailRows(ev)+'</details>';
 }
+function rapidSkillMobilityCoachView(ev,journey){
+ const m=ev&&typeof ev==='object'?ev:{},v=m.validation&&typeof m.validation==='object'?m.validation:{};
+ const direction=['return','pivot'].includes(m.direction)?m.direction:null;
+ const prior=journey?.modules?.['rapid-discover']||{};
+ const box=(heading,body)=>'<article class="evidenceCard"><h4>'+esc(heading)+'</h4>'+body+'</article>';
+ const row=(name,value)=>'<div class="item"><b>'+esc(name)+'</b>'+esc(String(value??'Not recorded'))+'</div>';
+ const grid=html=>'<div class="evidenceGrid">'+html+'</div>';
+ const list=values=>'<ul class="plainList">'+values.filter(Boolean).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+ const array=x=>Array.isArray(x)?x.filter(Boolean):[];
+ const jobs=array(v.jobs).filter(x=>x&&typeof x==='object'&&x.title);
+ const barriers=array(v.barriers).map(String);
+ const selected=array(m.considerations).filter(x=>x&&typeof x==='object'&&(x.title||x.name));
+ const postings=array(v.research).filter(x=>x&&typeof x==='object');
+ const reportedSkills=[...new Set([...array(v.confirmedSkills),...array(m.skillAssessment?.skills)]
+   .map(x=>typeof x==='string'?x:x?.label||x?.name||x?.skill||'').filter(Boolean))].slice(0,10);
+ const applied=jobs.filter(x=>x.applied==='yes').length,planning=jobs.filter(x=>x.applied==='planning').length;
+ if(!direction)return '<div class="coachNote"><b>How to use this evidence:</b> Compare the participant’s skills, explored occupations, wages, employer requirements and local opportunities. This historical record lacks the newer return-or-pivot decision.</div>'+
+  box('Does the evidence support this direction?','<p>No return-or-pivot decision was saved in this record, so the results do not establish a supported direction. Discuss them as starting evidence, not a determination.</p>')+mobilityCoachView(ev);
+ let html='<div class="coachNote"><b>Coach reading guide — Rapid Reemployment Module 2:</b> Review the participant’s direction, examine the evidence that informed it, and decide what still needs verification. Employer leads and skills are participant-reported, not verified hiring or eligibility decisions.</div>';
+ html+=box('1. What direction did the participant choose?',grid(row('Previous occupation',m.priorOccupation||prior.priorOccupation||'Not recorded')+
+   row('Direction',direction==='return'?'Return to previous occupation':'Explore other occupations')+
+   row('Work experience',m.duties||prior.duties||'Review earlier duties')+
+   (prior.direction?row('Compared with Module 1',prior.direction===direction?'Consistent direction — confirm it still fits':'Direction changed — ask what led to the change'):'')
+ ));
+ if(direction==='return'){
+  const statuses={yes:'Applied',no:'Not applied',planning:'Planning to apply'};
+  html+=box('2. What employment evidence was recorded?',
+   grid(row('Potential job leads',jobs.length+' recorded')+
+    row('Applications',applied+' applied · '+planning+' planning · '+Math.max(0,jobs.length-applied-planning)+' not applied/unspecified')+
+    row('Participant notes',v.notes||'Not recorded'))+
+   (jobs.length?'<div class="detailCards">'+jobs.map((j,i)=>{
+     let link='';
+     if(typeof j.url==='string'&&/^https:\/\//i.test(j.url)){try{const url=new URL(j.url);if(url.protocol==='https:')link='<a href="'+esc(url.href)+'" target="_blank" rel="noopener noreferrer">Review participant-supplied posting</a>'}catch(_){}}
+     return box('Lead '+(i+1)+': '+j.title,grid(row('Application status',statuses[j.applied]||'Not recorded')+(link?'<div class="item">'+link+'</div>':'')));
+   }).join('')+'</div>':'<p class="coachNote">No specific job leads recorded. Review where and how to find suitable openings.</p>'));
+  const actions={'Pay is too low':'Compare posted wages and available hours with earnings needs.','Commute too far':'Review commute and reliable transportation.','Missing required skills or experience':'Verify required skills, credentials and possible bridge options.',"Schedule doesn't work":'Compare available shifts with schedule preferences.','Application support needed':'Review applications and offer targeted résumé help.','Resume not up to date':'Update résumé with confirmed duties and accomplishments.',Other:'Clarify the additional barrier.'};
+  html+=box('3. What might prevent follow-through?',
+   barriers.length?list(barriers)+'<p><b>Suggested coaching response</b></p>'+list([...new Set(barriers.map(x=>actions[x]||'Discuss: '+x))]):
+    '<p>No barriers selected. Ask about pay, schedule, commute, experience requirements and résumé readiness.</p>');
+  html+=box('4. Does the evidence support a return-to-work search?',
+   '<p>'+esc(jobs.length?
+    'The '+jobs.length+' identified lead(s) provide a concrete starting point for returning to this occupation. '+(applied?'An application has been reported. ':'')+'Current openings, employer requirements, wages and work conditions are not independently verified.':
+    'Returning to the previous occupation is a recorded preference, but no specific employer leads were saved; suitable opportunities remain unverified.')+'</p>'+
+    list(['Review actual postings and confirm they are still open.','Compare pay, schedules, commute and job requirements with current needs.','Choose applications, résumé updates and employer outreach to prioritize.']));
+ }else{
+  html+=box('2. What alternatives and strengths were recorded?',grid(
+   row('Careers selected for consideration',selected.length?selected.map(x=>x.title||x.name).join(' · '):'None recorded')+
+   row('Confirmed transferable skills',reportedSkills.length?reportedSkills.join(' · '):'Not recorded in saved evidence')+
+   row('Employer research entries',postings.length+' recorded')+
+   row('Research status',v.evidenceStatus||'Not independently verified')));
+  if(postings.length)html+=box('Employer evidence to compare',
+    '<div class="detailCards">'+postings.slice(0,10).map((p,i)=>box(p.title||p.employer||'Research '+(i+1),
+     grid(row('Source',p.source||'Not recorded')+row('Posted wage',typeof (p.postedWage||p.wage)==='string'||typeof (p.postedWage||p.wage)==='number'?(p.postedWage||p.wage):'Verify posting')+
+     row('Requirements',typeof p.requirements==='string'?p.requirements:'Verify posting')))).join('')+'</div>');
+  html+=box('3. Does the evidence support a career pivot?',
+    '<p>'+esc(selected.length?'Specific occupations have been identified for comparison. This supports further exploration, but not a conclusion that skills, wages, openings and preparation needs align.':'No destination occupation was saved, so the evidence does not support a specific career pivot yet.')+'</p>'+
+    list(['Compare personally performed duties with target job requirements.','Distinguish demonstrated skills from credentials or experience still needed.','Check real job postings, entry wages, commutes, schedules and preparation time.','Consider immediate work or short bridge options before longer training.']));
+ }
+ html+=box('Questions and next steps to agree on together',
+  list(direction==='return'?[
+   'Which recorded employers are still hiring for suitable roles?',
+   'Do wage, commute, schedule and job requirements support returning?',
+   'What application or résumé support is most useful?',
+   'What will the participant do next, and when will the coach follow up?'
+  ]:[
+   'Which alternative occupation looks most realistic based on verified experience?',
+   'What critical evidence or employer requirements remain unknown?',
+   'How do pay and preparation time compare with the participant’s circumstances?',
+   'What employer contact, application or research step comes next?'
+  ]));
+ return html+'<details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700">Complete saved Module 2 evidence (reference only)</summary>'+detailRows(ev)+'</details>';
+}
 function mobilityCoachView(ev){
  const newReport=window.BOOSTCoachMobilityReport?.render(ev);
  if(newReport)return newReport;
@@ -550,7 +622,7 @@ async function coachHandoffView(r,id){
  return top+'<div class="notice">This appointment confirmation predates the full evidence packet. Review the individual module reports for details. The participant can reopen and reconfirm the Coach Conversation Brief to attach the complete report.</div>'+
  '<article class="evidenceCard"><h4>Saved preparation summary</h4><div class="evidenceGrid">'+item('Target career',p.selectedCareer)+item('Career decision',p.careerDecision)+item('Training program',p.trainingProgram)+item('Training provider',p.trainingProvider)+item('Preparation gap',p.investmentGap)+'</div></article>';
 }
-async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{if(moduleId==='rapid-discover'&&pathKind(r)==='rapid'&&r.progress?.module1==='complete'&&r.progress?.['rapid-discover']!=='complete'){$('drawerBody').innerHTML='<div class="notice"><strong>Earlier O*NET Discover completed.</strong> This participant completed the earlier Module 1 and keeps full progression credit. The newer Rapid Discover has optional additional occupation, preference, and return-or-pivot questions if the participant voluntarily reopens it. The original assessment is preserved under Module 1.</div><p>Open the saved Module 1 record to review O*NET interest and career evidence. No repeat activity is required.</p>';return;}if(moduleId==='handoff'||moduleId==='rapid-coach-prep'){$('drawerBody').innerHTML=await coachHandoffView(r,moduleId);return;}if(['softskills','resume','interview'].includes(moduleId)){$('drawerBody').innerHTML='<div class="notice">Ready 2 Work status: '+esc(stageStatus(r,moduleId))+'</div><p>Use View Ready 2 Work Results for available scenario, résumé, and interview evaluations. Detailed module-level viewer integration is pending.</p>';return;}const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+(moduleId==='industry'&&(!rows||!rows.length)&&ev&&Object.values(ev).some(v=>v?.completed)?'<div class="completionOk"><strong>Saved completion evidence ✓</strong><span>Industry challenge results are present in the participant journey. A separate validated completion record has not been found.</span></div>':completionSummary(rows,moduleId))+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':moduleId==='module4'?'Participant Decision Report & Coach Action':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):moduleId==='module4'?module4DecisionView(ev):moduleId==='industry'?industryCoachView(ev):['module1','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
+async function openDetail(id,moduleId){const r=records.find(x=>String(x.journey_id)===String(id));$('drawerTitle').textContent=(r?.participant_name||'Participant')+' • '+(names[moduleId]||label(moduleId));$('drawerMeta').textContent=[r?.participant_email,pathLabel(r?.selected_pathway),r?.current_step].filter(Boolean).join(' • ');$('drawerBody').innerHTML='<div class="notice">Loading module detail…</div>';$('drawerBack').classList.add('show');try{if(moduleId==='rapid-discover'&&pathKind(r)==='rapid'&&r.progress?.module1==='complete'&&r.progress?.['rapid-discover']!=='complete'){$('drawerBody').innerHTML='<div class="notice"><strong>Earlier O*NET Discover completed.</strong> This participant completed the earlier Module 1 and keeps full progression credit. The newer Rapid Discover has optional additional occupation, preference, and return-or-pivot questions if the participant voluntarily reopens it. The original assessment is preserved under Module 1.</div><p>Open the saved Module 1 record to review O*NET interest and career evidence. No repeat activity is required.</p>';return;}if(moduleId==='handoff'||moduleId==='rapid-coach-prep'){$('drawerBody').innerHTML=await coachHandoffView(r,moduleId);return;}if(['softskills','resume','interview'].includes(moduleId)){$('drawerBody').innerHTML='<div class="notice">Ready 2 Work status: '+esc(stageStatus(r,moduleId))+'</div><p>Use View Ready 2 Work Results for available scenario, résumé, and interview evaluations. Detailed module-level viewer integration is pending.</p>';return;}const d=await report(id),rows=(d.module_progress||[]).filter(x=>moduleId==='industry'?String(x.module_id||'').startsWith('industry-'):x.module_id===moduleId),ev=evidence(d,moduleId);$('drawerBody').innerHTML='<section class="detailSection"><h3>Validated Completion</h3>'+(moduleId==='industry'&&(!rows||!rows.length)&&ev&&Object.values(ev).some(v=>v?.completed)?'<div class="completionOk"><strong>Saved completion evidence ✓</strong><span>Industry challenge results are present in the participant journey. A separate validated completion record has not been found.</span></div>':completionSummary(rows,moduleId))+'</section><section class="detailSection"><h3>'+ (moduleId==='module2'?'Career Validation & Coaching Summary':moduleId==='module4'?'Participant Decision Report & Coach Action':'Participant Journey Evidence') +'</h3>'+(moduleId==='module2'?module2CoachView(ev):moduleId==='module3'?mobilityCoachView(ev):moduleId==='skillmobility'?rapidSkillMobilityCoachView(ev,d.journey):moduleId==='module4'?module4DecisionView(ev):moduleId==='industry'?industryCoachView(ev):['module1','module5'].includes(moduleId)?coachModuleView(moduleId,ev):detailRows(ev))+'</section>'}catch(e){$('drawerBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 function intakeRosieAdd(text,who='bot'){const c=$('intakeRosieChat');if(!c)return;const d=document.createElement('div');d.className='tsr-msg '+who;d.textContent=String(text||'');c.appendChild(d);c.scrollTop=c.scrollHeight}
 function intakeRosieQuick(){const q=$('intakeRosieQuick');if(!q)return;q.innerHTML='';const items=[['Adult Eligibility','Analyze Adult eligibility separately from Priority of Service. Show supported facts, missing verification, and policy basis.'],['DW Category','Analyze Dislocated Worker eligibility and identify the likely category or competing categories, supported facts, missing verification, and policy basis.'],['Priority of Service','Analyze Adult Priority of Service using only documented facts and identify missing verification.'],["What's Missing?",'List the eligibility facts or documentation still missing before staff can make a determination.'],['Draft Intake Note','Draft a professional intake note using BOOST outcomes and documented eligibility facts. Do not invent anything. Flag pending verification.'],['Prep for Intake','Summarize the BOOST career story and the most important Adult/DW eligibility and Priority of Service questions to resolve at intake.']];items.forEach(([label,prompt])=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>intakeRosieAsk(prompt);q.appendChild(b)})}
 function intakeRosieReset(){const c=$('intakeRosieChat');if(!c)return;c.innerHTML='<div class="tsr-msg bot"><strong>Hi, I’m Rosie — Intake & Eligibility.</strong><br>I can help with Pinal Adult/DW eligibility, Priority of Service, missing verification, and intake-note drafting. Staff make the official eligibility determination.<br><br><strong>Privacy:</strong> Do not enter names or other direct identifiers. Provide only the facts needed for the eligibility question.</div><div class="tsr-quick" id="intakeRosieQuick"></div>';intakeRosieQuick()}
