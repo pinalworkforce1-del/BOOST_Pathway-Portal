@@ -91,7 +91,7 @@ body{font-size:16px}
       <div class="progress-track" aria-label="Module progress"><div class="progress-fill" data-progress-fill></div></div>
       <div class="progress-count" data-progress-count>0 of 7 activities complete</div>
     </div>
-    <a class="toplink" href="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/">← BOOST Pathways</a>
+    <a class="toplink" href="https://pinal.boostpathways.org/">← BOOST Pathways</a>
   </div>
 </header>
 
@@ -477,7 +477,7 @@ body{font-size:16px}
   document.querySelector('[data-save-return]').addEventListener('click',()=>{
     try{
       saveDraftProgress();
-      const params=new URLSearchParams(location.search),fallback='https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/';
+      const params=new URLSearchParams(location.search),fallback='https://pinal.boostpathways.org/';
       const target=new URL(params.get('boost_return')||fallback,location.href);
       const official=(target.hostname==='pinal.boostpathways.org'&&['/','/index.html'].includes(target.pathname))||
         (target.hostname==='pinalworkforce1-del.github.io'&&target.pathname.startsWith('/BOOST_Pathway-Portal/'));
