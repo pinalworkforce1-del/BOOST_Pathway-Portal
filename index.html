@@ -1,4 +1,14 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOOST 2.0 | Pinal County Career Pathways</title><script>(function(){var p=new URLSearchParams(location.search);if(['explore','rapid','ready'].includes(p.get('boost2_path'))&&p.has('boost2_from'))document.documentElement.classList.add('boost2-module-return');})();</script><style>.boost2-module-return .hero,.boost2-module-return .welcome,.boost2-module-return #choices{display:none!important}.boost2-module-return .container{padding-top:0}.boost2-module-return #path.active{margin-top:12px}</style><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BOOST 2.0 | Pinal County Career Pathways</title><script>(function(){
+var p=new URLSearchParams(location.search);
+if(['explore','rapid','ready'].includes(p.get('boost2_path'))&&p.has('boost2_from'))document.documentElement.classList.add('boost2-module-return');
+// Capture the module's fragment before auth initialization or browser URL cleanup.
+// The fragment is never sent to the server and contains no access credentials.
+try{
+ var handoff=new URLSearchParams(location.hash.replace(/^#/,'')).get('boost_handoff');
+ if(handoff&&handoff.length<120000&&(p.get('boost_complete')==='jobsearch'||p.get('boost_draft')==='jobsearch'))
+  sessionStorage.setItem('boost_rapid_pending_handoff',handoff);
+}catch(e){console.warn('Rapid return payload could not be retained',e);}
+})();</script><style>.boost2-module-return .hero,.boost2-module-return .welcome,.boost2-module-return #choices{display:none!important}.boost2-module-return .container{padding-top:0}.boost2-module-return #path.active{margin-top:12px}</style><style>
 :root{--navy:#081b2a;--cyan:#26beea;--muted:#aecddd;--gold:#f7bd62}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 40% -20%,#244b62,#081926 66%);color:#fff;font:16px/1.5 system-ui,Segoe UI,sans-serif}button{font:inherit;cursor:pointer}button:focus-visible{outline:3px solid #ffe19a;outline-offset:3px}.top{background:#071522e8;border-bottom:1px solid #ffffff24;display:flex;justify-content:space-between;align-items:center;padding:13px 4vw;gap:12px;flex-wrap:wrap}.brand{font-size:1.55rem;font-weight:1000;font-style:italic;letter-spacing:.02em}.brand span{color:#48c5e8}.tag{font-size:.73rem;font-weight:800;letter-spacing:.08em;color:#fcd27c;border:1px solid #ffcf7769;padding:6px 12px;border-radius:99px}.container{width:min(1260px,95%);margin:auto;padding-bottom:60px}.hero{padding:34px 14px 26px;text-align:center}.eyebrow{color:#f1ba59;letter-spacing:.14em;text-transform:uppercase;font-weight:850;font-size:.74rem}.hero h1{font-size:clamp(2.1rem,5vw,3.5rem);line-height:1.05;margin:8px auto 12px;font-weight:950;max-width:1000px;font-style:italic;text-transform:uppercase}.hero h1 em{font-style:inherit;color:#38c9e8}.hero p{color:#d5e7f2;max-width:780px;margin:auto}.welcome{background:#ffffff0c;border:1px solid #ffffff2b;border-radius:16px;padding:14px 22px;margin-bottom:23px;display:flex;justify-content:space-between;gap:16px;align-items:center}.welcome strong{color:#fff}.welcome p{margin:3px 0;color:#cae0ee;font-size:.91rem}.orientation{font-size:.77rem;font-weight:800;color:#e0f8ff;white-space:nowrap}.choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.path-card{position:relative;isolation:isolate;overflow:hidden;border-radius:17px;min-height:410px;border:2px solid var(--accent);background:#0d2436;box-shadow:0 12px 24px #0006;text-align:left;color:#fff;display:flex;flex-direction:column;padding:0}.path-card:hover{transform:translateY(-3px);box-shadow:0 20px 34px #0009}.path-art{height:225px;background-size:cover;background-position:center 30%;position:relative}.path-art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#0d2436 0%,transparent 65%)}.path-content{padding:0 18px 17px;display:flex;flex-direction:column;gap:8px;flex:1;margin-top:-27px;position:relative}.path-content h2{margin:0;font-size:1.36rem;line-height:1.1;text-transform:uppercase;text-shadow:0 3px 8px #000}.path-content p{margin:0;font-size:.91rem;line-height:1.43}.path-content .outcome{margin-top:auto;color:var(--accent);font-size:.86rem;font-weight:700;padding-top:5px}.cta{border-radius:10px;margin-top:9px;background:var(--accent);color:#071a28;text-align:center;padding:10px;font-weight:850}.path-wrap{display:none;background:#e8f1f7;color:#092337;border:1px solid #a8c7d6;border-radius:20px;margin:25px 0;padding:19px;box-shadow:0 10px 32px #0005}.path-wrap.active{display:block}.path-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}.path-heading h2{margin:0;font-size:1.6rem;text-transform:uppercase}.path-heading p{margin:5px 0 0;color:#425a68;font-size:.93rem}.back{color:#153b55;border:1px solid #b8cddc;background:#fff;border-radius:10px;padding:9px 12px;font-weight:780}.stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}.stage{border:1px solid #b8cad5;background:white;border-radius:15px;overflow:hidden;display:flex;flex-direction:column}.stage-art{height:clamp(205px,22vw,310px);background-size:contain;background-repeat:no-repeat;background-position:center;background-color:#102b46;flex-shrink:0}.stage-body{padding:12px 13px;display:flex;flex-direction:column;gap:6px;flex:1}.stage-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.num{display:grid;place-items:center;border-radius:50%;background:#145b83;color:white;width:32px;height:32px;font-weight:850}.kind{font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;background:#e3eff7;color:#38647d;padding:5px 8px;border-radius:999px;font-weight:900}.stage h3{font-size:1rem;margin:0}.stage p{font-size:.87rem;line-height:1.35;margin:0;color:#526a79}.pathnote{color:#486375;font-size:.87rem;margin:15px 0 0}.foot{text-align:center;font-size:.82rem;color:#a8c7d9;margin:26px auto}.preview-note{color:#f6d38d;font-size:.8rem;margin-top:8px}@media(max-width:900px){.choices{grid-template-columns:1fr 1fr}.stages{grid-template-columns:1fr 1fr}}@media(max-width:600px){.choices,.stages{grid-template-columns:1fr}.path-card{min-height:390px}.welcome{display:block}.orientation{margin-top:10px}.hero{padding-top:20px}}
 
 .test-launch{display:block;margin-top:12px;width:100%;background:#116e95;color:#fff;padding:10px;border:0;border-radius:9px;font-weight:800;cursor:pointer}.test-launch:disabled{opacity:.45;cursor:not-allowed}.stage-body select{margin-top:12px;width:100%;padding:9px;border:1px solid #a6c1cc;border-radius:8px;background:#fff;color:#142a3d}.pending-wire{margin-top:14px;padding:9px 10px;background:#e6edf1;color:#5c7082;border-radius:8px;font-size:.77rem;font-weight:700}.stage-body small{display:block;color:#516879} 
@@ -30,6 +40,28 @@ const industryRoutes = Object.freeze({
 });
 const portalBase=new URL('./',location.href).toString();
 function freshNonce(){const b=new Uint8Array(24);crypto.getRandomValues(b);return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')}
+const RAPID_LAUNCH_KEY='boost_rapid_launches_v1';
+function recordRapidLaunch(moduleId,nonce){
+ if(moduleId!=='jobsearch'||!authUser?.id||!nonce)return;
+ const now=Date.now();let entries=[];
+ try{entries=JSON.parse(localStorage.getItem(RAPID_LAUNCH_KEY)||'[]');if(!Array.isArray(entries))entries=[];}catch{}
+ entries=entries.filter(e=>e&&e.userId===authUser.id&&e.issuedAt>now-30*86400000&&e.nonce!==nonce);
+ entries.push({moduleId,nonce,userId:authUser.id,issuedAt:now});
+ localStorage.setItem(RAPID_LAUNCH_KEY,JSON.stringify(entries.slice(-12)));
+}
+function validRapidLaunchNonce(moduleId,nonce){
+ if(moduleId!=='jobsearch'||!nonce)return false;
+ if(sessionStorage.getItem('boost_completion_nonce:'+moduleId)===nonce)return true;
+ if(!authUser?.id)return false;
+ try{
+  const entries=JSON.parse(localStorage.getItem(RAPID_LAUNCH_KEY)||'[]');
+  if(Array.isArray(entries)&&entries.some(e=>e?.moduleId===moduleId&&e.nonce===nonce&&e.userId===authUser.id&&Date.now()-e.issuedAt<=30*86400000)){
+   sessionStorage.setItem('boost_completion_nonce:'+moduleId,nonce);
+   return true;
+  }
+ }catch{}
+ return false;
+}
 function openModule(moduleId,tile){
  if(typeof window.boost2ModuleLaunch==='function')return window.boost2ModuleLaunch(moduleId,tile);
  alert('BOOST is still loading your saved journey. Please try again.');
@@ -53,25 +85,28 @@ function openModule(moduleId,tile){
 }
 function industryId(id){return ['healthcare','trades','manufacturing','it','cdl'].includes(id)?'industry-'+id:id}
 function receiveRapidHandoff(){
- const q=new URLSearchParams(location.search),hash=new URLSearchParams(location.hash.replace(/^#/,''));
- const raw=hash.get('boost_handoff');
+ const q=new URLSearchParams(location.search);
+ const hash=new URLSearchParams(location.hash.replace(/^#/,''));
+ const isReturn=q.get('boost_complete')==='jobsearch'||q.get('boost_draft')==='jobsearch';
+ const raw=hash.get('boost_handoff')||(isReturn?sessionStorage.getItem('boost_rapid_pending_handoff'):null);
  if(!raw)return null;
- let transfer;try{transfer=JSON.parse(raw)}catch{return 'Malformed return handoff. Your saved work has not been changed.'}
+ let transfer;try{transfer=JSON.parse(raw)}catch{return '48-Hour return evidence could not be read. The activity remains saved on its original page.'}
  const nonce=String(transfer?.nonce||'');
- const module=String(transfer?.module||'');
- if(module!=='jobsearch'||!nonce||nonce!==sessionStorage.getItem('boost_completion_nonce:jobsearch')||
-    q.get('boost_nonce')!==nonce||!['completion','draft'].includes(transfer.kind))
-   return 'Return verification failed. Your saved work has not been changed.';
+ if(transfer?.module!=='jobsearch'||!['completion','draft'].includes(transfer.kind)||
+   !validRapidLaunchNonce('jobsearch',nonce)||q.get('boost_nonce')!==nonce)
+   return '48-Hour return verification did not match the original BOOST launch. Reopen the saved activity using the BOOST pathway card to reconnect it.';
  if(transfer.kind==='completion'){
    const e=transfer.evidence;
-   if(!e||typeof e!=='object'||!e.completedAt||!e.phases||![1,2,3,4].every(n=>e.phases[n]))
-     return 'The job-search planning evidence is incomplete. No completion has been recorded.';
+   if(!e||typeof e!=='object'||!e.completedAt||!e.phases||![1,2,3,4].every(n=>e.phases[n]===true))
+     return 'The 48-Hour plan must have all four planning phases saved before BOOST can mark completion.';
    sessionStorage.setItem('boost_completion_payload:jobsearch',JSON.stringify(e));
  }else{
    const d=transfer.draft;
-   if(!d||typeof d!=='object'||!d.state||!d.updatedAt)return 'Draft handoff was incomplete.';
+   if(!d||typeof d!=='object'||!d.state?.values||!d.state?.lists||!d.updatedAt)
+     return 'The 48-Hour draft evidence was incomplete. No saved answers were changed.';
    sessionStorage.setItem('boost_jobsearch_draft_handoff',JSON.stringify(d));
  }
+ sessionStorage.removeItem('boost_rapid_pending_handoff');
  const clean=new URL(location.href);clean.hash='';
  history.replaceState({},'',clean.toString());
  return null;
@@ -81,7 +116,8 @@ async function acceptCompletionReceipt(client,region){
  if(!id)return null;
  const clean=new URL(location.href);clean.searchParams.delete('boost_complete');clean.searchParams.delete('boost_nonce');
  // Keep return receipt in URL if validation fails so it can be retried.
- if(!nonce||sessionStorage.getItem('boost_completion_nonce:'+id)!==nonce)return 'Completion receipt not recognized. Saved work has not been changed.';
+ if(!nonce||(id==='jobsearch'?!validRapidLaunchNonce(id,nonce):sessionStorage.getItem('boost_completion_nonce:'+id)!==nonce))
+  return 'Completion receipt not recognized for this BOOST launch. Open the 48-Hour module from the pathway card to reconnect your saved work.';
  const j=JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}');
  const handoff=['skillmobility','jobsearch'].includes(id)?sessionStorage.getItem('boost_completion_payload:'+id):null;
  let handoffEvidence=null;
@@ -94,7 +130,7 @@ async function acceptCompletionReceipt(client,region){
  }
  if(id==='jobsearch'){
    if(!handoffEvidence?.completedAt||![1,2,3,4].every(n=>handoffEvidence.phases?.[n]))
-     return 'Complete the four planning phases before confirming your 48-Hour Job Search.';
+     return 'BOOST did not receive the completed 48-Hour plan. Your answers remain saved in the activity; reopen it from BOOST and choose Complete Module & Return.';
    j.modules=j.modules||{};j.progress=j.progress||{};
    j.modules.jobsearch={...j.modules.jobsearch,...handoffEvidence};
    j.progress.jobsearch='complete';
@@ -122,6 +158,7 @@ async function acceptCompletionReceipt(client,region){
  if(error)return 'Completion confirmation failed: '+error.message;
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
+ if(id==='jobsearch'){sessionStorage.removeItem('boost_rapid_pending_handoff');sessionStorage.removeItem('boost2_rapid_sync_error');}
  history.replaceState({},'',clean.toString());
  return 'Saved completion validated for '+id+'. Progress refreshed.';
 }
@@ -238,7 +275,7 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
       a.textContent='Open '+item[0]+' ↗';
       a.dataset.boostStep=moduleId;
       a.style.cssText='display:block;text-align:center;text-decoration:none';
-      a.addEventListener('click',e=>{if(key==='rapid'&&moduleId!=='jobsearch'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if((moduleId==='r2w'||(key==='ready'&&['financial','ai'].includes(moduleId)))&&!entryReady(el)){e.preventDefault();return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='rapid-coach-prep'){e.preventDefault();if(!hasEvidence(snapshot,'jobsearch')){alert('Complete your 48-Hour Job Search first.');return;}const url=new URL('rapid-coach-appointment-prep.html',location.href);sessionStorage.setItem('boost2_return_pathway','rapid');location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='rapid-discover'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:rapid-discover',nonce);const url=new URL('rapid-discover.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','rapid-discover');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','rapid-discover');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}if(key==='rapid'&&moduleId==='jobsearch'){try{const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:jobsearch',nonce);const url=new URL('https://pinalworkforce1-del.github.io/48_hour_job_search/');const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','jobsearch');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','jobsearch');url.searchParams.set('boost_nonce',nonce);
+      a.addEventListener('click',e=>{if(key==='rapid'&&moduleId!=='jobsearch'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if((moduleId==='r2w'||(key==='ready'&&['financial','ai'].includes(moduleId)))&&!entryReady(el)){e.preventDefault();return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='rapid-coach-prep'){e.preventDefault();if(!hasEvidence(snapshot,'jobsearch')){alert('Complete your 48-Hour Job Search first.');return;}const url=new URL('rapid-coach-appointment-prep.html',location.href);sessionStorage.setItem('boost2_return_pathway','rapid');location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='rapid-discover'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:rapid-discover',nonce);const url=new URL('rapid-discover.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','rapid-discover');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','rapid-discover');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}if(key==='rapid'&&moduleId==='jobsearch'){try{const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:jobsearch',nonce);recordRapidLaunch('jobsearch',nonce);sessionStorage.removeItem('boost_rapid_pending_handoff');const url=new URL('https://pinalworkforce1-del.github.io/48_hour_job_search/');const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','jobsearch');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','jobsearch');url.searchParams.set('boost_nonce',nonce);
  // Cross-site GitHub Pages cannot share localStorage. Pass only the three
  // non-sensitive career fields through a URL fragment (not sent to the server).
  const j=snapshot||{},mob=j.modules?.skillmobility||{},discover=j.modules?.['rapid-discover']||{};
@@ -490,7 +527,7 @@ function state(j,id,blocked){
    if(id==='rapid-coach-prep')return hasEvidence(j,'jobsearch')?{label:'Ready — Prepare for Your Appointment',cls:'ok',block:false,canLaunch:true}:{label:'Available after 48-Hour Job Search',cls:'lock',block:true,canLaunch:false};
    if(['financial','ai'].includes(id)&&!postEnrollmentAccess.unlocked)return {label:postEnrollmentAccess.checked?'Available After Enrollment':'Verifying Enrollment',cls:'lock',block:false,canLaunch:false};
    if(id==='skillmobility'&&rapidDirection(j)==='return')return {label:'Not Required — Returning to Previous Occupation',cls:'ok',block:false,canLaunch:false};
-   if(id==='jobsearch')return hasEvidence(j,'jobsearch')?{label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true}:{label:'Open — Continue Your 48-Hour Plan',cls:'warn',block:false,canLaunch:true};
+   if(id==='jobsearch')return hasEvidence(j,'jobsearch')?{label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true}:{label:'In Progress — Finish and Save Your 48-Hour Plan',cls:'warn',block:true,canLaunch:true};
    const done=hasEvidence(j,id);
    if(id==='rapid-discover'&&done&&!j?.progress?.['rapid-discover'])return {label:'Completed — Original Module 1 Preserved',cls:'ok',block:false,canLaunch:true};
    if(done)return {label:'Completed — Review Again',cls:'ok',block:false,canLaunch:true};
