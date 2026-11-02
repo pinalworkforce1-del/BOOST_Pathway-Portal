@@ -362,8 +362,10 @@ body{font-size:16px}
     status.textContent='Phase 1 saved on this browser. Verifying the Supabase draft…';
     try{
       const params=new URLSearchParams(location.search);
-      if(location.origin!=='https://pinal.boostpathways.org'||params.get('boost_module')!=='jobsearch')
-        throw Error('Open Module 3 from your signed-in BOOST pathway at pinal.boostpathways.org.');
+      if(location.origin!=='https://pinal.boostpathways.org')
+        throw Error('This page is running at '+location.origin+'. Open Module 3 from https://pinal.boostpathways.org/ instead.');
+      if(params.get('boost_module')&&params.get('boost_module')!=='jobsearch')
+        throw Error('The BOOST module identifier is '+params.get('boost_module')+', not jobsearch. Reopen Module 3 from the BOOST pathway.');
       const updatedAt=saveDraftProgress();
       const draft=readJourney().modules?.jobsearchDraft;
       if(!draft||draft.updatedAt!==updatedAt)throw Error('Local Phase 1 draft could not be prepared.');
