@@ -327,7 +327,7 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
  pane.classList.add('active');if(!new URLSearchParams(location.search).has('boost2_path'))pane.scrollIntoView({behavior:'smooth',block:'start'});
 }
 document.querySelectorAll('.path-card').forEach(b=>b.addEventListener('click',()=>{show(b.dataset.key);offerRosieIntro(b.dataset.key)}));
-document.querySelector('#back').addEventListener('click',()=>{pane.classList.remove('active');document.querySelector('#choices').scrollIntoView({behavior:'smooth',block:'start'})});</script><style>
+document.querySelector('#back').addEventListener('click',()=>{pane.classList.remove('active');if(typeof window.boost2ShowPathways==='function')window.boost2ShowPathways();else document.querySelector('#choices').scrollIntoView({behavior:'smooth',block:'start'});});</script><style>
 .progress-integration{max-width:1300px;margin:16px auto;padding:18px;background:#102b46;color:#eef8ff;border:1px solid #5792b4;border-radius:18px;font:15px/1.45 system-ui,sans-serif}.progress-integration h2{margin:0 0 6px;font-size:20px}.progress-integration p{margin:4px 0 10px;color:#d4e6f2}.progress-integration button{padding:9px 13px;margin:5px 7px 5px 0;background:#d6ad57;color:#092338;border:0;border-radius:9px;font-weight:750;cursor:pointer}.progress-integration button:disabled{opacity:.5;cursor:not-allowed}.progress-integration textarea{box-sizing:border-box;width:100%;min-height:95px;border-radius:8px;padding:10px;background:#f8fbff;color:#102b46}.progress-integration .readout{background:#0b2035;border-radius:9px;padding:10px;margin:10px 0}.progress-integration .source-note{font-size:12px;color:#c7dbea}.path-card.has-progress{outline:3px solid #e9b954!important;outline-offset:3px}.path-card.has-progress:after{content:'◉ IN PROGRESS';display:block;color:#f9d775;font-weight:900;margin:7px}.stage.progress-real-complete .demo-state{background:#206d49!important;color:#fff!important}.stage.progress-real-locked .demo-state{background:#3b4855!important;color:#fff!important}.stage.progress-real-inprogress .demo-state{background:#145984!important;color:#fff!important}
 </style>
 <section id="read-only-bridge" class="progress-integration" aria-label="Progression adapter testing">
@@ -378,7 +378,16 @@ document.querySelector('.choices').before(mount);
 const prep=document.createElement('section');prep.id='boost2-preparation';prep.setAttribute('aria-label','Getting started with BOOST');
 prep.innerHTML='<h2>Get Started with BOOST</h2><div class="boost2-prep-grid"><article><span class="boost2-prep-number">1</span><h3>Watch the Orientation Video & Complete the Interest Form</h3><p>Learn about workforce services and share your career interests.</p><a href="https://forms.cloud.microsoft/r/6aHKVyZzk9" target="_blank" rel="noopener noreferrer">Complete Interest Form ↗</a></article><article><span class="boost2-prep-number">2</span><h3>Create an AJC Account</h3><p>Register with Arizona Job Connection to access job-search tools.</p><a href="https://www.azjobconnection.gov/jobseeker/registrations/new" target="_blank" rel="noopener noreferrer">Create Your AJC Account ↗</a></article><article><span class="boost2-prep-number">3</span><h3>Select Your BOOST Pathway Below</h3><p>Choose the pathway that fits your goals. Sign-in begins when you select it.</p><button type="button" id="boost2-see-pathways">View BOOST Pathways ↓</button></article></div>';
 mount.before(prep);
-document.getElementById('boost2-see-pathways').onclick=()=>document.getElementById('choices').scrollIntoView({behavior:'smooth'});
+function showAllBoostPathways(){
+ // Module returns hide the pathway chooser for a cleaner landing page.
+ // Re-enable it before attempting to scroll to it.
+ document.documentElement.classList.remove('boost2-module-return');
+ document.getElementById('choices').removeAttribute('hidden');
+ const target=document.getElementById('choices');
+ target.scrollIntoView({behavior:'smooth',block:'start'});
+}
+window.boost2ShowPathways=showAllBoostPathways;
+document.getElementById('boost2-see-pathways').onclick=showAllBoostPathways;
 let boost2PathwayRequested=false;
 const boostPathKeys=['explore','rapid','ready'];
 const validBoostPath=p=>boostPathKeys.includes(p)?p:null;
@@ -692,7 +701,7 @@ function activate(key,returning=false){
   sessionStorage.removeItem('boost2_return_pathway');
  }
 }
-document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{rosiePathwayInteracted=true;if(snapshot&&authUser){document.body.classList.remove('boost2-auth-gate');activate(c.dataset.key,false)}}));
+document.querySelectorAll('.path-card').forEach(c=>c.addEventListener('click',()=>{rosiePathwayInteracted=true;if(snapshot&&authUser){document.body.classList.remove('boost2-auth-gate');activate(c.dataset.key,false);document.querySelector('#path')?.scrollIntoView({behavior:'smooth',block:'start'});}}));
 document.getElementById('choices').addEventListener('click',(event)=>{
  const card=event.target.closest('.path-card');if(!card)return;
  if(authUser){document.body.classList.remove('boost2-auth-gate');return;}
@@ -702,7 +711,7 @@ document.getElementById('choices').addEventListener('click',(event)=>{
  boost2PathwayRequested=true;sessionStorage.setItem('boost2_return_pathway',card.dataset.key);
  el('b2load').click();mount.scrollIntoView({behavior:'smooth',block:'start'});
 },true);
-el('b2all').onclick=()=>document.querySelector('#choices').scrollIntoView({behavior:'smooth'});
+el('b2all').onclick=showAllBoostPathways;
 el('b2load').onclick=async()=>{const button=el('b2load');button.disabled=true;try{el('b2message').textContent='Reading your saved journey…';if(!((location.hostname==='pinalworkforce1-del.github.io'&&location.pathname.startsWith('/BOOST_Pathway-Portal/'))||(location.hostname==='pinal.boostpathways.org'&&(location.pathname==='/'||location.pathname==='/index.html'))))throw Error('Open BOOST from its official portal address to sign in.');if(!window.supabase?.createClient)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});if(!window.BOOST_CONFIG)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-config.js';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});const cfg=window.BOOST_CONFIG||{};if(!window.PinalBOOSTCloud)await new Promise((resolve,reject)=>{const x=document.createElement('script');x.src='./assets/js/boost-cloud.js?v=rapid-session-20261102';x.onload=resolve;x.onerror=reject;document.head.appendChild(x)});await window.PinalBOOSTCloud?.ready?.();const client=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});boostPathSaveClient=client;boostPathSaveRegion=cfg.region||'Pinal County';const result=await client.auth.getSession();authUser=null;if(result.data?.session){const verified=await client.auth.getUser();if(!verified.error&&verified.data?.user){authUser=verified.data.user;}else{await client.auth.signOut({scope:'local'}).catch(()=>{});el('b2message').textContent='Your previous sign-in is no longer valid. Please sign in with your email to continue.';}}if(!authUser){document.body.classList.add('boost2-auth-gate');document.documentElement.classList.remove('boost2-module-return');if(boost2PathwayRequested||requestedBoostPath())showBoostSignIn(client);else el('b2message').textContent='Select a BOOST pathway below to begin.';return;}mount.classList.remove('boost2-awaiting-auth','boost2-pending-choice');
 const handoffError=receiveRapidHandoff();
 if(handoffError){console.warn('Rapid return verification:',handoffError);sessionStorage.setItem('boost2_rapid_sync_error',handoffError);}
