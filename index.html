@@ -42,20 +42,22 @@ const portalBase=new URL('./',location.href).toString();
 function freshNonce(){const b=new Uint8Array(24);crypto.getRandomValues(b);return [...b].map(v=>v.toString(16).padStart(2,'0')).join('')}
 const RAPID_LAUNCH_KEY='boost_rapid_launches_v1';
 function recordRapidLaunch(moduleId,nonce){
- if(moduleId!=='jobsearch'||!authUser?.id||!nonce)return;
+ const uid=window.boost2GetAuthenticatedUserId?.();
+ if(moduleId!=='jobsearch'||!uid||!nonce)return;
  const now=Date.now();let entries=[];
  try{entries=JSON.parse(localStorage.getItem(RAPID_LAUNCH_KEY)||'[]');if(!Array.isArray(entries))entries=[];}catch{}
- entries=entries.filter(e=>e&&e.userId===authUser.id&&e.issuedAt>now-30*86400000&&e.nonce!==nonce);
- entries.push({moduleId,nonce,userId:authUser.id,issuedAt:now});
+ entries=entries.filter(e=>e&&e.userId===uid&&e.issuedAt>now-30*86400000&&e.nonce!==nonce);
+ entries.push({moduleId,nonce,userId:uid,issuedAt:now});
  localStorage.setItem(RAPID_LAUNCH_KEY,JSON.stringify(entries.slice(-12)));
 }
 function validRapidLaunchNonce(moduleId,nonce){
  if(moduleId!=='jobsearch'||!nonce)return false;
+ const uid=window.boost2GetAuthenticatedUserId?.();
+ if(!uid)return false;
  if(sessionStorage.getItem('boost_completion_nonce:'+moduleId)===nonce)return true;
- if(!authUser?.id)return false;
  try{
   const entries=JSON.parse(localStorage.getItem(RAPID_LAUNCH_KEY)||'[]');
-  if(Array.isArray(entries)&&entries.some(e=>e?.moduleId===moduleId&&e.nonce===nonce&&e.userId===authUser.id&&Date.now()-e.issuedAt<=30*86400000)){
+  if(Array.isArray(entries)&&entries.some(e=>e?.moduleId===moduleId&&e.nonce===nonce&&e.userId===uid&&Date.now()-e.issuedAt<=30*86400000)){
    sessionStorage.setItem('boost_completion_nonce:'+moduleId,nonce);
    return true;
   }
@@ -462,6 +464,9 @@ mount.after(rosie);
 // Legacy BOOST 2 Rosie chat removed: authenticated Ask Rosie is the single chat widget.
 
 const el=id=>document.getElementById(id);let snapshot=null,chosen=null,authUser=null;
+// The pathway navigation and the authenticated journey run in separate script scopes.
+// Expose only a read-only ID getter after verification, never the auth token.
+window.boost2GetAuthenticatedUserId=()=>authUser?.id||null;
 let postEnrollmentAccess={unlocked:false,checked:false,program:null};
 window.boost2ModuleLaunch=function(moduleId,tile){
  const id=moduleId==='investment'?'module5':industryId(moduleId);
