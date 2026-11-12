@@ -13,12 +13,11 @@
 <link rel="stylesheet" href="resume-format-v1.css">
 <link rel="stylesheet" href="resume-occupation-search-v1.css">
 </head>
-<body><div id="northernGate" role="status" aria-live="polite"><div class="inner"><h1>Northern Ready 2 Work</h1><p id="northernGateText">Verifying your Northern BOOST session and enrollment…</p><p><a href="../">← Return to Northern BOOST</a></p></div></div>
-<div class="app-shell">
+<body><div class="app-shell">
   <header class="topbar">
     <a class="brand" href="#map" data-route="map" aria-label="Ready 2 Work map">BOOST • GET 2 WORK READY</a>
     <div class="top-progress" aria-label="Ready 2 Work progress"><span id="overallProgressText">0 of 22 scenarios complete</span><div class="top-track"><i id="overallProgressBar"></i></div></div>
-    <div class="top-actions"><a class="top-link" href="../">← Northern BOOST</a><button id="resetBtn" class="top-link button-link" type="button">Start over</button></div>
+    <div class="top-actions"><a class="top-link" href="../">← Pinal BOOST</a><button id="resetBtn" class="top-link button-link" type="button">Start over</button></div>
   </header>
 
   <main id="viewMap" class="view map-view">
@@ -113,10 +112,18 @@
 <script>if(window.pdfjsLib)window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.1/mammoth.browser.min.js"></script>
 <!-- Course data and application are loaded after authenticated enrollment verification. -->
-<script src="../preview-config.js"></script>
+<script src="../ready-2-work-qa/course-data.js"></script>
+<script src="resume-evidence-review-v1.js"></script>
+<script src="resume-occupation-titles-v1.js"></script>
+<script src="resume-occupation-search-v1.js"></script>
+<script src="resume-format-v1.js"></script>
+<script src="app.js"></script>
+<script src="resume-polish-v1.js"></script>
+<script src="../ready-2-work-qa/resume-step-arrival-v1.js"></script>
+<script src="resume-strategy-v1.js"></script>
+<script src="interview-landing-v1.js"></script>
+<script src="../assets/js/pinal-cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="northern-guard.js"></script>
-
-<!-- Northern cloud adapter is loaded only after verified enrollment by northern-guard.js. -->
+<script src="../ready-2-work-qa/cloud-save-v1.js"></script>
 </body>
 </html>
