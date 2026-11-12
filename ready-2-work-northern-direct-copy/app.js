@@ -4,7 +4,7 @@
   const weights = course.weights;
   const skillNames = course.skills;
   const skillOrder = course.skillOrder;
-  const STORAGE_KEY = 'boost-northern-r2w-v1';
+  const STORAGE_KEY = 'boost-r2w-integrated-v1';
   const $ = id => document.getElementById(id);
 
   const stageDefs = {
