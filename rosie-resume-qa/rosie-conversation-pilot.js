@@ -162,6 +162,53 @@ function manageBullets(){
   if(!dlg.open)dlg.showModal();
 }
 
+
+function resumeSectionReview(action){
+  const snapshot=bridge()?.snapshot(),dlg=ensureModal(),host=dlg.querySelector('#rosieDraftModalOptions');
+  if(!snapshot||!action)return;
+  host.replaceChildren();$('rosieDraftModalTitle').textContent=action.resumeAction==='move_clinical'?'Move clinical experience':'Add nursing education';
+  const desc=document.createElement('p');desc.textContent='This changes the résumé on the right only after your approval. No details will be invented.';host.append(desc);
+  const before=[...(snapshot.allExperiences||[])],educationBefore=snapshot.education||'';
+  let expectedClinicalBullet='';
+  if(action.resumeAction==='move_clinical'){
+    const from=before[action.actionExperienceIndex];expectedClinicalBullet=from?.bullets?.[action.actionBulletIndex]||'';
+    if(!expectedClinicalBullet||from.kind==='clinical'){
+      status('The proposed move needs a valid existing work-history bullet. Please try again.');return;
+    }
+    const source=document.createElement('p');source.textContent='Move FROM '+(from.role||'Work Experience')+': '+expectedClinicalBullet;
+    const destination=document.createElement('p');destination.textContent='Move TO Nursing Clinical Experience: Nursing Clinical Rotations';
+    host.append(source,destination);
+  }else if(action.resumeAction==='save_education'){
+    const entry=document.createElement('p');entry.textContent='Add to Education & Training: '+action.actionEducationText;
+    host.append(entry);
+  }else return;
+  const label=document.createElement('label');label.className='rosie-pilot-approval';
+  const confirm=document.createElement('input');confirm.type='checkbox';
+  label.append(confirm,document.createTextNode(' I reviewed and approve this résumé change.'));host.append(label);
+  const message=document.createElement('p');message.setAttribute('role','status');message.className='rosie-edit-error';host.append(message);
+  const button=document.createElement('button');button.type='button';button.className='rosie-pilot-accept';
+  button.textContent=action.resumeAction==='move_clinical'?'Move approved bullet':'Add approved education';
+  button.onclick=()=>{
+    if(!confirm.checked){message.textContent='Please confirm the change first.';confirm.focus();return}
+    const current=bridge().snapshot();
+    if(JSON.stringify(current.allExperiences)!==JSON.stringify(before)||String(current.education||'')!==educationBefore){
+      message.textContent='The résumé has changed. Please reopen the review.';return;
+    }
+    const result=action.resumeAction==='move_clinical'?
+      bridge().organizeClinical(action.actionExperienceIndex,action.actionBulletIndex,expectedClinicalBullet):
+      bridge().saveEducation(action.actionEducationText,educationBefore);
+    if(!result?.ok){message.textContent=result?.error||'Could not save this change.';return}
+    dlg.close();clearDrafts();
+    const description=action.resumeAction==='move_clinical'?'Moved the existing clinical bullet into Nursing Clinical Experience.':'Added your approved nursing education to the résumé.';
+    addMessage('assistant',description+' The résumé preview has been updated. You can undo this last section change.');
+    bridge().metric('resume_'+action.resumeAction,'chat');
+    const undo=$('rosieUndoSectionEdit');if(undo)undo.hidden=false;
+    status('Your approved résumé section change has been saved.');$('rosiePilotInput')?.focus();
+  };
+  host.append(button);
+  if(!dlg.open)dlg.showModal();
+}
+
 async function sendMessage(value){
   if(busy||!value.trim())return;
   if(!bridge()){status('Rosie résumé connection unavailable');return}
@@ -183,7 +230,10 @@ async function sendMessage(value){
     const reply=String(result.reply||'').trim()||'Can you tell me a little more about that responsibility?';
     addMessage('assistant',reply);
     const proposals=[{name:'Clear & Direct',text:result.clearDirect},{name:'Skills Forward',text:result.skillsForward}];
-    if(result.editOperation&&result.editOperation!=='none'){
+    if(result.resumeAction&&result.resumeAction!=='none'){
+      resumeSectionReview(result);
+      status('Review the proposed résumé section update; nothing has changed yet.');
+    }else if(result.editOperation&&result.editOperation!=='none'){
       editReview(result.editOperation,result.editIndexes||[],result.editText||'');
       status('Review a proposed edit to existing bullets. No new bullet will be added.');
     }else if((explicitEdit||agreementEdit)&&(bridge()?.snapshot()?.approvedBullets||[]).length){
@@ -215,6 +265,13 @@ function bind(){
   const undo=document.createElement('button');undo.type='button';undo.id='rosieUndoBulletEdit';undo.textContent='Undo last edit';undo.hidden=true;
   undo.onclick=()=>{const r=bridge()?.undoEdit();if(r?.ok){undo.hidden=true;status('Previous bullets restored.');addMessage('assistant','Your last bullet edit has been undone.')}else status(r?.error||'Unable to undo this edit.')};
   $('rosiePilotSwitchGuided').after(manage,undo);
+  const undoSection=document.createElement('button');undoSection.type='button';
+  undoSection.id='rosieUndoSectionEdit';undoSection.textContent='Undo section change';undoSection.hidden=true;
+  undoSection.onclick=()=>{const result=bridge()?.undoResumeSection();
+    if(result?.ok){undoSection.hidden=true;status('Previous résumé sections restored.');addMessage('assistant','Your last section change has been undone.')}
+    else status(result?.error||'Unable to undo the section change.');
+  };
+  undo.after(undoSection);
   $('rosiePilotGuided').onclick=()=>chooseMode('guided');
   $('rosiePilotChat').onclick=()=>chooseMode('chat');
   $('rosiePilotSwitchGuided').onclick=()=>showMode('guided');
