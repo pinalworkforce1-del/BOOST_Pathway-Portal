@@ -500,25 +500,7 @@
   if($('rbVersionSlots')){const d=resumeData();const box=$('rbVersionSlots');box.innerHTML=[0,1,2].map(i=>i<d.versions.length?'<button type="button" data-version="'+i+'" class="'+(i===d.activeVersion?'selected':'')+'">'+escapeHtml(d.versions[i].name)+' • '+escapeHtml(d.versions[i].target||'Set target')+(i===d.activeVersion?' • Current':'')+'</button>':'<button type="button" data-version-add="'+i+'">＋ Résumé '+(i+1)+'</button>').join('');box.querySelectorAll('[data-version]').forEach(b=>b.onclick=()=>{const x=resumeData();x.versions[x.activeVersion].target=x.target;x.versions[x.activeVersion].jobDescription=x.jobDescription;x.versions[x.activeVersion].summary=x.summary;x.versions[x.activeVersion].format=x.resumeFormat;x.versions[x.activeVersion].alignment=x.alignment||null;x.activeVersion=Number(b.dataset.version);const v=x.versions[x.activeVersion];x.alignment=v.alignment||null;x.target=v.target||'';x.jobDescription=v.jobDescription||'';x.summary=v.summary||'';x.resumeFormat=v.format||'hybrid';saveState();renderResumeBuilder()});box.querySelectorAll('[data-version-add]').forEach(b=>b.onclick=()=>{const x=resumeData();if(x.versions.length>=3)return;x.versions.push({name:'Résumé '+(x.versions.length+1),target:'',jobDescription:'',summary:'',format:'hybrid',visualStyle:'modern'});x.activeVersion=x.versions.length-1;x.alignment=null;x.target='';x.jobDescription='';x.summary='';x.resumeFormat='hybrid';saveState();renderResumeBuilder();$('rbTarget')?.focus()})}
   if($('rbBuildBullet')) $('rbBuildBullet').onclick=rosieBuildBullet;
   if($('rbAddExperience')) $('rbAddExperience').onclick=addResumeExperience;
-  async function rosieDiscoverNextResponsibility(){
-    const d=resumeData(),exp=d.experiences[d.activeExperience||0]||{},box=$('rbBulletCoach'),input=$('rbEvidence');
-    if(!box||!input)return;
-    box.hidden=false;
-    box.innerHTML='<div class="rosie-live-convo"><div class="rosie-convo-label">Rosie · Explore another responsibility</div><div class="rosie-speaking"><b>Rosie</b><div>What else did you do in this role? You can describe something in your own words, choose a reminder below, or finish this experience.</div></div><div id="rosieNextTasks" class="rosie-next-tasks">Finding a few ideas for this occupation…</div><button type="button" id="rosieNextOther">I did something else</button> <button type="button" id="rosieNextDone">I'm finished with this job</button></div>';
-    const pick=(value)=>{input.value=value;d.evidence=value;syncActiveExperience(d);saveState();box.hidden=true;input.focus()};
-    $('rosieNextOther').onclick=()=>pick('');
-    $('rosieNextDone').onclick=()=>{box.hidden=true;input.value='';d.evidence='';saveState();$('rbNext')?.focus()};
-    try{
-      const data=await callR2WResumeAI({mode:'next_responsibilities',evidence:{occupation:d.target,role:d.role,completedBullets:exp.bullets||[]}});
-      const suggestions=(Array.isArray(data.suggestions)?data.suggestions:[]).filter(x=>typeof x==='string'&&x.trim()).slice(0,4);
-      const area=$('rosieNextTasks');if(!area)return;
-      area.textContent='';
-      if(!suggestions.length){area.textContent='Tell Rosie about another responsibility you actually performed.';return}
-      const intro=document.createElement('p');intro.textContent='Did you do any of these? These are reminders, not claims about your work.';area.appendChild(intro);
-      suggestions.forEach(label=>{const b=document.createElement('button');b.type='button';b.className='rosie-draft';b.textContent=label;b.onclick=()=>pick(label);area.appendChild(b)});
-    }catch(e){const area=$('rosieNextTasks');if(area)area.textContent='You can still describe another responsibility in your own words.'}
-  }
-  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.evidence='';if(d.experiences[d.activeExperience||0])delete d.experiences[d.activeExperience||0].rosieGuided;$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;saveState();if($('rbEvidenceLabel'))$('rbEvidenceLabel').childNodes[0].nodeValue='What else did you do or accomplish in this role?';rosieDiscoverNextResponsibility()};
+  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.evidence='';if(d.experiences[d.activeExperience||0])delete d.experiences[d.activeExperience||0].rosieGuided;$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;saveState();if($('rbEvidenceLabel'))$('rbEvidenceLabel').childNodes[0].nodeValue='What else did you do or accomplish in this role?';$('rbEvidence').focus()};
   const evidenceWorkflow=window.R2WEvidenceWorkflow?.create({resumeData,saveState,renderResumePreview,callR2WResumeAI,showResumeCoach,syncActiveExperience,escapeHtml,$});
   evidenceWorkflow?.bind();
   // Parse résumé files locally, review source text, then import as a draft — never invent experience.
