@@ -266,7 +266,7 @@
     document.querySelector('.resume-workspace')?.classList.remove('alignment-preview-open');
     if($('rbTogglePreview'))$('rbTogglePreview').textContent='Show résumé preview';
   }
-  function renderResumePreview(){ const d=resumeData();syncActiveExperience(d); $('rpName').textContent=d.contact?.name||state.participantName||'Your Name';if($('rpContact'))$('rpContact').textContent=[d.contact?.email,d.contact?.phone,d.contact?.location].filter(Boolean).join(' • '); $('rpTarget').textContent=d.versions[d.activeVersion]?.target||d.careerTarget||'Target job'; $('rpSummary').textContent=d.versions[d.activeVersion]?.summary||'Your professional summary will appear here.';const pl=$('rpExperienceList');if(pl){const xs=d.experiences.filter(x=>String(x.experience||'').trim()||String(x.evidence||'').trim());pl.innerHTML=xs.map((x,i)=>{const head=[x.role,x.employer].filter(Boolean).join(' • ')||('Experience '+(i+1));const dates=[x.startDate,x.endDate].filter(Boolean).join(' – ');const bullets=(x.bullets||[]).filter(Boolean);return '<div class="preview-experience"><strong>'+escapeHtml(head)+'</strong>'+(dates?'<small>'+escapeHtml(dates)+'</small>':'')+(bullets.length?'<ul>'+bullets.map(b=>'<li>'+escapeHtml(b)+'</li>').join('')+'</ul>':(x.evidence?'<p>'+escapeHtml(x.evidence)+'</p>':''))+'</div>'}).join('');$('rpExperience').hidden=xs.length>0;$('rpEvidence').hidden=xs.length>0;} $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; window.R2WResumeFormat?.render(d); }
+  function renderResumePreview(){ const d=resumeData();syncActiveExperience(d); $('rpName').textContent=d.contact?.name||state.participantName||'Your Name';if($('rpContact'))$('rpContact').textContent=[d.contact?.email,d.contact?.phone,d.contact?.location].filter(Boolean).join(' • '); $('rpTarget').textContent=d.versions[d.activeVersion]?.target||d.careerTarget||'Target job'; $('rpSummary').textContent=d.versions[d.activeVersion]?.summary||'Your professional summary will appear here.';const pl=$('rpExperienceList');if(pl){const xs=d.experiences.filter(x=>String(x.experience||'').trim()||String(x.evidence||'').trim()||(x.bullets||[]).some(Boolean)||String(x.role||'').trim()||String(x.employer||'').trim());pl.innerHTML=xs.map((x,i)=>{const head=[x.role,x.employer].filter(Boolean).join(' • ')||('Experience '+(i+1));const dates=[x.startDate,x.endDate].filter(Boolean).join(' – ');const bullets=(x.bullets||[]).filter(Boolean);return '<div class="preview-experience"><strong>'+escapeHtml(head)+'</strong>'+(dates?'<small>'+escapeHtml(dates)+'</small>':'')+(bullets.length?'<ul>'+bullets.map(b=>'<li>'+escapeHtml(b)+'</li>').join('')+'</ul>':(x.evidence?'<p>'+escapeHtml(x.evidence)+'</p>':''))+'</div>'}).join('');$('rpExperience').hidden=xs.length>0;$('rpEvidence').hidden=xs.length>0;} $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; window.R2WResumeFormat?.render(d); }
   // Pinal Rosie pilot: conversation shares the existing résumé and cloud-save path.
   // This bridge never applies AI drafts without an explicit participant click.
   window.RosieConversationBridge={
@@ -331,6 +331,15 @@
       saveState();renderResumePreview();
       return true;
     },
+    updateMeta:(values)=>{
+      const d=resumeData(),v=d.versions[d.activeVersion],idx=d.activeExperience||0;
+      const exp=d.experiences[idx]||(d.experiences[idx]={bullets:[]});
+      if(typeof values.target==='string'){v.target=values.target.trim().slice(0,180);d.target=v.target}
+      if(typeof values.role==='string'){exp.role=values.role.trim().slice(0,180);d.role=exp.role}
+      if(typeof values.employer==='string'){exp.employer=values.employer.trim().slice(0,180);d.employer=exp.employer}
+      saveState();renderResumePreview();
+    },
+    refreshGuided:()=>renderResumeBuilder(),
     refreshPreview:()=>renderResumePreview()
   };
   const R2W_AI_URL='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/ready2work-resume-ai';
