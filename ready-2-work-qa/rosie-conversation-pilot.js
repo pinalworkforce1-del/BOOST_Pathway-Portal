@@ -20,6 +20,9 @@ function loadChat(){
   const snapshot=bridge()?.snapshot(),state=bridge()?.getSessionData();
   if(!snapshot||!state){status('Résumé data unavailable');return}
   sessionKey=state.key;
+  $('rosiePilotTarget').value=snapshot.target||'';
+  $('rosiePilotRole').value=snapshot.role||'';
+  $('rosiePilotEmployer').value=snapshot.employer||'';
   messages().replaceChildren();clearDrafts();
   for(const m of state.messages||[])addMessage(m.role,m.text,false);
   if(!state.messages?.length){
@@ -37,7 +40,8 @@ function showMode(mode,record=true){
   $('rosiePilotMode').textContent=guided?'Guided':'Conversational';
   visible=true;
   if(record)bridge()?.metric('choice_or_switch',mode);
-  if(!guided)loadChat();
+  if(guided)bridge()?.refreshGuided();
+  else loadChat();
 }
 function chooseMode(mode){
   bridge()?.metric('choice',mode);
@@ -104,6 +108,13 @@ async function sendMessage(value){
 }
 function bind(){
   if(!$('rosiePilotPanel')||!bridge())return;
+  const metaFields={rosiePilotTarget:'target',rosiePilotRole:'role',rosiePilotEmployer:'employer'};
+  for(const [id,key] of Object.entries(metaFields)){
+    $(id).addEventListener('change',()=>{
+      bridge()?.updateMeta({[key]:$(id).value});
+      status('Job information saved to your résumé.');
+    });
+  }
   $('rosiePilotGuided').onclick=()=>chooseMode('guided');
   $('rosiePilotChat').onclick=()=>chooseMode('chat');
   $('rosiePilotSwitchGuided').onclick=()=>showMode('guided');
