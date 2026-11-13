@@ -173,6 +173,11 @@ async function sendMessage(value){
   status('Rosie is reviewing your message…');
   try{
     const state=bridge().getSessionData();
+    const latest=String(value||'').trim().toLowerCase();
+    const previousAssistant=[...state.messages].slice(0,-1).reverse().find(m=>m.role==='assistant');
+    const textBefore=String(previousAssistant?.text||'').toLowerCase();
+    const explicitEdit=/\\b(remove|delete|replace|duplicate|duplicative|merge|consolidate|dedup|same bullets|fix this|clean up)\\b/.test(latest);
+    const agreementEdit=/^(yes|yes please|sure|ok|okay|please do|do it)[.! ]*$/.test(latest)&&/\\b(replace|remove|delete|merge|consolidate|duplicate)\\b/.test(textBefore);
     const result=await bridge().converse(state.messages);
     if(bridge().getSessionData().key!==sessionKey){status('Résumé changed during coaching. Open that role to continue.');return}
     const reply=String(result.reply||'').trim()||'Can you tell me a little more about that responsibility?';
@@ -181,6 +186,11 @@ async function sendMessage(value){
     if(result.editOperation&&result.editOperation!=='none'){
       editReview(result.editOperation,result.editIndexes||[],result.editText||'');
       status('Review a proposed edit to existing bullets. No new bullet will be added.');
+    }else if((explicitEdit||agreementEdit)&&(bridge()?.snapshot()?.approvedBullets||[]).length){
+      // Do not route an edit request into the legacy ADD-only draft modal.
+      status('Choose the existing résumé bullets to change. No new bullet was added.');
+      addMessage('assistant','I haven’t changed your résumé. Use Manage résumé bullets to select which existing bullets to consolidate, replace, or remove.');
+      manageBullets();
     }else if(proposals.some(x=>x.text)){
       draftsUI(proposals);status('Review and approve a draft before adding it.');
     }else status('Your conversation is saved. Continue whenever you’re ready.');
