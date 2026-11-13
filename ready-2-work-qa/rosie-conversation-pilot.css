@@ -30,3 +30,10 @@
 #rosiePilotSwitchChat{margin:0 0 12px}
 @media(max-width:780px){.rosie-pilot-options{grid-template-columns:1fr}.rosie-pilot-panel{padding:12px}.rosie-pilot-messages{height:340px}.rosie-pilot-panel .rosie-guide{grid-template-columns:70px minmax(0,1fr)}.rosie-pilot-panel .rosie-guide img{width:70px;height:94px}}
 [hidden]{display:none!important}
+
+.rosie-pilot-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+.rosie-pilot-meta label{font-size:.8rem;font-weight:700;color:#334e65;display:grid;gap:4px}
+.rosie-pilot-meta label:first-child{grid-column:1/-1}
+.rosie-pilot-meta input{width:100%;box-sizing:border-box;border:1px solid #b8c8d3;border-radius:9px;padding:9px;font:inherit;font-weight:400}
+.rosie-pilot-privacy{font-size:.77rem;line-height:1.5;color:#587083;margin:8px 0 14px}
+@media(max-width:560px){.rosie-pilot-meta{grid-template-columns:1fr}}
