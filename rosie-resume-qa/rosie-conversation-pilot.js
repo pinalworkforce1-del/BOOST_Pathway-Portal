@@ -15,7 +15,30 @@ function addMessage(role,text,persist=true){
   el.append(header,body);messages().appendChild(el);messages().scrollTop=messages().scrollHeight;
   if(persist)bridge()?.append(role,text);
 }
-function clearDrafts(){draftTexts=[];draftKey='';$('rosiePilotDrafts').replaceChildren()}
+const cleanBullet=text=>String(text||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\\d+[.)])\\s*/,'').trim();
+let activeModal=null;
+function ensureModal(){
+  if(activeModal)return activeModal;
+  const dlg=document.createElement('dialog');dlg.id='rosieDraftReviewModal';dlg.className='rosie-draft-modal';dlg.setAttribute('aria-labelledby','rosieDraftModalTitle');
+  const shell=document.createElement('div');shell.className='rosie-draft-modal-shell';
+  const top=document.createElement('div');top.className='rosie-draft-modal-top';
+  const heading=document.createElement('div');const kicker=document.createElement('small');kicker.textContent='ROSIE · RÉSUMÉ EVIDENCE REVIEW';
+  const title=document.createElement('h2');title.id='rosieDraftModalTitle';title.textContent='Choose your strongest bullet';
+  heading.append(kicker,title);
+  const close=document.createElement('button');close.type='button';close.className='rosie-draft-close';close.textContent='✕';close.setAttribute('aria-label','Close bullet review');close.onclick=()=>dlg.close();
+  top.append(heading,close);shell.appendChild(top);
+  const description=document.createElement('p');description.textContent='These are suggestions based on what you shared. Review or edit one, confirm the facts, then add it to your résumé.';shell.appendChild(description);
+  const host=document.createElement('div');host.id='rosieDraftModalOptions';host.className='rosie-pilot-drafts';shell.appendChild(host);
+  const foot=document.createElement('div');foot.className='rosie-draft-modal-footer';
+  const continueBtn=document.createElement('button');continueBtn.type='button';continueBtn.className='rosie-draft-close-later';continueBtn.textContent='Return to conversation';continueBtn.onclick=()=>dlg.close();
+  foot.appendChild(continueBtn);shell.appendChild(foot);
+  dlg.appendChild(shell);
+  dlg.addEventListener('click',event=>{if(event.target===dlg)dlg.close()});
+  document.body.appendChild(dlg);
+  activeModal=dlg;return dlg;
+}
+function clearDrafts(){draftTexts=[];draftKey='';$('rosiePilotDrafts').replaceChildren();const d=$('rosieDraftReviewModal');if(d?.open)d.close();const b=$('rosieReviewDrafts');if(b)b.hidden=true}
+function showDraftModal(){const d=ensureModal();if(draftTexts.length&&!d.open)d.showModal()}
 function loadChat(){
   const snapshot=bridge()?.snapshot(),state=bridge()?.getSessionData();
   if(!snapshot||!state){status('Résumé data unavailable');return}
@@ -32,6 +55,7 @@ function loadChat(){
   status('Preview conversation saved on this browser. You approve every change.');
 }
 function showMode(mode,record=true){
+  if(activeModal?.open)activeModal.close();
   const guided=mode!=='chat';
   $('rosiePilotChoice').hidden=true;
   $('resumeBuilderForm').hidden=!guided;
@@ -57,30 +81,35 @@ function offerChoice(){
   }else showMode(state.lastMode||state.initialChoice,false);
 }
 function draftsUI(proposals){
-  const host=$('rosiePilotDrafts');host.replaceChildren();
+  const host=ensureModal().querySelector('#rosieDraftModalOptions');host.replaceChildren();
   draftKey=bridge()?.getSessionData()?.key||'';
-  draftTexts=proposals.filter(x=>x.text);
+  draftTexts=proposals.filter(x=>x.text).map(x=>({...x,text:cleanBullet(x.text)})).filter(x=>x.text);
+  const btn=$('rosieReviewDrafts');if(btn)btn.hidden=false;
   for(const proposal of draftTexts){
     const wrap=document.createElement('div');wrap.className='rosie-pilot-proposal';
     const heading=document.createElement('strong');heading.textContent=proposal.name;
     const editor=document.createElement('textarea');editor.value=proposal.text;editor.rows=3;editor.setAttribute('aria-label','Review and edit '+proposal.name);
     const approval=document.createElement('label');approval.className='rosie-pilot-approval';
-    const check=document.createElement('input');check.type='checkbox';approval.append(check,document.createTextNode(' I confirm that this describes work I actually did.'));
-    const button=document.createElement('button');button.type='button';button.textContent='Add reviewed bullet to my résumé';button.className='rosie-pilot-accept';
+    const check=document.createElement('input');check.type='checkbox';
+    approval.append(check,document.createTextNode(' I confirm that this describes work I actually did.'));
+    const button=document.createElement('button');button.type='button';button.textContent='Add this bullet to my résumé';button.className='rosie-pilot-accept';
     button.onclick=()=>{
-      if(!check.checked){status('Please verify the facts before adding the bullet.');return}
-      const text=editor.value.trim();if(text.length<10){status('Please enter a complete bullet.');return}
+      if(!check.checked){status('Please verify the facts before adding the bullet.');check.focus();return}
+      const text=cleanBullet(editor.value);
+      if(text.length<10){status('Please enter a complete bullet.');editor.focus();return}
       if(bridge()?.getSessionData()?.key!==draftKey){status('You changed résumé or role. Start a new draft for this experience.');clearDrafts();return}
       const other=bridge()?.snapshot()?.approvedBullets||[];
-      if(other.includes(text)){status('This bullet is already on your résumé.');return}
+      if(other.map(cleanBullet).includes(text)){status('This bullet is already on your résumé.');return}
       bridge().accept(text);
       bridge().metric('bullet_approved','chat');
       clearDrafts();
       addMessage('assistant','Added to your résumé preview. Would you like to build another bullet, revise your résumé, or discuss a different responsibility?');
-      status('Approved bullet saved to the same résumé as Guided Builder.');
+      status('Approved bullet saved to the résumé on the right.');
+      $('rosiePilotInput')?.focus();
     };
     wrap.append(heading,editor,approval,button);host.appendChild(wrap);
   }
+  showDraftModal();
 }
 async function sendMessage(value){
   if(busy||!value.trim())return;
@@ -115,6 +144,8 @@ function bind(){
       status('Job information saved to your résumé.');
     });
   }
+  const reviewButton=document.createElement('button');reviewButton.type='button';reviewButton.id='rosieReviewDrafts';reviewButton.textContent='Review drafted bullets';reviewButton.hidden=true;
+  reviewButton.onclick=showDraftModal;$('rosiePilotDraftNow').after(reviewButton);
   $('rosiePilotGuided').onclick=()=>chooseMode('guided');
   $('rosiePilotChat').onclick=()=>chooseMode('chat');
   $('rosiePilotSwitchGuided').onclick=()=>showMode('guided');
