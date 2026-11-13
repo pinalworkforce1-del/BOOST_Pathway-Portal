@@ -55,3 +55,15 @@
 .rosie-draft-close-later{border:1px solid #c9b7e0;border-radius:9px;padding:11px 14px;background:#faf7ff;color:#43285f;font-weight:700;cursor:pointer}
 #rosieReviewDrafts{padding:10px 13px;border:1px solid #b99cd8;border-radius:10px;background:#f4edf9;color:#40255c;font:inherit;font-weight:700;cursor:pointer}
 @media(max-width:560px){.rosie-draft-modal{width:calc(100vw - 16px);max-height:94vh}.rosie-draft-modal-shell{padding:15px}.rosie-draft-modal h2{font-size:1.2rem}}
+
+/* Reviewable edits to approved résumé bullets — explicit replacement rather than addition. */
+.rosie-edit-note{font-weight:600;color:#553776!important}
+.rosie-edit-before{border:1px solid #d2c4e5;border-radius:10px;padding:12px;background:#f7f3fc;margin:10px 0 14px}
+.rosie-edit-before ul{padding-left:20px;margin:9px 0 0}
+.rosie-edit-before li{margin:5px 0;line-height:1.45}
+.rosie-edit-error{color:#9a293e!important;min-height:1.2em}
+.rosie-manage-choice{display:flex;gap:10px;align-items:flex-start;padding:11px;border-bottom:1px solid #e5dbf0;line-height:1.4;cursor:pointer}
+.rosie-manage-choice input{margin-top:4px;flex-shrink:0}
+#rosieManageBullets,#rosieUndoBulletEdit{padding:10px 13px;margin:7px 7px 5px 0;border:1px solid #b99cd8;border-radius:10px;background:#f6f1fc;color:#40255c;font:inherit;font-weight:700;cursor:pointer}
+.rosie-draft-modal .rosie-draft-modal-shell #rosieDraftModalOptions>textarea{box-sizing:border-box;width:100%;min-height:95px;padding:12px;border:1px solid #c9b9de;border-radius:9px;font:inherit}
+.rosie-draft-modal .rosie-draft-modal-shell #rosieDraftModalOptions>button{margin:10px 8px 0 0}
