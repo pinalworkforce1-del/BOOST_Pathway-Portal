@@ -37,3 +37,21 @@
 .rosie-pilot-meta input{width:100%;box-sizing:border-box;border:1px solid #b8c8d3;border-radius:9px;padding:9px;font:inherit;font-weight:400}
 .rosie-pilot-privacy{font-size:.77rem;line-height:1.5;color:#587083;margin:8px 0 14px}
 @media(max-width:560px){.rosie-pilot-meta{grid-template-columns:1fr}}
+
+/* Draft review overlay: always visible at the moment options are ready. */
+.rosie-draft-modal{border:0;border-radius:18px;padding:0;width:min(720px,calc(100vw - 24px));max-height:min(86vh,900px);background:white;color:#1a2a3c;box-shadow:0 22px 80px rgba(22,12,41,.32);overflow:auto}
+.rosie-draft-modal::backdrop{background:rgba(14,22,40,.64);backdrop-filter:blur(3px)}
+.rosie-draft-modal-shell{padding:clamp(16px,3vw,28px)}
+.rosie-draft-modal-top{display:flex;justify-content:space-between;align-items:start;gap:18px}
+.rosie-draft-modal-top small{font-size:.72rem;letter-spacing:.08em;color:#744caa;font-weight:800}
+.rosie-draft-modal h2{font-size:1.45rem;margin:5px 0 2px;color:#1c2d3e}
+.rosie-draft-modal p{color:#536579;line-height:1.45;margin:8px 0 15px}
+.rosie-draft-close{border:1px solid #d9d3e0;background:#faf9fc;border-radius:9px;min-width:36px;min-height:36px;cursor:pointer;font-weight:700}
+.rosie-draft-modal .rosie-pilot-drafts{margin:0}
+.rosie-draft-modal .rosie-pilot-proposal{padding:16px}
+.rosie-draft-modal .rosie-pilot-proposal textarea{min-height:82px}
+.rosie-draft-modal .rosie-pilot-accept{width:100%;margin-top:3px}
+.rosie-draft-modal-footer{margin-top:16px;display:flex;justify-content:flex-end}
+.rosie-draft-close-later{border:1px solid #c9b7e0;border-radius:9px;padding:11px 14px;background:#faf7ff;color:#43285f;font-weight:700;cursor:pointer}
+#rosieReviewDrafts{padding:10px 13px;border:1px solid #b99cd8;border-radius:10px;background:#f4edf9;color:#40255c;font:inherit;font-weight:700;cursor:pointer}
+@media(max-width:560px){.rosie-draft-modal{width:calc(100vw - 16px);max-height:94vh}.rosie-draft-modal-shell{padding:15px}.rosie-draft-modal h2{font-size:1.2rem}}
