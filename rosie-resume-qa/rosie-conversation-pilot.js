@@ -82,6 +82,7 @@ function offerChoice(){
 }
 function draftsUI(proposals){
   const host=ensureModal().querySelector('#rosieDraftModalOptions');host.replaceChildren();
+  $('rosieDraftModalTitle').textContent='Choose your strongest bullet';
   draftKey=bridge()?.getSessionData()?.key||'';
   draftTexts=proposals.filter(x=>x.text).map(x=>({...x,text:cleanBullet(x.text)})).filter(x=>x.text);
   const btn=$('rosieReviewDrafts');if(btn)btn.hidden=false;
@@ -111,6 +112,56 @@ function draftsUI(proposals){
   }
   showDraftModal();
 }
+
+function editReview(operation,indexes,replacement){
+  const snapshot=bridge()?.snapshot(),original=snapshot?.approvedBullets||[];
+  const affected=[...new Set(indexes||[])].filter(i=>Number.isInteger(i)&&i>=0&&i<original.length).sort((a,b)=>a-b);
+  if(!affected.length){status('I could not identify which approved bullet to change. Use Manage résumé bullets to choose it.');return}
+  if(operation==='consolidate'&&affected.length<2){status('Choose at least two bullets to consolidate.');return}
+  const host=ensureModal().querySelector('#rosieDraftModalOptions');host.replaceChildren();
+  const title=$('rosieDraftModalTitle');title.textContent='Review a résumé change';
+  const note=document.createElement('p');note.className='rosie-edit-note';note.textContent='This will '+(operation==='remove'?'remove':operation==='replace'?'replace':'consolidate')+' existing approved bullet(s), NOT add a new bullet. Nothing changes until you confirm.';
+  host.append(note);
+  const old=document.createElement('div');old.className='rosie-edit-before';
+  const label=document.createElement('strong');label.textContent='Existing bullets affected';old.append(label);
+  const ul=document.createElement('ul');for(const i of affected){const li=document.createElement('li');li.textContent=original[i];ul.append(li)}old.append(ul);host.append(old);
+  const editor=document.createElement('textarea');editor.rows=3;
+  if(operation!=='remove'){const heading=document.createElement('strong');heading.textContent='Replacement bullet — editable';host.append(heading);editor.value=cleanBullet(replacement||original[affected[0]]);editor.setAttribute('aria-label','Replacement bullet');host.append(editor)}
+  const confirm=document.createElement('label');confirm.className='rosie-pilot-approval';
+  const check=document.createElement('input');check.type='checkbox';confirm.append(check,document.createTextNode(' I reviewed which bullet(s) will change.'));host.append(confirm);
+  const message=document.createElement('p');message.setAttribute('role','status');message.className='rosie-edit-error';host.append(message);
+  const action=document.createElement('button');action.type='button';action.className='rosie-pilot-accept';action.textContent=operation==='remove'?'Remove selected bullet(s)':'Replace selected bullet(s)';
+  action.onclick=()=>{
+    if(!check.checked){message.textContent='Confirm the proposed change first.';return}
+    const result=bridge().applyEdit(operation,affected,editor.value,original);
+    if(!result.ok){message.textContent=result.error;return}
+    clearDrafts();bridge().metric('bullet_'+operation,'chat');
+    addMessage('assistant','Résumé updated: '+(result.beforeCount-result.afterCount>0?'redundant bullets removed. ':'approved wording replaced. ')+'Use Undo last edit if you want to reverse this change.');
+    status('Résumé updated — '+result.afterCount+' approved bullet(s) remain.');
+    const undo=$('rosieUndoBulletEdit');if(undo)undo.hidden=false;
+  };
+  host.append(action);draftKey=bridge().getSessionData().key;draftTexts=[];ensureModal().showModal();
+}
+function manageBullets(){
+  const snapshot=bridge()?.snapshot(),bullets=snapshot?.approvedBullets||[];
+  if(!bullets.length){status('There are no approved bullets in this role yet.');return}
+  const dlg=ensureModal(),host=dlg.querySelector('#rosieDraftModalOptions');host.replaceChildren();
+  $('rosieDraftModalTitle').textContent='Manage approved résumé bullets';
+  const intro=document.createElement('p');intro.textContent='Choose the duplicates you want to consolidate. You will review the exact replacement before anything changes.';host.append(intro);
+  const choices=[];bullets.forEach((b,i)=>{const label=document.createElement('label');label.className='rosie-manage-choice';const check=document.createElement('input');check.type='checkbox';const txt=document.createElement('span');txt.textContent=b;label.append(check,txt);host.append(label);choices.push({check,i})});
+  const note=document.createElement('p');note.setAttribute('role','status');host.append(note);
+  const consolidate=document.createElement('button');consolidate.type='button';consolidate.className='rosie-pilot-accept';consolidate.textContent='Review consolidation';
+  consolidate.onclick=()=>{
+    const ix=choices.filter(x=>x.check.checked).map(x=>x.i);
+    if(ix.length<2){note.textContent='Select at least two duplicate bullets to consolidate.';return}
+    dlg.close();editReview('consolidate',ix,bullets[ix[ix.length-1]]);
+  };
+  const remove=document.createElement('button');remove.type='button';remove.className='rosie-draft-close-later';remove.textContent='Review removal';
+  remove.onclick=()=>{const ix=choices.filter(x=>x.check.checked).map(x=>x.i);if(!ix.length){note.textContent='Select one or more bullets to remove.';return}dlg.close();editReview('remove',ix,'')};
+  host.append(consolidate,remove);
+  if(!dlg.open)dlg.showModal();
+}
+
 async function sendMessage(value){
   if(busy||!value.trim())return;
   if(!bridge()){status('Rosie résumé connection unavailable');return}
@@ -127,8 +178,12 @@ async function sendMessage(value){
     const reply=String(result.reply||'').trim()||'Can you tell me a little more about that responsibility?';
     addMessage('assistant',reply);
     const proposals=[{name:'Clear & Direct',text:result.clearDirect},{name:'Skills Forward',text:result.skillsForward}];
-    if(proposals.some(x=>x.text))draftsUI(proposals);
-    status(proposals.some(x=>x.text)?'Review and approve a draft before adding it.':'Your conversation is saved. Continue whenever you’re ready.');
+    if(result.editOperation&&result.editOperation!=='none'){
+      editReview(result.editOperation,result.editIndexes||[],result.editText||'');
+      status('Review a proposed edit to existing bullets. No new bullet will be added.');
+    }else if(proposals.some(x=>x.text)){
+      draftsUI(proposals);status('Review and approve a draft before adding it.');
+    }else status('Your conversation is saved. Continue whenever you’re ready.');
   }catch(e){
     const msg=String(e?.message||'Rosie is currently unavailable.');
     status(msg);
@@ -146,6 +201,10 @@ function bind(){
   }
   const reviewButton=document.createElement('button');reviewButton.type='button';reviewButton.id='rosieReviewDrafts';reviewButton.textContent='Review drafted bullets';reviewButton.hidden=true;
   reviewButton.onclick=showDraftModal;$('rosiePilotDraftNow').after(reviewButton);
+  const manage=document.createElement('button');manage.type='button';manage.id='rosieManageBullets';manage.textContent='Manage résumé bullets';manage.onclick=manageBullets;
+  const undo=document.createElement('button');undo.type='button';undo.id='rosieUndoBulletEdit';undo.textContent='Undo last edit';undo.hidden=true;
+  undo.onclick=()=>{const r=bridge()?.undoEdit();if(r?.ok){undo.hidden=true;status('Previous bullets restored.');addMessage('assistant','Your last bullet edit has been undone.')}else status(r?.error||'Unable to undo this edit.')};
+  $('rosiePilotSwitchGuided').after(manage,undo);
   $('rosiePilotGuided').onclick=()=>chooseMode('guided');
   $('rosiePilotChat').onclick=()=>chooseMode('chat');
   $('rosiePilotSwitchGuided').onclick=()=>showMode('guided');
