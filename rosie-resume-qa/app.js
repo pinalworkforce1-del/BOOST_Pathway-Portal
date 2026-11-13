@@ -332,6 +332,36 @@
       saveState();renderResumePreview();
       return true;
     },
+    applyEdit:(operation,indexes,replacement,expectedBullets)=>{
+      const d=resumeData(),exp=d.experiences[d.activeExperience||0];
+      if(!exp||!Array.isArray(exp.bullets))return {ok:false,error:'No résumé bullets found.'};
+      const original=[...exp.bullets],same=JSON.stringify(original)===JSON.stringify(expectedBullets);
+      if(!same)return {ok:false,error:'The résumé has changed. Reopen the review before editing.'};
+      const ix=[...new Set(indexes)].sort((a,b)=>a-b);
+      if(!ix.length||ix.some(i=>!Number.isInteger(i)||i<0||i>=original.length))return {ok:false,error:'Choose existing bullet(s) to edit.'};
+      if(!['remove','replace','consolidate'].includes(operation))return {ok:false,error:'Unsupported change.'};
+      if(operation==='replace'&&ix.length!==1||operation==='consolidate'&&ix.length<2)return {ok:false,error:'Select the bullets for this change.'};
+      const text=String(replacement||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\\d+[.)])\\s*/,'');
+      if(operation!=='remove'&&text.length<10)return {ok:false,error:'The replacement bullet needs more detail.'};
+      let result=original.filter((_,i)=>!ix.includes(i));
+      if(operation!=='remove')result.splice(ix[0],0,text);
+      const unique=[];
+      for(const b of result)if(!unique.includes(b))unique.push(b);
+      const p=d.rosiePilot=d.rosiePilot||{};
+      const key=String(d.activeVersion)+':'+String(d.activeExperience||0);
+      p.lastBulletEdit={key,before:original,after:unique,at:new Date().toISOString()};
+      exp.bullets=unique;saveState();renderResumePreview();
+      return {ok:true,beforeCount:original.length,afterCount:unique.length};
+    },
+    undoEdit:()=>{
+      const d=resumeData(),p=d.rosiePilot||{},last=p.lastBulletEdit;
+      const key=String(d.activeVersion)+':'+String(d.activeExperience||0);
+      const exp=d.experiences[d.activeExperience||0];
+      if(!last||last.key!==key||!exp||JSON.stringify(exp.bullets)!==JSON.stringify(last.after))
+        return {ok:false,error:'Unable to undo: the résumé changed after this edit.'};
+      exp.bullets=[...last.before];delete p.lastBulletEdit;saveState();renderResumePreview();
+      return {ok:true};
+    },
     updateMeta:(values)=>{
       const d=resumeData(),v=d.versions[d.activeVersion],idx=d.activeExperience||0;
       const exp=d.experiences[idx]||(d.experiences[idx]={bullets:[]});
