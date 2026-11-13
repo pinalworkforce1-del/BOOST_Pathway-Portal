@@ -316,7 +316,7 @@
         'Authorization':'Bearer '+data.session.access_token
       },body:JSON.stringify({mode:'resume_conversation',evidence:{
         targetOccupation:d.target,role:exp.role||d.role||'',
-        approvedBullets:(exp.bullets||[]).slice(-8),messages:messages.slice(-18)
+        approvedBullets:(exp.bullets||[]).slice(-8),resumeExperiences:(d.experiences||[]).map(x=>({role:x.role||"",employer:x.employer||"",kind:x.kind||"work",bullets:x.bullets||[]})),education:d.education||"",messages:messages.slice(-18)
       }})});
       const out=await res.json().catch(()=>({}));
       if(!res.ok)throw Error(out.error||out.message||'Rosie is temporarily unavailable.');
@@ -360,6 +360,50 @@
       if(!last||last.key!==key||!exp||JSON.stringify(exp.bullets)!==JSON.stringify(last.after))
         return {ok:false,error:'Unable to undo: the résumé changed after this edit.'};
       exp.bullets=[...last.before];delete p.lastBulletEdit;saveState();renderResumePreview();
+      return {ok:true};
+    },
+    organizeClinical:(sourceExperience,sourceBullet,expectedText)=>{
+      const d=resumeData(),from=d.experiences[sourceExperience];
+      if(!from||from.kind==='clinical'||!Array.isArray(from.bullets)||from.bullets[sourceBullet]!==expectedText)
+       return {ok:false,error:'The selected clinical bullet changed. Review the résumé before moving it.'};
+      if(!/\b(patient|clinical|hospital|vital signs|nursing)\b/i.test(expectedText))
+       return {ok:false,error:'The selected bullet does not clearly describe clinical training.'};
+      const p=d.rosiePilot=d.rosiePilot||{};
+      const before=JSON.stringify(d.experiences);
+      const matching=d.experiences.find(x=>x.kind==='clinical'&&x.role==='Nursing Clinical Rotations');
+      const target=matching||{kind:'clinical',role:'Nursing Clinical Rotations',employer:'',startDate:'',endDate:'',experience:'',evidence:'',bullets:[]};
+      if(!matching)d.experiences.push(target);
+      target.bullets=Array.isArray(target.bullets)?target.bullets:[];
+      if(!target.bullets.includes(expectedText))target.bullets.push(expectedText);
+      from.bullets.splice(sourceBullet,1);
+      p.lastResumeSectionEdit={type:'move_clinical',before,after:JSON.stringify(d.experiences),educationBefore:d.education||'',educationAfter:d.education||'',at:new Date().toISOString()};
+      saveState();renderResumePreview();
+      return {ok:true};
+    },
+    saveEducation:(line,expectedEducation)=>{
+      const d=resumeData();
+      if(String(d.education||'')!==String(expectedEducation||''))
+       return {ok:false,error:'Education changed while you were reviewing. Please reopen the proposal.'};
+      const text=String(line||'').trim().slice(0,500);
+      if(text.length<25||!/\b(ADN|BSN|MSN|Bachelor|Associate|Master)\b/i.test(text)||!/\b(?:19|20)\d{2}\b/.test(text))
+       return {ok:false,error:'Education needs a degree or credential and completion year.'};
+      const old=d.education||'';
+      if(old.split('\n').some(x=>x.trim().toLowerCase()===text.toLowerCase()))
+       return {ok:false,error:'That education entry is already on your résumé.'};
+      const next=[old,text].filter(Boolean).join('\n');
+      const p=d.rosiePilot=d.rosiePilot||{};
+      p.lastResumeSectionEdit={type:'save_education',before:JSON.stringify(d.experiences||[]),after:JSON.stringify(d.experiences||[]),educationBefore:old,educationAfter:next,at:new Date().toISOString()};
+      d.education=next;saveState();renderResumePreview();
+      return {ok:true};
+    },
+    undoResumeSection:()=>{
+      const d=resumeData(),p=d.rosiePilot||{},edit=p.lastResumeSectionEdit;
+      if(!edit||JSON.stringify(d.experiences||[])!==edit.after||String(d.education||'')!==edit.educationAfter)
+       return {ok:false,error:'The résumé changed since that update; undo is unavailable.'};
+      d.experiences=JSON.parse(edit.before);
+      d.education=edit.educationBefore;
+      delete p.lastResumeSectionEdit;
+      saveState();renderResumePreview();
       return {ok:true};
     },
     updateMeta:(values)=>{
