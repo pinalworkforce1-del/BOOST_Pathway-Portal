@@ -267,13 +267,71 @@
     if($('rbTogglePreview'))$('rbTogglePreview').textContent='Show résumé preview';
   }
   function renderResumePreview(){ const d=resumeData();syncActiveExperience(d); $('rpName').textContent=d.contact?.name||state.participantName||'Your Name';if($('rpContact'))$('rpContact').textContent=[d.contact?.email,d.contact?.phone,d.contact?.location].filter(Boolean).join(' • '); $('rpTarget').textContent=d.versions[d.activeVersion]?.target||d.careerTarget||'Target job'; $('rpSummary').textContent=d.versions[d.activeVersion]?.summary||'Your professional summary will appear here.';const pl=$('rpExperienceList');if(pl){const xs=d.experiences.filter(x=>String(x.experience||'').trim()||String(x.evidence||'').trim());pl.innerHTML=xs.map((x,i)=>{const head=[x.role,x.employer].filter(Boolean).join(' • ')||('Experience '+(i+1));const dates=[x.startDate,x.endDate].filter(Boolean).join(' – ');const bullets=(x.bullets||[]).filter(Boolean);return '<div class="preview-experience"><strong>'+escapeHtml(head)+'</strong>'+(dates?'<small>'+escapeHtml(dates)+'</small>':'')+(bullets.length?'<ul>'+bullets.map(b=>'<li>'+escapeHtml(b)+'</li>').join('')+'</ul>':(x.evidence?'<p>'+escapeHtml(x.evidence)+'</p>':''))+'</div>'}).join('');$('rpExperience').hidden=xs.length>0;$('rpEvidence').hidden=xs.length>0;} $('rpExperience').textContent=d.experience||'Experience'; $('rpEvidence').textContent=d.evidence||'Evidence and accomplishments'; $('rpSkills').textContent=d.skills||'Skills'; $('rpEducation').textContent=d.education||'Education, training, and credentials'; window.R2WResumeFormat?.render(d); }
-  // Pilot-only bridge: both experiences write to the existing résumé record.
+  // Pinal Rosie pilot: conversation shares the existing résumé and cloud-save path.
+  // This bridge never applies AI drafts without an explicit participant click.
   window.RosieConversationBridge={
-    snapshot:()=>{const d=resumeData();return {target:d.target,role:d.role,experience:d.experience,bullets:[...((d.experiences[d.activeExperience||0]||{}).bullets||[])]}},
-    propose:async(evidence)=>{const d=resumeData();return callR2WResumeAI({mode:'bullet',evidence:{targetOccupation:d.target,experience:d.experience,currentEvidence:evidence,previousBullets:((d.experiences[d.activeExperience||0]||{}).bullets||[])}})},
-    probe:async(source,answers)=>{const d=resumeData();return callR2WResumeAI({mode:'responsibility_probe',evidence:{targetOccupation:d.target,role:d.role,responsibility:source,answers}})},
-    accept:(text,evidence)=>{const d=resumeData(),exp=d.experiences[d.activeExperience||0]||(d.experiences[d.activeExperience||0]={bullets:[]});exp.bullets=Array.isArray(exp.bullets)?exp.bullets:[];if(!exp.bullets.includes(text))exp.bullets.push(text);d.evidence=evidence;const field=$('rbEvidence');if(field)field.value=evidence;syncActiveExperience(d);saveState();renderResumePreview();return true},
-    openGuided:()=>{document.getElementById('rosiePilotPanel')?.setAttribute('hidden','');document.getElementById('resumeBuilderForm')?.removeAttribute('hidden');}
+    snapshot:()=>{
+      const d=resumeData(),exp=d.experiences[d.activeExperience||0]||{},v=d.versions[d.activeVersion]||{};
+      return {target:d.target||'',careerTarget:d.careerTarget||'',onetOccupation:v.onetOccupationTitle||'',
+        role:exp.role||d.role||'',employer:exp.employer||d.employer||'',
+        experienceIndex:d.activeExperience||0,versionIndex:d.activeVersion,
+        approvedBullets:[...(exp.bullets||[])],name:d.contact?.name||''};
+    },
+    getSessionData:()=>{
+      const d=resumeData();d.rosiePilot=d.rosiePilot&&typeof d.rosiePilot==='object'?d.rosiePilot:{};
+      const p=d.rosiePilot;p.conversations=p.conversations||{};
+      const key=String(d.activeVersion)+':'+String(d.activeExperience||0);
+      if(!p.conversations[key])p.conversations[key]={messages:[],createdAt:new Date().toISOString()};
+      return {key,messages:[...(p.conversations[key].messages||[])],initialChoice:p.initialChoice||'',lastMode:p.lastMode||''};
+    },
+    append:(role,text)=>{
+      const d=resumeData(),p=d.rosiePilot||{},key=String(d.activeVersion)+':'+String(d.activeExperience||0);
+      const chat=p.conversations?.[key];if(!chat)return;
+      if(role!=='user'&&role!=='assistant')return;
+      chat.messages=Array.isArray(chat.messages)?chat.messages:[];
+      chat.messages.push({role,text:String(text||'').slice(0,1500),at:new Date().toISOString()});
+      chat.messages=chat.messages.slice(-60);saveState();
+    },
+    metric:(kind,mode)=>{
+      const d=resumeData(),p=d.rosiePilot=d.rosiePilot||{};
+      if(!p.initialChoice&&(kind==='choice'))p.initialChoice=mode;
+      if(mode)p.lastMode=mode;
+      p.events=Array.isArray(p.events)?p.events:[];
+      p.events.push({kind,mode:mode||'',at:new Date().toISOString()});
+      p.events=p.events.slice(-120);saveState();
+    },
+    converse:async(messages)=>{
+      if(!window.supabase||!window.PINAL_BOOST_CONFIG)throw Error('BOOST authentication is unavailable.');
+      if(!window.__rosiePilotClient){
+        const cfg=window.PINAL_BOOST_CONFIG;
+        window.__rosiePilotClient=window.supabase.createClient(cfg.url,cfg.key,
+          {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+      }
+      const client=window.__rosiePilotClient;
+      const {data,error}=await client.auth.getSession();
+      if(error||!data?.session?.access_token)throw Error('Sign in to BOOST to use conversational Rosie.');
+      const d=resumeData(),exp=d.experiences[d.activeExperience||0]||{};
+      const res=await fetch(R2W_AI_URL,{method:'POST',headers:{
+        'Content-Type':'application/json','apikey':R2W_AI_KEY,
+        'Authorization':'Bearer '+data.session.access_token
+      },body:JSON.stringify({mode:'resume_conversation',evidence:{
+        targetOccupation:d.target,role:exp.role||d.role||'',
+        approvedBullets:(exp.bullets||[]).slice(-8),messages:messages.slice(-18)
+      }})});
+      const out=await res.json().catch(()=>({}));
+      if(!res.ok)throw Error(out.error||out.message||'Rosie is temporarily unavailable.');
+      return out;
+    },
+    accept:(text)=>{
+      const d=resumeData(),idx=d.activeExperience||0;
+      let exp=d.experiences[idx];
+      if(!exp){exp={role:d.role||'',employer:d.employer||'',startDate:d.startDate||'',endDate:d.endDate||'',experience:d.experience||'',evidence:'',bullets:[]};d.experiences[idx]=exp}
+      exp.bullets=Array.isArray(exp.bullets)?exp.bullets:[];
+      if(!exp.bullets.includes(text))exp.bullets.push(text);
+      saveState();renderResumePreview();
+      return true;
+    },
+    refreshPreview:()=>renderResumePreview()
   };
   const R2W_AI_URL='https://dxcajwarqojvmbteroco.supabase.co/functions/v1/ready2work-resume-ai';
   const R2W_AI_KEY='sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF';
