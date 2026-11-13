@@ -114,7 +114,7 @@
    const node=byName[name];if(!node)continue;
    node.hidden=name==='clinical'&&!model.clinical.length;container.appendChild(node);
    if(name==='experience'||name==='skills'){
-    const title=node.querySelector('h3');if(title)title.textContent=headings[model.format][name];
+    const title=node.querySelector('h3');if(title)title.textContent=(name==='experience'&&model.clinical.length)?'Work Experience':headings[model.format][name];
    }
    sectionContent(name,model);
   }
