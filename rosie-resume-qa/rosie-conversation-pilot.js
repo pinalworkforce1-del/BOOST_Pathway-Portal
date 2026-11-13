@@ -15,7 +15,7 @@ function addMessage(role,text,persist=true){
   el.append(header,body);messages().appendChild(el);messages().scrollTop=messages().scrollHeight;
   if(persist)bridge()?.append(role,text);
 }
-const cleanBullet=text=>String(text||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\\d+[.)])\\s*/,'').trim();
+const cleanBullet=text=>String(text||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\d+[.)])\s*/,'').trim();
 let activeModal=null;
 function ensureModal(){
   if(activeModal)return activeModal;
