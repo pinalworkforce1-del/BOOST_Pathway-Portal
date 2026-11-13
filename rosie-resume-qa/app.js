@@ -341,7 +341,7 @@
       if(!ix.length||ix.some(i=>!Number.isInteger(i)||i<0||i>=original.length))return {ok:false,error:'Choose existing bullet(s) to edit.'};
       if(!['remove','replace','consolidate'].includes(operation))return {ok:false,error:'Unsupported change.'};
       if(operation==='replace'&&ix.length!==1||operation==='consolidate'&&ix.length<2)return {ok:false,error:'Select the bullets for this change.'};
-      const text=String(replacement||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\\d+[.)])\\s*/,'');
+      const text=String(replacement||'').trim().replace(/^(?:[•●▪◦*]|[-–—]|\d+[.)])\s*/,'');
       if(operation!=='remove'&&text.length<10)return {ok:false,error:'The replacement bullet needs more detail.'};
       let result=original.filter((_,i)=>!ix.includes(i));
       if(operation!=='remove')result.splice(ix[0],0,text);
