@@ -275,7 +275,7 @@
       return {target:d.target||'',careerTarget:d.careerTarget||'',onetOccupation:v.onetOccupationTitle||'',
         role:exp.role||d.role||'',employer:exp.employer||d.employer||'',
         experienceIndex:d.activeExperience||0,versionIndex:d.activeVersion,
-        approvedBullets:[...(exp.bullets||[])],name:d.contact?.name||''};
+        approvedBullets:[...(exp.bullets||[])],allExperiences:d.experiences.map(x=>({role:x.role||"",kind:x.kind||"work",bullets:[...(x.bullets||[])]})),education:d.education||"",name:d.contact?.name||''};
     },
     getSessionData:()=>{
       const d=resumeData();d.rosiePilot=d.rosiePilot&&typeof d.rosiePilot==='object'?d.rosiePilot:{};
