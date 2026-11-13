@@ -18,6 +18,8 @@
     {title:'Electrician',onet:'Electricians',aliases:['electrical']},
     {title:'Construction Laborer',onet:'Construction Laborers',aliases:['construction worker','construction laborer']},
     {title:'HVAC Technician',onet:'Heating, Air Conditioning, and Refrigeration Mechanics and Installers',aliases:['hvac','heating and cooling','air conditioning','hvac technician']},
+    {title:'Fast Food and Counter Worker',onet:'Fast Food and Counter Workers',aliases:['fast food','fast food worker','counter worker','food service worker','quick service restaurant worker','fast food and counter workers']},
+    {title:'Cashier',onet:'Cashiers',aliases:['cashier','cashiers','retail cashier','checkout clerk','cash register operator']},
     {title:'Customer Service Representative',onet:'Customer Service Representatives',aliases:['customer service','csr','customer support representative']}
   ];
   const key=value=>String(value||'').trim().replace(/\s+/g,' ').toLocaleLowerCase();
