@@ -271,7 +271,48 @@
   const R2W_AI_KEY='sb_publishable_ehUKOOksq5SlkTNb-wQ8ZA_Zh8XlWDF';
   async function callR2WResumeAI(body){const res=await fetch(R2W_AI_URL,{method:'POST',headers:{'Content-Type':'application/json','apikey':R2W_AI_KEY},body:JSON.stringify(body)});let data={};try{data=await res.json()}catch(_){}if(!res.ok)throw new Error(data?.message||data?.error||'Rosie AI is unavailable right now.');return data}
   function showResumeCoach(id,html){const el=$(id);if(!el)return;el.hidden=false;el.innerHTML=html}
+  // Rosie 2.0: explore one responsibility at a time before drafting.
+  // Persist follow-ups with the active experience; never treat occupational hints as evidence.
   async function rosieBuildBullet(){
+    const d=resumeData(),input=$('rbEvidence'),btn=$('rbBuildBullet'),choices=$('rbBulletChoices');
+    const initial=String(d.evidence||'').trim();
+    if(!initial){showResumeCoach('rbBulletCoach','<b>What was the main thing you did in this role?</b><br>Start with one responsibility. We can explore the others next.');input?.focus();return}
+    const exp=d.experiences[d.activeExperience||0]||(d.experiences[d.activeExperience||0]={bullets:[]});
+    let g=exp.rosieGuided;
+    if(!g||g.lastEvidence!==initial){
+      g={source:initial,lastEvidence:initial,answers:[],status:'exploring'};
+      exp.rosieGuided=g;saveState();
+    }
+    if(g.status==='drafting'||g.status==='complete')return rosieDraftBullet();
+    const askParticipant=(question)=>{
+      const box=$('rbBulletCoach');box.hidden=false;
+      box.innerHTML='<div class="rosie-live-convo"><div class="rosie-convo-label">Build stronger evidence · '+(g.answers.length+1)+' of 3</div><div class="rosie-speaking"><b>Rosie</b><div class="rosie-typed-question"></div></div><div class="rosie-reply-wrap"><label>Your answer (or skip)</label><textarea rows="3" placeholder="Your experience, in your own words…"></textarea><button type="button" class="rosie-send-btn">Continue →</button><button type="button" class="rosie-skip-btn">Skip question</button><button type="button" class="rosie-draft-now">Draft with what I shared</button></div></div>';
+      box.querySelector('.rosie-typed-question').textContent=question;
+      const reply=box.querySelector('textarea');
+      const continueWith=(answer)=>{
+        if(answer)g.answers.push({question,answer});
+        else g.answers.push({question,answer:'Participant skipped'});
+        g.lastEvidence=[g.source,...g.answers.filter(x=>x.answer!=='Participant skipped').map(x=>x.answer)].join('\n');
+        d.evidence=g.lastEvidence;input.value=d.evidence;saveState();rosieBuildBullet();
+      };
+      box.querySelector('.rosie-send-btn').onclick=()=>{const v=reply.value.trim();if(v)continueWith(v);else reply.focus()};
+      box.querySelector('.rosie-skip-btn').onclick=()=>continueWith('');
+      box.querySelector('.rosie-draft-now').onclick=()=>{g.status='drafting';saveState();rosieDraftBullet()};
+      reply.focus();
+    };
+    if(g.answers.length>=3){g.status='drafting';saveState();return rosieDraftBullet()}
+    btn.disabled=true;btn.textContent='Rosie is exploring…';choices.innerHTML='';
+    showResumeCoach('rbBulletCoach','<b>Let’s uncover what makes this responsibility meaningful.</b>');
+    try{
+      const result=await callR2WResumeAI({mode:'responsibility_probe',evidence:{targetOccupation:d.target,role:d.role,responsibility:g.source,answers:g.answers}});
+      if(result.readyToDraft||!result.question){g.status='drafting';saveState();return await rosieDraftBullet()}
+      askParticipant(result.question);
+    }catch(e){
+      showResumeCoach('rbBulletCoach','<b>We can still draft from your experience.</b><br>'+escapeHtml(e.message||'The coaching questions are temporarily unavailable.')+'<br><button type="button" id="rosieFallbackDraft">Draft from my words</button>');
+      $('rosieFallbackDraft').onclick=()=>{g.status='drafting';saveState();rosieDraftBullet()};
+    }finally{btn.disabled=false;btn.textContent='✦ Rosie: Build My Experience'}
+  }
+  async function rosieDraftBullet(){
     const d=resumeData(),btn=$('rbBuildBullet'),choices=$('rbBulletChoices');if(!String(d.evidence||'').trim()){showResumeCoach('rbBulletCoach','<b>Tell me one thing you did in this role.</b><br>Use normal words. I’ll ask questions and help turn it into strong résumé evidence.');$('rbEvidence').focus();return}
     btn.disabled=true;btn.textContent='Rosie is working…';choices.innerHTML='';showResumeCoach('rbBulletCoach','<b>Working from your real experience…</b><br>I won’t add facts you didn’t give me.');
     const askInline=(question,label)=>{const box=$('rbBulletCoach');box.hidden=false;box.innerHTML='<div class="rosie-live-convo"><div class="rosie-convo-label">'+label+'</div><div class="rosie-speaking"><b>Rosie</b><div class="rosie-typed-question"></div></div><div class="rosie-reply-wrap"><label>Your answer</label><textarea rows="3" placeholder="Answer Rosie in your own words…"></textarea><button type="button" class="rosie-send-btn">Send to Rosie →</button></div></div>';const q=box.querySelector('.rosie-typed-question'),reply=box.querySelector('textarea'),send=box.querySelector('button');q.textContent='';let i=0;const timer=setInterval(()=>{q.textContent=question.slice(0,++i);if(i>=question.length){clearInterval(timer);reply.focus()}},18);send.onclick=async()=>{const answer=reply.value.trim();if(!answer){reply.focus();return}d.evidence=[d.evidence,answer].filter(Boolean).join(d.evidence?'\\n':'');$('rbEvidence').value=d.evidence;saveState();showResumeCoach('rbBulletCoach','<b>Got it.</b> Let me use that with what you already told me…');await rosieBuildBullet()}};
@@ -281,7 +322,7 @@
       const drafts=[{label:'Clear & Direct',text:data.clearDirect},{label:'Skills Forward',text:data.skillsForward}].filter(x=>x.text);
       showResumeCoach('rbBulletCoach','<b>Rosie drafted these only from what you entered.</b><br>Choose one, then edit it if you want.');
       choices.innerHTML=drafts.map((x,i)=>'<button type="button" class="rosie-draft" data-rb-draft="'+i+'"><b>'+escapeHtml(x.label)+'</b><span>'+escapeHtml(x.text)+'</span></button>').join('');
-      choices.querySelectorAll('[data-rb-draft]').forEach(b=>b.onclick=()=>{const text=drafts[Number(b.dataset.rbDraft)].text;d.evidence=text;const x=d.experiences[d.activeExperience||0]||(d.experiences[d.activeExperience||0]={bullets:[]});x.bullets=Array.isArray(x.bullets)?x.bullets:[];if(!x.bullets.includes(text))x.bullets.push(text);$('rbEvidence').value=d.evidence;syncActiveExperience(d);saveState();renderResumePreview();choices.querySelectorAll('.rosie-draft').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
+      choices.querySelectorAll('[data-rb-draft]').forEach(b=>b.onclick=()=>{const text=drafts[Number(b.dataset.rbDraft)].text;d.evidence=text;if(exp.rosieGuided){exp.rosieGuided.status='complete';exp.rosieGuided.selectedBullet=text;}const x=d.experiences[d.activeExperience||0]||(d.experiences[d.activeExperience||0]={bullets:[]});x.bullets=Array.isArray(x.bullets)?x.bullets:[];if(!x.bullets.includes(text))x.bullets.push(text);$('rbEvidence').value=d.evidence;syncActiveExperience(d);saveState();renderResumePreview();choices.querySelectorAll('.rosie-draft').forEach(x=>x.classList.remove('selected'));b.classList.add('selected')});
     }catch(e){showResumeCoach('rbBulletCoach','<b>Rosie could not complete that draft.</b><br>'+escapeHtml(e.message||'Your own words are still saved. Please try again.'))}finally{btn.disabled=false;btn.textContent='✦ Rosie: Turn This Into Résumé Evidence'}
   }
   async function rosieBuildSummary(){
@@ -459,7 +500,7 @@
   if($('rbVersionSlots')){const d=resumeData();const box=$('rbVersionSlots');box.innerHTML=[0,1,2].map(i=>i<d.versions.length?'<button type="button" data-version="'+i+'" class="'+(i===d.activeVersion?'selected':'')+'">'+escapeHtml(d.versions[i].name)+' • '+escapeHtml(d.versions[i].target||'Set target')+(i===d.activeVersion?' • Current':'')+'</button>':'<button type="button" data-version-add="'+i+'">＋ Résumé '+(i+1)+'</button>').join('');box.querySelectorAll('[data-version]').forEach(b=>b.onclick=()=>{const x=resumeData();x.versions[x.activeVersion].target=x.target;x.versions[x.activeVersion].jobDescription=x.jobDescription;x.versions[x.activeVersion].summary=x.summary;x.versions[x.activeVersion].format=x.resumeFormat;x.versions[x.activeVersion].alignment=x.alignment||null;x.activeVersion=Number(b.dataset.version);const v=x.versions[x.activeVersion];x.alignment=v.alignment||null;x.target=v.target||'';x.jobDescription=v.jobDescription||'';x.summary=v.summary||'';x.resumeFormat=v.format||'hybrid';saveState();renderResumeBuilder()});box.querySelectorAll('[data-version-add]').forEach(b=>b.onclick=()=>{const x=resumeData();if(x.versions.length>=3)return;x.versions.push({name:'Résumé '+(x.versions.length+1),target:'',jobDescription:'',summary:'',format:'hybrid',visualStyle:'modern'});x.activeVersion=x.versions.length-1;x.alignment=null;x.target='';x.jobDescription='';x.summary='';x.resumeFormat='hybrid';saveState();renderResumeBuilder();$('rbTarget')?.focus()})}
   if($('rbBuildBullet')) $('rbBuildBullet').onclick=rosieBuildBullet;
   if($('rbAddExperience')) $('rbAddExperience').onclick=addResumeExperience;
-  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.evidence='';$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;saveState();if($('rbEvidenceLabel'))$('rbEvidenceLabel').childNodes[0].nodeValue='What else did you do or accomplish in this role?';$('rbEvidence').focus()};
+  if($('rbAddBullet')) $('rbAddBullet').onclick=()=>{const d=resumeData();syncActiveExperience(d);d.evidence='';if(d.experiences[d.activeExperience||0])delete d.experiences[d.activeExperience||0].rosieGuided;$('rbEvidence').value='';$('rbBulletChoices').innerHTML='';$('rbBulletCoach').hidden=true;saveState();if($('rbEvidenceLabel'))$('rbEvidenceLabel').childNodes[0].nodeValue='What else did you do or accomplish in this role?';$('rbEvidence').focus()};
   const evidenceWorkflow=window.R2WEvidenceWorkflow?.create({resumeData,saveState,renderResumePreview,callR2WResumeAI,showResumeCoach,syncActiveExperience,escapeHtml,$});
   evidenceWorkflow?.bind();
   // Parse résumé files locally, review source text, then import as a draft — never invent experience.
