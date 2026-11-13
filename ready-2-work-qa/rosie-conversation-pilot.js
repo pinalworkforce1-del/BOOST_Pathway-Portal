@@ -1,15 +1,128 @@
-(()=>{'use strict';
+/* Rosie conversational pilot: opt-in, human-approved additions to existing resume state. */
+(()=>{
+'use strict';
 const $=id=>document.getElementById(id);
-let source='',answers=[],drafts=[],busy=false;
+const bridge=()=>window.RosieConversationBridge;
+let busy=false, sessionKey='', draftTexts=[], draftKey='', visible=false;
 const messages=()=> $('rosiePilotMessages');
-function line(who,content){const el=document.createElement('div');el.className='rosie-pilot-line '+who;const name=document.createElement('strong');name.textContent=who==='coach'?'Rosie':'You';const p=document.createElement('p');p.textContent=content;el.append(name,p);messages().append(el);messages().scrollTop=messages().scrollHeight}
-function status(text){$('rosiePilotStatus').textContent=text}
-function switchMode(mode){$('rosiePilotChoice').hidden=true;$('resumeBuilderForm').hidden=mode==='chat';$('rosiePilotPanel').hidden=mode!=='chat';$('rosiePilotMode').textContent=mode==='chat'?'Conversational':'Guided';if(mode==='chat'&&!messages().children.length){const d=window.RosieConversationBridge.snapshot();line('coach','Tell me about a responsibility from your work experience. We can build one strong résumé bullet at a time.'+(d.target?' I see your résumé target is '+d.target+'.':''))}try{sessionStorage.setItem('rosie-pilot-mode',mode)}catch(_){}}
-async function send(){const input=$('rosiePilotInput'),value=input.value.trim();if(!value||busy)return;input.value='';line('participant',value);busy=true;$('rosiePilotSend').disabled=true;
-try{if(!source){source=value;answers=[];await next()}else{answers.push({question:window.__rosiePilotQuestion||'Follow-up',answer:value});await next()}}
-catch(e){line('coach','I could not reach Rosie right now. Your existing résumé is safe. You can switch to Guided Builder and continue.');status('Connection unavailable')}
-finally{busy=false;$('rosiePilotSend').disabled=false}}
-async function next(){status('Rosie is thinking…');const result=await window.RosieConversationBridge.probe(source,answers);if(result.readyToDraft||!result.question||answers.length>=3){await draft();return}window.__rosiePilotQuestion=result.question;line('coach',result.question);status('Answer in your own words, or draft now')}
-async function draft(){status('Preparing drafts…');const evidence=[source,...answers.map(x=>x.answer)].join('\n');const result=await window.RosieConversationBridge.propose(evidence);if(result.needsClarification||result.integrityFailed){line('coach',result.question||'Could you share one more specific detail?');return}drafts=[{name:'Clear & Direct',text:result.clearDirect},{name:'Skills Forward',text:result.skillsForward}].filter(x=>x.text);const host=$('rosiePilotDrafts');host.replaceChildren();for(const d of drafts){const b=document.createElement('button');b.type='button';b.className='rosie-pilot-draft';b.textContent=d.name+': '+d.text;b.onclick=()=>{window.RosieConversationBridge.accept(d.text,evidence);line('coach','Added to your résumé. What else did you do in this role?');host.replaceChildren();source='';answers=[];status('Saved to your existing résumé')};host.appendChild(b)}line('coach','Here are two options. Choose one to add it to the résumé on the right.');status('Review before adding')}
-document.addEventListener('DOMContentLoaded',()=>{if(!$('rosiePilotPanel'))return;$('rosiePilotGuided').onclick=()=>switchMode('guided');$('rosiePilotChat').onclick=()=>switchMode('chat');$('rosiePilotSwitchGuided').onclick=()=>switchMode('guided');$('rosiePilotSwitchChat').onclick=()=>switchMode('chat');$('rosiePilotSend').onclick=send;$('rosiePilotInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});$('rosiePilotDraftNow').onclick=async()=>{if(!source||busy)return;busy=true;try{await draft()}catch(e){status('Unable to generate drafts right now')}finally{busy=false}};const view=$('viewResumeBuilder');new MutationObserver(()=>{if(!view.hidden&&!view.dataset.rosieChoiceSeen){view.dataset.rosieChoiceSeen='1';$('rosiePilotChoice').hidden=false}}).observe(view,{attributes:true,attributeFilter:['hidden']});});
+const when=()=>new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+function status(text){$('rosiePilotStatus').textContent=text||''}
+function addMessage(role,text,persist=true){
+  if(!text)return;
+  const el=document.createElement('div');el.className='rosie-pilot-line '+(role==='assistant'?'coach':'participant');
+  const header=document.createElement('strong');header.textContent=(role==='assistant'?'Rosie':'You')+' · '+when();
+  const body=document.createElement('p');body.textContent=text;
+  el.append(header,body);messages().appendChild(el);messages().scrollTop=messages().scrollHeight;
+  if(persist)bridge()?.append(role,text);
+}
+function clearDrafts(){draftTexts=[];draftKey='';$('rosiePilotDrafts').replaceChildren()}
+function loadChat(){
+  const snapshot=bridge()?.snapshot(),state=bridge()?.getSessionData();
+  if(!snapshot||!state){status('Résumé data unavailable');return}
+  sessionKey=state.key;
+  messages().replaceChildren();clearDrafts();
+  for(const m of state.messages||[])addMessage(m.role,m.text,false);
+  if(!state.messages?.length){
+    addMessage('assistant','Hi! I’m Rosie. You can tell me what you did at a previous job, ask for help explaining your experience, or work on one résumé bullet together.'+
+      (snapshot.target?' Your current résumé target is '+snapshot.target+'. We can use that for relevance without pretending you have experience you haven’t gained.':''));
+  }
+  status('Conversation saved with your BOOST résumé. You approve every change.');
+}
+function showMode(mode,record=true){
+  const guided=mode!=='chat';
+  $('rosiePilotChoice').hidden=true;
+  $('resumeBuilderForm').hidden=!guided;
+  $('rosiePilotPanel').hidden=guided;
+  $('rosiePilotSwitchChat').hidden=!guided;
+  $('rosiePilotMode').textContent=guided?'Guided':'Conversational';
+  visible=true;
+  if(record)bridge()?.metric('choice_or_switch',mode);
+  if(!guided)loadChat();
+}
+function chooseMode(mode){
+  bridge()?.metric('choice',mode);
+  showMode(mode,false);
+}
+function offerChoice(){
+  const state=bridge()?.getSessionData();
+  if(!state)return;
+  const form=$('resumeBuilderForm');
+  if(!state.initialChoice){
+    $('rosiePilotChoice').hidden=false;form.hidden=true;
+    $('rosiePilotPanel').hidden=true;$('rosiePilotSwitchChat').hidden=true;
+  }else showMode(state.lastMode||state.initialChoice,false);
+}
+function draftsUI(proposals){
+  const host=$('rosiePilotDrafts');host.replaceChildren();
+  draftKey=bridge()?.getSessionData()?.key||'';
+  draftTexts=proposals.filter(x=>x.text);
+  for(const proposal of draftTexts){
+    const wrap=document.createElement('div');wrap.className='rosie-pilot-proposal';
+    const heading=document.createElement('strong');heading.textContent=proposal.name;
+    const editor=document.createElement('textarea');editor.value=proposal.text;editor.rows=3;editor.setAttribute('aria-label','Review and edit '+proposal.name);
+    const approval=document.createElement('label');approval.className='rosie-pilot-approval';
+    const check=document.createElement('input');check.type='checkbox';approval.append(check,document.createTextNode(' I confirm that this describes work I actually did.'));
+    const button=document.createElement('button');button.type='button';button.textContent='Add reviewed bullet to my résumé';button.className='rosie-pilot-accept';
+    button.onclick=()=>{
+      if(!check.checked){status('Please verify the facts before adding the bullet.');return}
+      const text=editor.value.trim();if(text.length<10){status('Please enter a complete bullet.');return}
+      if(bridge()?.getSessionData()?.key!==draftKey){status('You changed résumé or role. Start a new draft for this experience.');clearDrafts();return}
+      const other=bridge()?.snapshot()?.approvedBullets||[];
+      if(other.includes(text)){status('This bullet is already on your résumé.');return}
+      bridge().accept(text);
+      bridge().metric('bullet_approved','chat');
+      clearDrafts();
+      addMessage('assistant','Added to your résumé preview. Would you like to build another bullet, revise your résumé, or discuss a different responsibility?');
+      status('Approved bullet saved to the same résumé as Guided Builder.');
+    };
+    wrap.append(heading,editor,approval,button);host.appendChild(wrap);
+  }
+}
+async function sendMessage(value){
+  if(busy||!value.trim())return;
+  if(!bridge()){status('Rosie résumé connection unavailable');return}
+  const current=bridge().getSessionData();
+  if(current.key!==sessionKey)loadChat();
+  clearDrafts();
+  addMessage('user',value.trim());
+  busy=true;$('rosiePilotSend').disabled=true;$('rosiePilotDraftNow').disabled=true;
+  status('Rosie is reviewing your message…');
+  try{
+    const state=bridge().getSessionData();
+    const result=await bridge().converse(state.messages);
+    if(bridge().getSessionData().key!==sessionKey){status('Résumé changed during coaching. Open that role to continue.');return}
+    const reply=String(result.reply||'').trim()||'Can you tell me a little more about that responsibility?';
+    addMessage('assistant',reply);
+    const proposals=[{name:'Clear & Direct',text:result.clearDirect},{name:'Skills Forward',text:result.skillsForward}];
+    if(proposals.some(x=>x.text))draftsUI(proposals);
+    status(proposals.some(x=>x.text)?'Review and approve a draft before adding it.':'Your conversation is saved. Continue whenever you’re ready.');
+  }catch(e){
+    const msg=String(e?.message||'Rosie is currently unavailable.');
+    status(msg);
+    addMessage('assistant','I cannot complete that request right now. Your existing résumé and our conversation are saved; you can continue in Guided Builder.');
+  }finally{busy=false;$('rosiePilotSend').disabled=false;$('rosiePilotDraftNow').disabled=false}
+}
+function bind(){
+  if(!$('rosiePilotPanel')||!bridge())return;
+  $('rosiePilotGuided').onclick=()=>chooseMode('guided');
+  $('rosiePilotChat').onclick=()=>chooseMode('chat');
+  $('rosiePilotSwitchGuided').onclick=()=>showMode('guided');
+  $('rosiePilotSwitchChat').onclick=()=>showMode('chat');
+  $('rosiePilotSend').onclick=()=>{const input=$('rosiePilotInput'),value=input.value;input.value='';sendMessage(value)};
+  $('rosiePilotDraftNow').onclick=()=>sendMessage('Please create two concise, evidence-based résumé bullet drafts from the confirmed details I have shared. Ask one specific question instead if more evidence is necessary.');
+  $('rosiePilotInput').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('rosiePilotSend').click()}};
+  const view=$('viewResumeBuilder');
+  const refresh=()=>{
+    if(!view.hidden){
+      const next=bridge().getSessionData().key;
+      if(!visible){offerChoice()}
+      else if(!$('rosiePilotPanel').hidden&&next!==sessionKey)loadChat();
+    }else visible=false;
+  };
+  new MutationObserver(refresh).observe(view,{attributes:true,attributeFilter:['hidden']});
+  window.addEventListener('boost-r2w-cloud-restored',()=>{if(!view.hidden&&!$('rosiePilotPanel').hidden)loadChat()});
+  refresh();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);
+else bind();
 })();
