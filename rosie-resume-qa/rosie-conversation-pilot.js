@@ -176,8 +176,8 @@ async function sendMessage(value){
     const latest=String(value||'').trim().toLowerCase();
     const previousAssistant=[...state.messages].slice(0,-1).reverse().find(m=>m.role==='assistant');
     const textBefore=String(previousAssistant?.text||'').toLowerCase();
-    const explicitEdit=/\\b(remove|delete|replace|duplicate|duplicative|merge|consolidate|dedup|same bullets|fix this|clean up)\\b/.test(latest);
-    const agreementEdit=/^(yes|yes please|sure|ok|okay|please do|do it)[.! ]*$/.test(latest)&&/\\b(replace|remove|delete|merge|consolidate|duplicate)\\b/.test(textBefore);
+    const explicitEdit=/\b(remove|delete|replace|duplicate|duplicative|merge|consolidate|dedup|same bullets|fix this|clean up)\b/.test(latest);
+    const agreementEdit=/^(yes|yes please|sure|ok|okay|please do|do it)[.! ]*$/.test(latest)&&/\b(replace|remove|delete|merge|consolidate|duplicate)\b/.test(textBefore);
     const result=await bridge().converse(state.messages);
     if(bridge().getSessionData().key!==sessionKey){status('Résumé changed during coaching. Open that role to continue.');return}
     const reply=String(result.reply||'').trim()||'Can you tell me a little more about that responsibility?';
