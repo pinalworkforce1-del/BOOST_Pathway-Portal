@@ -70,8 +70,9 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
         try{
           result=await call('upgrade_manual');
         }catch(upgradeError){
-          notice.textContent='The recovered report is available. Detailed evaluation could not be generated: '+upgradeError.message;
+          notice.textContent='Detailed Rosie evaluation did not complete: '+upgradeError.message+'. The saved recovery review is shown below.';
           result=await call('latest');
+          result.upgradeFailure=upgradeError.message;
         }
       }else if(result.latest&&!result.latest.evaluation){
         result=await call('evaluate');
@@ -109,6 +110,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       }else{section('Interview participation • 80/20 speaking target','The transcript speaking-share estimate is not available for this session.');}
       if(Number.isFinite(Number(evaluation.average_question_score)))el('p','Average answer-quality indicator: '+Number(evaluation.average_question_score).toFixed(1)+' / 5 (developmental coaching, not hiring assessment).');
       if(evaluation.source==='manual_recovery')el('p','This report was recovered from the saved transcript after the interview was interrupted. It is a brief coaching review, not the full automated Rosie evaluation.','report-note');
+      if(result.upgradeFailure)el('p','Full Rosie evaluation is currently unavailable: '+result.upgradeFailure+'. Your saved interview is preserved.','report-note');
       section('Strengths demonstrated',evaluation.strengths||[]);
       section('Development priorities',evaluation.development_priorities||[]);
       section('Recommended next steps',evaluation.next_steps||[]);
