@@ -146,6 +146,17 @@ async function acceptCompletionReceipt(client,region){
    j.progress.jobsearch='complete';
    localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
  }
+ if(id==='financial'){
+   // Cloud bootstrap restores the last confirmed journey before receipt processing.
+   // Restore only the evidence for the nonce-bound activity that just returned.
+   let handoff=null;
+   try{handoff=JSON.parse(sessionStorage.getItem('boost_completion_payload:financial')||'null')}catch(_){}
+   if(handoff?.nonce===nonce&&handoff?.evidence?.completedAt){
+     j.modules=j.modules||{};j.progress=j.progress||{};
+     j.modules.financial=handoff.evidence;j.progress.financial='complete';
+     localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
+   }
+ }
  const payload=j?.modules?.[id];
  if(!payload||typeof payload!=='object'||!Object.keys(payload).length)return 'No saved module evidence found. Completion was not recorded.';
  const session=(await client.auth.getSession()).data?.session;
@@ -182,6 +193,7 @@ async function acceptCompletionReceipt(client,region){
    completed_at:now,updated_at:now
  },{onConflict:'user_id,region,module_id'});
  if(error)return 'Completion confirmation failed: '+error.message;
+ if(id==='financial')sessionStorage.removeItem('boost_completion_payload:financial');
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
  if(id==='jobsearch'){sessionStorage.removeItem('boost_rapid_pending_handoff');sessionStorage.removeItem('boost2_rapid_sync_error');}
