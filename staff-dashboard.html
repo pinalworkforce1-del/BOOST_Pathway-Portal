@@ -197,6 +197,8 @@ function stageCompletionDate(r,id){
 function stageCompletionLabel(r,id,status){
  if(status==='Completed'||status==='Completed — Legacy Module 1'||status==='Ready for coach appointment'){
   const when=stageCompletionDate(r,id);
+  const verified=meta(r,id)?.evidence?.source==='coach_verified_printed_results_restoration';
+  if(verified)return when?'Coach verified: '+fmt(when)+' · original date unknown':'Coach verified · original date unknown';
   return when?'Completed: '+fmt(when):'Completed · date not recorded';
  }
  return 'View participant evidence';
