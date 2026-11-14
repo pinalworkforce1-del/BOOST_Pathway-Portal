@@ -11,7 +11,7 @@
 <p class="hint">Select your interview focus before starting Jacqueline.</p>
 <p class="notice">Your verified BOOST account and TalentSync enrollment are required. Interview completion is confirmed from saved session results, not simply launching or ending a call. Live sessions may incur usage charges.</p>
 <div class="row"><button id="start" type="button">Begin live interview</button><button id="end" class="secondary" type="button" disabled>End interview</button><button id="enableAudio" class="secondary" type="button" hidden>Enable Audio</button></div>
-<button id="pastFeedback" type="button" class="secondary" hidden>View My Previous Interview Feedback</button><div id="feedbackActions" hidden><button id="saveRosiePdf" type="button" class="secondary" disabled>Save Report as PDF</button><div id="feedbackReport" class="notice" hidden></div></div>
+<button id="pastFeedback" type="button" class="secondary" hidden>View Jacqueline Interview Feedback</button><div id="feedbackActions" hidden><button id="saveRosiePdf" type="button" class="secondary" disabled>Save Report as PDF</button><div id="feedbackReport" class="notice" hidden></div></div>
 <p id="allowance" class="hint">Test environment: LiveKit interview launch is disabled until scenario and session checks pass.</p><p id="status" role="status" aria-live="polite"><span class="indicator"></span>Awaiting BOOST verification.</p><p class="hint" id="connection">Tip: Turn off nearby TVs or use headphones to avoid accidental interruptions.</p>
 </section><section class="panel"><div class="stage" id="stage"><video id="avatar" autoplay playsinline aria-label="Live video of your AI practice interviewer"></video><div class="placeholder" id="placeholder"><strong>Interview Intelligence</strong><p>Jacqueline's BOOST agent is deployed.</p><p class="muted">Your interviewer's video will appear here when connected.</p></div><div id="remoteAudio"></div></div><div class="row"><span class="indicator" id="indicator"></span><span id="trackState">Not connected</span></div><p class="muted">If video pauses, your audio interview may continue. The session remains open until you end it.</p></section></div>
 </main>
@@ -24,7 +24,7 @@ notice.style.cssText='margin:12px auto;padding:16px;max-width:1100px;border:1px 
 document.body.insertBefore(notice,document.querySelector('main'));
 document.querySelectorAll('button').forEach(b=>{b.disabled=true;});
 let room=null,activeRoomName=null,closing=false;
-async function closeInterview(client,cfg){if(closing||!activeRoomName)return;closing=true;try{const {data:{session}}=await client.auth.getSession();if(!session)return;const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+session.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'client_ended',room_name:activeRoomName})});const result=await response.json();if(!response.ok)throw Error(result.error||'Session close failed');notice.textContent='Interview ended. Preparing your Rosie evaluation…';
+async function closeInterview(client,cfg){if(closing||!activeRoomName)return;closing=true;try{const {data:{session}}=await client.auth.getSession();if(!session)return;const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+session.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'client_ended',room_name:activeRoomName})});const result=await response.json();if(!response.ok)throw Error(result.error||'Session close failed');notice.textContent='Interview ended. Preparing your Jacqueline evaluation…';
   try{
     const evaluationResponse=await fetch(cfg.url+'/functions/v1/boost-rosie-live-evaluation',{method:'POST',headers:{authorization:'Bearer '+session.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'evaluate'})});
     const evaluated=await evaluationResponse.json();
@@ -38,10 +38,12 @@ async function closeInterview(client,cfg){if(closing||!activeRoomName)return;clo
       if(we)throw we;
       try{const local=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');local.jacquelineInterview=progress.jacquelineInterview;localStorage.setItem('boost-r2w-integrated-v1',JSON.stringify(local))}catch(_){}
       notice.textContent='Mock Interview complete and verified. Return to Ready 2 Work to view completion.';
-    }else notice.textContent='Interview ended; Rosie review is available. Select View Rosie Interview Feedback.';
-  }catch(e){notice.textContent='Interview ended and transcript saved. Rosie evaluation pending: '+(e.message||String(e))+'. Use View Rosie Interview Feedback to retry.';}}catch(e){notice.textContent='Interview transcript saved; completion synchronization pending: '+e.message;}finally{closing=false;}}
+    }else notice.textContent='Interview ended; Jacqueline review is available. Select View Jacqueline Interview Feedback.';
+  }catch(e){notice.textContent='Interview ended and transcript saved. Jacqueline evaluation pending: '+(e.message||String(e))+'. Use View Jacqueline Interview Feedback to retry.';}}catch(e){notice.textContent='Interview transcript saved; completion synchronization pending: '+e.message;}finally{closing=false;}}
 const startButton=document.getElementById('start'),endButton=document.getElementById('end');
-const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Rosie Interview Feedback';
+const verificationStatus=document.getElementById('status');
+const setVerification=(message,good=false)=>{verificationStatus.textContent=message;verificationStatus.dataset.verified=String(good);};
+const rosieButton=document.getElementById('pastFeedback');rosieButton.hidden=false;rosieButton.disabled=false;rosieButton.textContent='View Jacqueline Interview Feedback';
 const saveRosiePdf=document.getElementById('saveRosiePdf');saveRosiePdf.disabled=true;saveRosiePdf.onclick=()=>{notice.textContent='Opening print dialog. Choose Save as PDF as your destination.';window.print();};
 document.querySelector('main').appendChild(document.getElementById('feedbackActions'));
 (async()=>{
@@ -51,9 +53,9 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
   const client=window.supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
   rosieButton.onclick=async()=>{
     rosieButton.disabled=true;saveRosiePdf.disabled=true;
-    notice.textContent='Rosie is retrieving and evaluating your interview…';
+    notice.textContent='Retrieving your Jacqueline interview feedback…';
     const actions=document.getElementById('feedbackActions'),report=document.getElementById('feedbackReport');
-    actions.hidden=false;report.hidden=false;report.textContent='Loading Rosie interview feedback…';
+    actions.hidden=false;report.hidden=false;report.textContent='Loading Jacqueline interview feedback…';
     try{
       const {data:{session:auth}}=await client.auth.getSession();
       if(!auth)throw Error('Sign in to BOOST again.');
@@ -80,7 +82,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}
       const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');if(typeof parent==='string'){node.className=parent;report.appendChild(node);}else{parent.appendChild(node);}return node;};
       const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',item,list));}else el('p',items);};
-      el('h2','Rosie | Interview Readiness Report');
+      el('h2','Jacqueline | Interview Readiness Report');
       el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
       el('p','Evaluation date: '+new Date(evaluation.evaluated_at||Date.now()).toLocaleDateString()+' • Status: '+(result.latest.status==='completed'?'Completed':'Coaching review'),'report-meta');
       section('Your interview summary',evaluation.summary);
@@ -102,15 +104,17 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
         }
       });
       el('p','This is AI-generated practice feedback for career development, not an employment or hiring decision.','report-note');
-      saveRosiePdf.disabled=false;notice.textContent='Rosie report ready. Use Save Report as PDF to print or save a PDF copy.';
+      saveRosiePdf.disabled=false;notice.textContent='Jacqueline report ready. Use Save Report as PDF to print or save a PDF copy.';
       actions.scrollIntoView({behavior:'smooth',block:'start'});
-    }catch(error){const message='Rosie evaluation: '+error.message;notice.textContent=message;report.textContent=message;}
+    }catch(error){const message='Jacqueline evaluation: '+error.message;notice.textContent=message;report.textContent=message;}
     finally{rosieButton.disabled=false;}
   };
   const {data:{user},error}=await client.auth.getUser();
   if(error||!user)throw Error('Sign in through BOOST before opening the interview.');
+  setVerification('BOOST account verified. Checking TalentSync enrollment…');
   const {data:transferred,error:gateError}=await client.rpc('boost_resume_enrollment_approved');
   if(gateError||transferred!==true)throw Error('Verified transfer into TalentSync is required.');
+  setVerification('BOOST account and TalentSync transfer verified.',true);
   const {data:{session}}=await client.auth.getSession();
   if(!session)throw Error('BOOST authentication session is unavailable.');
   const check=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{'authorization':'Bearer '+session.access_token,'apikey':cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'readiness'})});
@@ -140,6 +144,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
   const cloudCount=new Set((cloud||[]).map(row=>Number(row.scene_id))).size;
   const savedCount=requiredIds.filter(id=>['A','B','C','D'].includes(cloudDecisions[id])).length;
   notice.textContent='BOOST account verified. Interview Landing decisions saved in your BOOST journey: '+savedCount+' of 5; verified for Jacqueline: '+cloudCount+' of 5. '+(cloudCount<5?'Finish the five Interview Landing decisions in Ready 2 Work.':'Ready to begin your Jacqueline interview.');
+  setVerification(cloudCount===5?'BOOST verified • TalentSync verified • 5 of 5 interview scenarios complete.':'BOOST verified • TalentSync verified • '+cloudCount+' of 5 interview scenarios complete.',cloudCount===5);
   if(cloudCount===5){
     startButton.disabled=false;
     startButton.onclick=async()=>{
@@ -168,6 +173,6 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
     endButton.onclick=async()=>{if(room)await room.disconnect();endButton.disabled=true;startButton.disabled=false;await closeInterview(client,cfg);};
   }
 
- }catch(e){notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
+ }catch(e){setVerification('Verification incomplete: '+e.message);notice.textContent='Access check: '+e.message+' Live interview remains disabled.'}
 })();
 </script></body></html>
