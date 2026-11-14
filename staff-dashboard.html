@@ -628,7 +628,7 @@ function renderJacquelineCoachEvaluation(session){
  const turns=Array.isArray(session.transcript)?session.transcript:[];
  const transcript=turns.length?'<details><summary>Review saved interview transcript ('+turns.length+' turns)</summary><div style="max-height:380px;overflow:auto;padding:10px">'+
   turns.map(t=>'<p><b>'+safe(t.role==='user'?'Participant':t.role==='assistant'?'Jacqueline':'Unknown')+':</b> '+safe(t.text)+'</p>').join('')+'</div></details>':'<p>Transcript not available.</p>';
- return '<p><b>Interview status:</b> '+safe(session.status)+' · <b>Evaluated:</b> '+safe(e.evaluated_at?fmt(e.evaluated_at):'Date unavailable')+
+ return '<p><b>Interview focus:</b> '+safe(e.occupation_label||({general:'General Employment',customer_service:'Customer Service',nursing_assistant:'Nursing Assistant'}[session.profile_id]||'General Employment'))+'</p><p><b>Interview status:</b> '+safe(session.status)+' · <b>Evaluated:</b> '+safe(e.evaluated_at?fmt(e.evaluated_at):'Date unavailable')+
   (Number.isFinite(Number(e.average_question_score))?' · <b>Answer-quality indicator:</b> '+Number(e.average_question_score).toFixed(1)+'/5':'')+'</p>'+
   '<h4>80/20 Interview Participation</h4>'+participation+
   '<h4>Rosie’s Evidence-Based Summary</h4><p>'+safe(e.summary)+'</p>'+
