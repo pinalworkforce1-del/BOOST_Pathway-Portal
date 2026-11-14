@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BOOST | Financial Stability</title>
+<style>
+  :root{
+    --ink:#17202a;
+    --paper:#f5f1e8;
+    --panel:#ffffff;
+    --accent:#e3a72f;
+    --teal:#2f7e78;
+    --soft:#e9eef0;
+    --muted:#5f6b73;
+    --line:rgba(23,32,42,.18);
+    --gold-soft:#f8f0d8;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,0,0,.035) 0 1px, transparent 1.5px) 0 0/8px 8px,
+      var(--paper);
+  }
+  .shell{max-width:1100px;margin:auto;padding:20px}
+  .hero{
+    min-height:360px;
+    border:4px solid var(--ink);
+    border-radius:20px;
+    overflow:hidden;
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    background:
+      linear-gradient(90deg, rgba(23,32,42,.96), rgba(23,32,42,.72)),
+      url('assets/financial-literacy-hero.png') center/cover no-repeat;
+    box-shadow:10px 10px 0 rgba(23,32,42,.18);
+  }
+  .hero-copy{padding:48px;display:flex;flex-direction:column;justify-content:center;color:white}
+  .eyebrow{letter-spacing:.13em;text-transform:uppercase;font-size:.78rem;font-weight:800;color:#f2c75c}
+  h1{font-size:clamp(2.5rem,6vw,5rem);line-height:.92;margin:.35rem 0 1rem;text-transform:uppercase}
+  .hero p{font-size:1.08rem;line-height:1.55;max-width:640px;color:#eef2f3}
+  .hero-card{
+    margin:30px;align-self:end;background:rgba(255,255,255,.94);border:3px solid var(--ink);
+    padding:20px;border-radius:14px;color:var(--ink);transform:rotate(1deg);
+  }
+  .hero-card strong{display:block;font-size:1.2rem;margin-bottom:6px}
+  .note{font-size:.91rem;color:var(--muted);line-height:1.45}
+  .progress-wrap{position:sticky;top:0;background:rgba(245,241,232,.96);z-index:5;padding:14px 0 10px;margin-top:22px}
+  .progress{height:12px;border:2px solid var(--ink);border-radius:99px;background:white;overflow:hidden}
+  .progress span{display:block;height:100%;width:20%;background:var(--accent);transition:.25s}
+  .steps{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;margin-top:7px;gap:8px}
+  .section{
+    background:var(--panel);border:3px solid var(--ink);border-radius:18px;margin:26px 0;padding:28px;
+    box-shadow:7px 7px 0 rgba(23,32,42,.12)
+  }
+  .section h2{font-size:1.9rem;margin:0 0 8px}
+  .section-intro{color:var(--muted);line-height:1.55;margin-top:0}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .input-card{border:2px solid var(--line);border-radius:14px;padding:16px;background:#fbfbfa}
+  label{display:block;font-weight:800;margin-bottom:8px}
+  .money{display:flex;align-items:center;border:2px solid #aeb7bc;border-radius:10px;background:white;overflow:hidden}
+  .money span{padding:0 11px;font-weight:800;color:var(--muted)}
+  input[type=number], input[type=text]{
+    width:100%;border:0;padding:13px;font-size:1rem;outline:none;background:transparent
+  }
+  .hint{margin-top:8px;font-size:.83rem;color:var(--muted);line-height:1.4}
+  .wide{grid-column:1/-1}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0}
+  .stat{border:3px solid var(--ink);border-radius:14px;padding:18px;background:var(--soft)}
+  .stat small{display:block;text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--muted)}
+  .stat strong{display:block;font-size:1.8rem;margin-top:6px}
+  .balance-message{padding:18px;border-left:6px solid var(--teal);background:#eef7f5;border-radius:10px;line-height:1.5}
+  .support-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:15px}
+  .check{display:flex;gap:12px;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:14px;background:#fbfbfa}
+  .check input{margin-top:3px;transform:scale(1.2)}
+  .check strong{display:block}
+  .check span{display:block;font-size:.88rem;color:var(--muted);margin-top:4px;line-height:1.35}
+  .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+  button{
+    border:3px solid var(--ink);background:var(--accent);color:var(--ink);font-weight:900;
+    padding:12px 18px;border-radius:12px;cursor:pointer;font-size:.97rem;box-shadow:4px 4px 0 var(--ink)
+  }
+  button.secondary{background:white}
+  button:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+  .snapshot{border:3px dashed var(--ink);padding:22px;border-radius:14px;background:#fffdf8;margin-top:18px}
+  .snapshot h3{margin-top:0}
+  .snapshot ul{padding-left:20px}
+  .footer{padding:25px 5px 50px;color:var(--muted);font-size:.88rem;text-align:center}
+  .tag{display:inline-block;background:var(--ink);color:white;padding:5px 9px;border-radius:99px;font-size:.76rem;font-weight:800;margin-bottom:8px}
+  .micro{font-size:.82rem;color:var(--muted)}
+  .rosie-wrap{display:grid;grid-template-columns:260px 1fr;gap:20px;align-items:start}
+  .rosie-card{background:linear-gradient(180deg, #fffdf7, var(--gold-soft));}
+  .rosie-figure{display:flex;justify-content:center;align-items:end;border:2px dashed var(--line);border-radius:16px;background:white;min-height:280px;padding:12px;position:relative}
+  .rosie-figure img{max-width:100%;max-height:320px;object-fit:contain}
+  .rosie-copy h3{margin:0 0 10px;font-size:1.45rem}
+  .rosie-callout{border-left:6px solid var(--accent);background:white;border-radius:10px;padding:14px 16px;line-height:1.55;margin:14px 0}
+  .audio-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+  audio{width:100%;max-width:440px}
+  .speech-wrap{position:relative;margin-top:14px}
+  .speech-label{display:inline-block;background:var(--ink);color:white;font-size:.73rem;font-weight:800;letter-spacing:.08em;padding:6px 10px;border-radius:999px;margin-bottom:8px;text-transform:uppercase}
+  .speech-bubble{
+    position:relative;
+    background:white;
+    border:3px solid var(--ink);
+    border-radius:24px;
+    padding:18px 20px;
+    line-height:1.62;
+    box-shadow:6px 6px 0 rgba(23,32,42,.12);
+  }
+  .speech-bubble:before{
+    content:'';
+    position:absolute;
+    left:-24px;
+    top:52px;
+    width:0;height:0;
+    border-top:16px solid transparent;
+    border-bottom:16px solid transparent;
+    border-right:24px solid var(--ink);
+  }
+  .speech-bubble:after{
+    content:'';
+    position:absolute;
+    left:-18px;
+    top:55px;
+    width:0;height:0;
+    border-top:13px solid transparent;
+    border-bottom:13px solid transparent;
+    border-right:20px solid white;
+  }
+  .transcript-text{margin:0;font-size:.97rem;color:var(--ink)}
+  @media(max-width:760px){
+    .hero{grid-template-columns:1fr;min-height:auto}
+    .hero-copy{padding:30px 24px}
+    .hero-card{margin:0 22px 24px}
+    .grid,.support-grid,.summary,.rosie-wrap{grid-template-columns:1fr}
+    .wide{grid-column:auto}
+    .steps{display:none}
+    .speech-bubble:before{left:24px; top:-24px; border-right:16px solid transparent; border-left:16px solid transparent; border-bottom:24px solid var(--ink); border-top:0;}
+    .speech-bubble:after{left:27px; top:-18px; border-right:13px solid transparent; border-left:13px solid transparent; border-bottom:20px solid white; border-top:0;}
+  }
+  @media print{
+    body{background:white}
+    .hero,.progress-wrap,.section:not(#snapshotSection),.footer,.actions{display:none!important}
+    #snapshotSection{box-shadow:none;border:0;margin:0;padding:0}
+    .snapshot{border:0;padding:0}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="hero">
+    <div class="hero-copy">
+      <div class="eyebrow">BOOST • Build Strong Financial Habits</div>
+      <h1>Your Money.<br>Your Plan.</h1>
+      <p>This is not a test of whether you are “good with money.” It is a quick way to see what is coming in, what has to go out, and whether a work or training expense could make your budget harder to manage.</p>
+    </div>
+    <div class="hero-card">
+      <strong>No judgment. No perfect budget required.</strong>
+      <div class="note">Your answers stay in this browser unless your BOOST site is later connected to a form or case-management system.</div>
+    </div>
+  </header>
+
+  <section class="section rosie-card" id="rosieSection">
+    <span class="tag">ROSIE INTRO</span>
+    <div class="rosie-wrap">
+      <div class="rosie-figure">
+        <img src="https://pinalworkforce1-del.github.io/BOOST_Pathway-Portal/assets/images/rosie-guide-panel.webp" alt="Rosie introducing the financial stability calculator" />
+      </div>
+      <div class="rosie-copy">
+        <h3>Before You Start</h3>
+        <p class="section-intro">Listen to Rosie’s quick introduction, then use the calculator to build a simple financial snapshot.</p>
+        <div class="rosie-callout">
+          This check is designed to assess financial stability in a non-judgmental way and help identify what support may be available to assist you in reaching your employment goals.
+        </div>
+        <div class="audio-bar">
+          <button id="playRosieBtn" type="button">Play Rosie Intro</button>
+          <button id="pauseRosieBtn" type="button" class="secondary">Pause</button>
+          <audio id="rosieAudio" controls preload="metadata">
+            <source src="https://pinalworkforce1-del.github.io/Financial_Assessment/assets/rosie-financial-barriers.mp3" type="audio/mpeg" />
+            <track src="https://pinalworkforce1-del.github.io/Financial_Assessment/assets/rosie-financial-barriers.vtt" kind="subtitles" srclang="en" label="English" default />
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+        <div class="speech-wrap">
+          <div class="speech-label">Rosie says</div>
+          <div class="speech-bubble">
+            <p id="rosieTranscript" class="transcript-text">Before we get started, I want you to know something important. This isn’t a test, and there are no right or wrong answers. We’re not here to judge how you spend your money or tell you what your budget should look like. This quick financial stability check simply helps us understand what’s coming in, what’s going out, and whether there are expenses or barriers that could make it harder to reach your employment goals. What you share can help your career coach identify support services that may be available to help you move forward — things like transportation, work clothing, tools, childcare, or other employment-related needs. Participation in this financial check-in is voluntary. However, if you are requesting support services, it must be completed before those services can be issued. Just give us your best estimate. It doesn’t have to be perfect. The goal is simple: understand where things stand today, identify what might help, and keep you moving toward your employment goals.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="progress-wrap">
+    <div class="progress"><span id="progressBar"></span></div>
+    <div class="steps"><span>1. Money In</span><span>2. Money Out</span><span>3. What’s Left</span><span>4. What Could Help?</span><span>5. Snapshot</span></div>
+  </div>
+
+  <section class="section" id="incomeSection">
+    <span class="tag">STEP 1</span>
+    <h2>Money In</h2>
+    <p class="section-intro">Use the amount you actually have available each month after taxes and deductions. An estimate is okay.</p>
+    <div class="grid">
+      <div class="input-card">
+        <label for="jobIncome">Job / take-home pay</label>
+        <div class="money"><span>$</span><input id="jobIncome" type="number" min="0" step="1" placeholder="0"></div>
+        <div class="hint">Think about pay from your job after taxes, deductions, or payroll withholding.</div>
+      </div>
+      <div class="input-card">
+        <label for="otherIncome">Other regular income</label>
+        <div class="money"><span>$</span><input id="otherIncome" type="number" min="0" step="1" placeholder="0"></div>
+        <div class="hint">Examples may include child support, benefits, family contribution, or another regular source of income.</div>
+      </div>
+    </div>
+    <p class="micro">Tip: If your income changes from month to month, use a typical or conservative month.</p>
+  </section>
+
+  <section class="section" id="expenseSection">
+    <span class="tag">STEP 2</span>
+    <h2>Money Out</h2>
+    <p class="section-intro">Enter the monthly costs you are responsible for. Leave anything that does not apply at $0.</p>
+    <div class="grid">
+      <div class="input-card">
+        <label>Housing / rent</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Housing / rent" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Rent, room payment, lot rent, or the amount you regularly contribute toward housing.</div>
+      </div>
+      <div class="input-card">
+        <label>Utilities</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Utilities" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Electric, water, gas, trash, or other regular household utility costs.</div>
+      </div>
+      <div class="input-card">
+        <label>Food / groceries</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Food / groceries" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Groceries, household food items, and basic meals you regularly pay for.</div>
+      </div>
+      <div class="input-card">
+        <label>Transportation</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Transportation" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Gas, bus fare, ride share, insurance, car payment, or basic vehicle upkeep.</div>
+      </div>
+      <div class="input-card">
+        <label>Phone / internet</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Phone / internet" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Mobile phone service, internet access, or other basic connectivity costs.</div>
+      </div>
+      <div class="input-card">
+        <label>Child / dependent care</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Child / dependent care" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Childcare, babysitting, elder care, or another regular dependent-care cost.</div>
+      </div>
+      <div class="input-card">
+        <label>Medical / prescriptions</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Medical / prescriptions" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Co-pays, prescriptions, ongoing treatment, or other basic medical expenses.</div>
+      </div>
+      <div class="input-card">
+        <label>Debt / minimum payments</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Debt / minimum payments" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Minimum payments on credit cards, loans, payment plans, or other required debt payments.</div>
+      </div>
+      <div class="input-card wide">
+        <label>Other regular expenses</label>
+        <div class="money"><span>$</span><input class="expense" data-label="Other regular expenses" type="number" min="0" placeholder="0"></div>
+        <div class="hint">Any regular cost not listed above, such as school costs, legal obligations, or another recurring payment.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="balanceSection">
+    <span class="tag">STEP 3</span>
+    <h2>What’s Left?</h2>
+    <p class="section-intro">This is a snapshot, not a grade. A tight budget can simply mean there is less room for an unexpected cost or a new work/training expense.</p>
+    <div class="summary">
+      <div class="stat"><small>Monthly income</small><strong id="incomeTotal">$0</strong></div>
+      <div class="stat"><small>Monthly expenses</small><strong id="expenseTotal">$0</strong></div>
+      <div class="stat"><small>Estimated left</small><strong id="leftTotal">$0</strong></div>
+    </div>
+    <div class="balance-message" id="balanceMessage">Enter your income and expenses above to build your snapshot.</div>
+  </section>
+
+  <section class="section" id="supportSection">
+    <span class="tag">STEP 4</span>
+    <h2>What Could Make Work or Training Easier?</h2>
+    <p class="section-intro">Support services are not rewards or signs that something went wrong. They can help remove practical barriers that make it harder to start, keep, or advance in work or training. Check anything that may be worth discussing with your career coach.</p>
+
+    <div class="support-grid">
+      <label class="check"><input type="checkbox" class="support" value="Transportation"><div><strong>Transportation</strong><span>Gas, bus fare, car repair, or another transportation barrier.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Work clothing / footwear"><div><strong>Work clothing / footwear</strong><span>Uniforms, shoes, boots, or required work attire.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Tools / equipment"><div><strong>Tools / equipment</strong><span>Required tools, safety gear, or equipment needed to participate.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Child / dependent care"><div><strong>Child / dependent care</strong><span>Care costs or scheduling that could affect attendance or work.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Phone / internet"><div><strong>Phone / internet</strong><span>Needed for job search, employer contact, online learning, or remote work.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Testing / licensing / credentials"><div><strong>Testing / licensing / credentials</strong><span>Fees connected to a job, training, exam, permit, or credential.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Housing / utilities"><div><strong>Housing / utilities</strong><span>A stability concern that may interfere with participation.</span></div></label>
+      <label class="check"><input type="checkbox" class="support" value="Other"><div><strong>Something else</strong><span>Another cost or barrier you want to discuss privately with your coach.</span></div></label>
+    </div>
+    <p class="micro">Checking an item does not determine eligibility or guarantee funding. It simply helps focus the conversation.</p>
+  </section>
+
+  <section class="section" id="snapshotSection">
+    <span class="tag">STEP 5</span>
+    <h2>Your Financial Snapshot</h2>
+    <p class="section-intro">Use this as a conversation starter with your career coach. You decide what you want to share.</p>
+
+    <div class="input-card">
+      <label for="participantName">Name (optional)</label>
+      <input id="participantName" type="text" placeholder="Enter name if you want it on the snapshot">
+    </div>
+
+    <div class="snapshot" id="snapshot">
+      <h3>BOOST Financial Stability Snapshot</h3>
+      <p id="snapshotName"></p>
+      <p><strong>Monthly income:</strong> <span id="snapIncome">$0</span></p>
+      <p><strong>Monthly expenses:</strong> <span id="snapExpenses">$0</span></p>
+      <p><strong>Estimated amount left:</strong> <span id="snapLeft">$0</span></p>
+      <p><strong>Areas I may want to discuss:</strong></p>
+      <ul id="supportList"><li>None selected yet.</li></ul>
+      <p class="note"><strong>Important:</strong> This snapshot is not an eligibility determination. It is designed to help identify possible barriers and guide a supportive conversation about work, training, and available resources.</p>
+    </div>
+
+    <div class="actions">
+      <button id="financialSaveReturn" type="button" style="background:#176d50;color:white">Save Completion &amp; Return to BOOST</button><button id="printBtn" type="button">Print / Save Snapshot</button>
+      <button class="secondary" id="resetBtn">↺ Clear Module</button>
+    </div>
+  </section>
+
+  <div class="footer">
+    BOOST • Financial Stability • Simple awareness, practical planning, supportive next steps
+  </div>
+</div>
+
+<script>
+const BOOST_RETURN=new URLSearchParams(location.search).get('boost_return')||'';
+const IS_NORTHERN=/\/Northern-BOOST\//i.test(BOOST_RETURN);
+const JOURNEY_KEY=IS_NORTHERN?'boost_naz_journey_v1':'pinal_boost_journey_v1';
+const FINANCIAL_KEY=IS_NORTHERN?'boost_naz_financial_v1':'pinal_boost_financial_v1';
+const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(Number(n)||0);
+const val = el => Number(el.value)||0;
+function readJourney(){try{return JSON.parse(localStorage.getItem(JOURNEY_KEY)||'{}')||{}}catch{return{}}}
+function buildFinancialEvidence(){
+  const expenses=[...document.querySelectorAll('.expense')].map(x=>({label:x.dataset.label||'',amount:val(x)}));
+  const income={job:val(document.getElementById('jobIncome')),other:val(document.getElementById('otherIncome'))};
+  const incomeTotal=income.job+income.other,expenseTotal=expenses.reduce((s,x)=>s+x.amount,0);
+  return {participantName:document.getElementById('participantName').value.trim(),income,expenses,incomeTotal,expenseTotal,estimatedLeft:incomeTotal-expenseTotal,supports:[...document.querySelectorAll('.support:checked')].map(x=>x.value)}
+}
+function saveFinancialJourneyEvidence(){
+  const evidence=buildFinancialEvidence(),completedAt=new Date().toISOString(),j=readJourney();
+  const record={module:'financial',source:'pinal_financial_assessment',version:2,completedAt,...evidence};
+  j.schema_version=Math.max(Number(j.schema_version)||0,2);j.region=IS_NORTHERN?'Northern Arizona':'Pinal County';j.modules=j.modules||{};j.progress=j.progress||{};
+  j.modules.financial=record;j.progress.financial='complete';j.updated_at=completedAt;localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));
+  localStorage.setItem(FINANCIAL_KEY,JSON.stringify({completedAt,evidence}));
+  return record
+}
+
+function update(){
+  const income = val(document.getElementById('jobIncome')) + val(document.getElementById('otherIncome'));
+  const expenses = [...document.querySelectorAll('.expense')].reduce((s,e)=>s+val(e),0);
+  const left = income-expenses;
+
+  document.getElementById('incomeTotal').textContent = money(income);
+  document.getElementById('expenseTotal').textContent = money(expenses);
+  document.getElementById('leftTotal').textContent = money(left);
+
+  let msg = 'Enter your income and expenses above to build your snapshot.';
+  if(income>0){
+    if(left >= 300){
+      msg = 'You appear to have some room between income and regular expenses. That room can help with savings, unexpected costs, or future career expenses.';
+    } else if(left >= 0){
+      msg = 'Your budget looks fairly tight right now. A new work or training expense could reduce your breathing room, so it may be worth discussing available supports with your career coach.';
+    } else {
+      msg = 'Your regular expenses are currently higher than the income entered. That can happen for many reasons. This snapshot may help you and your career coach identify which barriers or costs need attention first.';
+    }
+  }
+  document.getElementById('balanceMessage').textContent = msg;
+
+  document.getElementById('snapIncome').textContent = money(income);
+  document.getElementById('snapExpenses').textContent = money(expenses);
+  document.getElementById('snapLeft').textContent = money(left);
+
+  const name = document.getElementById('participantName').value.trim();
+  document.getElementById('snapshotName').textContent = name ? name : '';
+
+  const selected = [...document.querySelectorAll('.support:checked')].map(x=>x.value);
+  const ul = document.getElementById('supportList');
+  ul.innerHTML = selected.length ? selected.map(x=>`<li>${x}</li>`).join('') : '<li>None selected yet.</li>';
+
+  let completion = 20;
+  if(income>0) completion = 40;
+  if([...document.querySelectorAll('.expense')].some(x=>val(x)>0)) completion = 60;
+  if(income>0 && [...document.querySelectorAll('.expense')].some(x=>val(x)>=0)) completion = 80;
+  if(selected.length || name || income>0) completion = 100;
+  document.getElementById('progressBar').style.width = completion+'%';
+}
+
+document.querySelectorAll('input').forEach(el=>el.addEventListener('input',update));
+document.querySelectorAll('.support').forEach(el=>el.addEventListener('change',update));
+document.getElementById('financialSaveReturn').addEventListener('click',()=>{const name=document.getElementById('participantName').value.trim(),income=val(document.getElementById('jobIncome'))+val(document.getElementById('otherIncome')),hasExpense=[...document.querySelectorAll('.expense')].some(x=>val(x)>0);if(!name||income<=0||!hasExpense){alert('Complete your name, monthly income, and at least one expense before saving.');return;}const p=new URLSearchParams(location.search);const nonce=p.get('boost_nonce'),returnUrl=p.get('boost_return');if(!nonce||p.get('boost_module')!=='financial'||!returnUrl){alert('Open Financial Habits from your signed-in BOOST pathway to save completion.');return;}let target;try{target=new URL(returnUrl);if(target.origin!==location.origin)throw Error('Invalid return origin');}catch(_){alert('The BOOST return address could not be verified. Reopen this activity from BOOST.');return;}saveFinancialJourneyEvidence();target.searchParams.set('boost_complete','financial');target.searchParams.set('boost_nonce',nonce);location.assign(target.toString());});
+document.getElementById('printBtn').addEventListener('click',()=>{const name=document.getElementById('participantName').value.trim(),income=val(document.getElementById('jobIncome'))+val(document.getElementById('otherIncome')),hasExpense=[...document.querySelectorAll('.expense')].some(x=>val(x)>0);if(!name||income<=0||!hasExpense){alert('Complete your name, monthly income, and at least one expense before finishing your snapshot.');return}saveFinancialJourneyEvidence();boostOfferCompletion('financial',document.getElementById('snapshotSection'));window.print()});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(confirm('Clear Build Strong Financial Habits and start this module over? Other BOOST modules will not be deleted.')){
+    const j=readJourney();j.progress=j.progress||{};j.modules=j.modules||{};
+    delete j.progress.financial;delete j.modules.financial;delete j.financial;delete j.sharedModules?.financial;
+    delete j.completion;delete j.boostCompletedAt;
+    j.updatedAt=new Date().toISOString();j.updated_at=j.updatedAt;
+    localStorage.setItem(JOURNEY_KEY,JSON.stringify(j));localStorage.removeItem(FINANCIAL_KEY);
+    document.querySelectorAll('input').forEach(el=>{if(el.type==='checkbox')el.checked=false;else el.value=''});
+    update();window.scrollTo({top:0,behavior:'smooth'});
+  }
+});
+
+const rosieAudio = document.getElementById('rosieAudio');
+document.getElementById('playRosieBtn').addEventListener('click', ()=> rosieAudio.play());
+document.getElementById('pauseRosieBtn').addEventListener('click', ()=> rosieAudio.pause());
+
+update();
+
+function boostOfferCompletion(moduleId,mount){
+ const p=new URLSearchParams(location.search),returnUrl=p.get('boost_return'),requested=p.get('boost_module'),nonce=p.get('boost_nonce');
+ if(!returnUrl||requested!==moduleId||!nonce||!mount)return;
+ let target;
+ try{target=new URL(returnUrl,location.href);if(target.origin!==location.origin)return}catch(_){return}
+ let box=document.getElementById('boostCompletionReturn');
+ if(!box){box=document.createElement('div');box.id='boostCompletionReturn';box.style.cssText='margin:20px 0;padding:20px;border:3px solid #16835b;border-radius:16px;background:#effff7;text-align:center';mount.appendChild(box)}
+ box.innerHTML='<h3 style="margin:0 0 8px">Activity Complete</h3><p style="margin:0 0 14px">Return to BOOST Pathways to save this completion and unlock your next step.</p><button type="button" id="boostSaveReturn" style="padding:13px 20px;border:0;border-radius:10px;background:#0d6248;color:#fff;font-weight:900;cursor:pointer">Save Completion & Return to BOOST</button>';
+ document.getElementById('boostSaveReturn').onclick=function(){saveFinancialJourneyEvidence();target.searchParams.set('boost_complete',moduleId);target.searchParams.set('boost_nonce',nonce);location.assign(target.toString())};
+}
+
+</script>
+</body>
+</html>
