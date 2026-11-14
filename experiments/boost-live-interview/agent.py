@@ -30,7 +30,7 @@ PILOT_QUESTIONS = [
 ]
 
 
-# Two occupation pilots. General Employment remains the unchanged default.
+# Two live occupation pilots, plus three staged profiles. General Employment remains the default.
 INTERVIEW_PROFILES = {
     "general": {"label": "General Employment", "questions": PILOT_QUESTIONS},
     "customer_service": {
@@ -49,6 +49,30 @@ INTERVIEW_PROFILES = {
             ("q3", "Imagine you're assisting one patient when another patient asks for help and you notice a possible safety concern. How would you prioritize and when would you get the nurse involved?"),
         ],
     },
+    "electrician": {
+        "label": "Electrician",
+        "questions": [
+            ("q1", "What interests you about electrical work, and what experience or strengths would help you learn and work safely?"),
+            ("q2", "Tell me about a time you followed instructions or worked with a team to complete a hands-on task. What did you do, and what was the result?"),
+            ("q3", "You notice a possible safety hazard at a jobsite while the crew is on a tight deadline. How would you respond?"),
+        ],
+    },
+    "manufacturing": {
+        "label": "Manufacturing / Team Assembler",
+        "questions": [
+            ("q1", "What interests you about manufacturing or team assembly, and what skills or experiences could help you succeed?"),
+            ("q2", "Tell me about a time you worked with others to meet a deadline or quality goal. What was your contribution?"),
+            ("q3", "You notice a part that may not meet quality instructions while your team is behind schedule. What would you do?"),
+        ],
+    },
+    "cdl_driver": {
+        "label": "Commercial Driver",
+        "questions": [
+            ("q1", "What interests you about commercial driving, and what experiences or habits would help you work responsibly?"),
+            ("q2", "Tell me about a time you planned carefully, followed a procedure, or coordinated with others. What happened?"),
+            ("q3", "Before a delivery, you notice a possible vehicle safety issue that could delay your schedule. How would you handle it?"),
+        ],
+    },
 }
 
 
@@ -63,6 +87,10 @@ Keep each required question recognizable; do not replace its central meaning.
 Wait for the participant's response before moving on. Respond to the actual content, not with generic praise. If the answer is brief, vague, ambiguous, or missing a concrete example, ask a natural, specific follow-up and give the participant time to elaborate. Ask up to two concise follow-ups per required question when useful, but never interrogate or repeat a question mechanically. Invite a situation, the participant's actions, and the outcome where relevant. If the participant declines or cannot elaborate, acknowledge that respectfully and move forward. Do not grade or coach during the interview; Rosie evaluates the captured transcript afterward.
 For a Nursing Assistant interview, keep scenarios within an entry-level nursing assistant's role: respect patient dignity, seek the supervising nurse for clinical decisions, follow workplace safety procedures, and do not assume the participant has clinical experience or certification.
 For a Customer Service interview, invite transferable experiences without assuming the participant has worked with customers previously. Keep follow-ups concise and make the interview a conversation rather than a lecture.
+For an Electrician interview, discuss safe work habits and escalation to a qualified supervisor. Never imply someone without authorization or training should work on live electrical equipment.
+For Manufacturing or Team Assembler, emphasize quality, following instructions, asking questions and reporting hazards rather than skipping steps for speed.
+For Commercial Driver, emphasize pre-trip inspection, alertness, safe decisions, reporting issues and employer procedures; never reward driving an unsafe vehicle to meet a schedule.
+Do not assume the participant already has the job's required training, credentials or paid experience.
 Do not invent an answer if the participant refuses or does not respond.
 After all required questions have participant responses, call finish_interview once.
 Never say the participant has passed a real job interview or reveal grades.
