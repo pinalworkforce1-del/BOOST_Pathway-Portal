@@ -119,6 +119,10 @@ async function acceptCompletionReceipt(client,region){
  // The pending evidence and original launch nonce must both belong to this tab.
  const fromJobsearch=q.get('boost2_path')==='rapid'&&q.get('boost2_from')==='jobsearch';
  const pendingJobsearch=fromJobsearch&&sessionStorage.getItem('boost_completion_payload:jobsearch');
+ // Preserve cross-origin AI & You evidence before cloud bootstrap restores the journey.
+ let aiReceipt=null;
+ try{const raw=new URLSearchParams(location.hash.replace(/^#/,'')).get('boost_ai_receipt');if(raw)aiReceipt=JSON.parse(raw)}catch(_){}
+ if(aiReceipt?.nonce&&aiReceipt?.evidence?.completedAt)sessionStorage.setItem('boost_completion_payload:ai',JSON.stringify(aiReceipt));
  const id=q.get('boost_complete')||(pendingJobsearch?'jobsearch':null);
  const nonce=q.get('boost_nonce')||(pendingJobsearch&&id==='jobsearch'?sessionStorage.getItem('boost_completion_nonce:jobsearch'):null);
  if(!id)return fromJobsearch&&!q.has('boost_draft')
@@ -146,6 +150,13 @@ async function acceptCompletionReceipt(client,region){
    j.progress.jobsearch='complete';
    localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
  }
+ if(id==='ai'){
+   let handoff=null;try{handoff=JSON.parse(sessionStorage.getItem('boost_completion_payload:ai')||'null')}catch(_){}
+   if(handoff?.nonce!==nonce||!handoff?.evidence?.completedAt||!handoff.evidence.challengeCompleted)return 'AI & You completion evidence is missing or does not match this launch.';
+   j.modules=j.modules||{};j.progress=j.progress||{};
+   j.modules.ai=handoff.evidence;j.progress.ai='complete';
+   localStorage.setItem('pinal_boost_journey_v1',JSON.stringify(j));
+ }
  if(id==='financial'){
    // Cloud bootstrap restores the last confirmed journey before receipt processing.
    // Restore only the evidence for the nonce-bound activity that just returned.
@@ -164,18 +175,18 @@ async function acceptCompletionReceipt(client,region){
  const now=new Date().toISOString();
  // A completion receipt must persist the full module evidence, not only the progress marker.
  // Keep the receipt retryable until the guarded versioned cloud write confirms success.
- if(id==='financial'){
-   // Financial Habits must be committed to the versioned cloud journey before
+ if(id==='financial'||id==='ai'){
+   // Financial Habits and AI & You must be committed to the versioned cloud journey before
    // the receipt is acknowledged or the local journey is replaced by cloud load.
    let saved=false;
    for(let attempt=0;attempt<3&&!saved;attempt++){
      const loaded=await client.rpc('boost_pinal_load_versioned');
      if(loaded.error||!loaded.data||loaded.data.revision===undefined)return 'Financial Habits cloud load failed. Your local snapshot is preserved; please retry the return.';
      const remote=loaded.data.journey&&typeof loaded.data.journey==='object'?loaded.data.journey:{};
-     const merged={...remote,modules:{...(remote.modules||{}),financial:payload},progress:{...(remote.progress||{}),financial:'complete'},updated_at:now};
+     const merged={...remote,modules:{...(remote.modules||{}),[id]:payload},progress:{...(remote.progress||{}),[id]:'complete'},updated_at:now};
      const result=await client.rpc('boost_pinal_save_if_revision',{p_journey:merged,p_revision:loaded.data.revision});
      if(result.error)return 'Financial Habits cloud save failed: '+result.error.message;
-     if(result.data?.saved){saved=result.data.journey?.progress?.financial==='complete'&&!!result.data.journey?.modules?.financial?.completedAt;}
+     if(result.data?.saved){saved=result.data.journey?.progress?.[id]==='complete'&&!!result.data.journey?.modules?.[id]?.completedAt;}
      else if(result.data?.reason!=='revision_changed')return 'Financial Habits cloud save rejected: '+(result.data?.reason||'unknown reason');
    }
    if(!saved)return 'Financial Habits cloud confirmation pending. Your snapshot is preserved; please retry the return.';
@@ -193,7 +204,7 @@ async function acceptCompletionReceipt(client,region){
    completed_at:now,updated_at:now
  },{onConflict:'user_id,region,module_id'});
  if(error)return 'Completion confirmation failed: '+error.message;
- if(id==='financial')sessionStorage.removeItem('boost_completion_payload:financial');
+ if(id==='financial'||id==='ai')sessionStorage.removeItem('boost_completion_payload:'+id);
  sessionStorage.removeItem('boost_completion_nonce:'+id);
  if(['skillmobility','jobsearch'].includes(id))sessionStorage.removeItem('boost_completion_payload:'+id);
  if(id==='jobsearch'){sessionStorage.removeItem('boost_rapid_pending_handoff');sessionStorage.removeItem('boost2_rapid_sync_error');}
@@ -313,7 +324,17 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
       a.textContent='Open '+item[0]+' ↗';
       a.dataset.boostStep=moduleId;
       a.style.cssText='display:block;text-align:center;text-decoration:none';
-      a.addEventListener('click',e=>{if(moduleId==='financial'){try{const eligible=typeof window.boost2FinancialLaunchAllowed==='function'&&window.boost2FinancialLaunchAllowed(key);if(!eligible){e.preventDefault();alert('Financial Habits is not yet unlocked. Please reload your saved BOOST journey.');return;}const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:financial',nonce);sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module','financial');const destination=new URL('financial-habits.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path',key);back.searchParams.set('boost2_from','financial');destination.searchParams.set('boost_return',back.toString());destination.searchParams.set('boost_module','financial');destination.searchParams.set('boost_nonce',nonce);a.href=destination.toString();}catch(err){e.preventDefault();alert('Could not open Financial Habits: '+(err?.message||'launch error'));}return;}if(key==='rapid'&&moduleId!=='jobsearch'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if((moduleId==='r2w'||(['ready','explore'].includes(key)&&['financial','ai'].includes(moduleId)))&&!entryReady(el)){e.preventDefault();return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='rapid-coach-prep'){e.preventDefault();if(el.dataset.b2canLaunch!=='true'){alert('Complete your 48-Hour Job Search first.');return;}const url=new URL('rapid-coach-appointment-prep.html',location.href);sessionStorage.setItem('boost2_return_pathway','rapid');location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='rapid-discover'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:rapid-discover',nonce);const url=new URL('rapid-discover.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','rapid-discover');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','rapid-discover');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}if(key==='rapid'&&moduleId==='jobsearch'){e.preventDefault();try{const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:jobsearch',nonce);recordRapidLaunch('jobsearch',nonce);sessionStorage.removeItem('boost_completion_payload:jobsearch');sessionStorage.removeItem('boost_rapid_pending_handoff');const url=new URL('rapid-48-hour.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','jobsearch');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','jobsearch');url.searchParams.set('boost_nonce',nonce);
+      a.addEventListener('click',e=>{if(moduleId==='ai'){
+   e.preventDefault();
+   const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:ai',nonce);
+   sessionStorage.setItem('boost2_return_pathway',key);
+   const destination=new URL('https://pinalworkforce1-del.github.io/AI_Literacy/');
+   const back=new URL(location.pathname,location.origin);
+   back.searchParams.set('boost2_path',key);back.searchParams.set('boost2_from','ai');
+   destination.searchParams.set('boost_return',back.toString());
+   destination.searchParams.set('boost_module','ai');destination.searchParams.set('boost_nonce',nonce);
+   location.assign(destination.toString());return;
+  }if(moduleId==='financial'){try{const eligible=typeof window.boost2FinancialLaunchAllowed==='function'&&window.boost2FinancialLaunchAllowed(key);if(!eligible){e.preventDefault();alert('Financial Habits is not yet unlocked. Please reload your saved BOOST journey.');return;}const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:financial',nonce);sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module','financial');const destination=new URL('financial-habits.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path',key);back.searchParams.set('boost2_from','financial');destination.searchParams.set('boost_return',back.toString());destination.searchParams.set('boost_module','financial');destination.searchParams.set('boost_nonce',nonce);a.href=destination.toString();}catch(err){e.preventDefault();alert('Could not open Financial Habits: '+(err?.message||'launch error'));}return;}if(key==='rapid'&&moduleId!=='jobsearch'&&el.dataset.b2canLaunch!=='true'){e.preventDefault();return;}if((moduleId==='r2w'||(['ready','explore'].includes(key)&&['financial','ai'].includes(moduleId)))&&!entryReady(el)){e.preventDefault();return;}sessionStorage.setItem('boost2_return_pathway',key);sessionStorage.setItem('boost2_return_module',moduleId);if(key==='rapid'&&moduleId==='rapid-coach-prep'){e.preventDefault();if(el.dataset.b2canLaunch!=='true'){alert('Complete your 48-Hour Job Search first.');return;}const url=new URL('rapid-coach-appointment-prep.html',location.href);sessionStorage.setItem('boost2_return_pathway','rapid');location.assign(url.toString());return;}if(key==='rapid'&&moduleId==='rapid-discover'){e.preventDefault();const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:rapid-discover',nonce);const url=new URL('rapid-discover.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','rapid-discover');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','rapid-discover');url.searchParams.set('boost_nonce',nonce);location.assign(url.toString());}if(key==='rapid'&&moduleId==='jobsearch'){e.preventDefault();try{const nonce=freshNonce();sessionStorage.setItem('boost_completion_nonce:jobsearch',nonce);recordRapidLaunch('jobsearch',nonce);sessionStorage.removeItem('boost_completion_payload:jobsearch');sessionStorage.removeItem('boost_rapid_pending_handoff');const url=new URL('rapid-48-hour.html',location.href);const back=new URL(location.pathname,location.origin);back.searchParams.set('boost2_path','rapid');back.searchParams.set('boost2_from','jobsearch');url.searchParams.set('boost_return',back.toString());url.searchParams.set('boost_module','jobsearch');url.searchParams.set('boost_nonce',nonce);
  // Cross-site GitHub Pages cannot share localStorage. Pass only the three
  // non-sensitive career fields through a URL fragment (not sent to the server).
  const j=(()=>{try{return JSON.parse(localStorage.getItem('pinal_boost_journey_v1')||'{}')||{}}catch{return {}}})(),mob=j.modules?.skillmobility||{},discover=j.modules?.['rapid-discover']||{};
