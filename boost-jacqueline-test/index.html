@@ -8,7 +8,7 @@
 <h1>Practice with a live interviewer.</h1><p class="lead">A private, real-time AI interview simulation. Choose a career focus, enable your microphone, and speak naturally. Camera access isn't needed.</p>
 <div class="layout"><section class="panel"><h2>Prepare your interview</h2><label for="occupation">Career focus</label><select id="occupation">
 <option value="general">General employment</option><option value="electrician">Electrician</option><option value="nursing_assistant">Nursing Assistant</option><option value="manufacturing">Manufacturing / Team Assembler</option><option value="customer_service">Customer Service</option><option value="cdl_driver">Commercial Driver</option></select>
-<p class="hint">Select your interview focus before starting Jacqueline.</p>
+<p class="hint" id="occupationHint">Select your interview focus before starting Jacqueline. Nursing Assistant and Customer Service pilots activate after the LiveKit worker update.</p>
 <p class="notice">Your verified BOOST account and TalentSync enrollment are required. Interview completion is confirmed from saved session results, not simply launching or ending a call. Live sessions may incur usage charges.</p>
 <div class="row"><button id="start" type="button">Begin live interview</button><button id="end" class="secondary" type="button" disabled>End interview</button><button id="enableAudio" class="secondary" type="button" hidden>Enable Audio</button></div>
 <button id="pastFeedback" type="button" class="secondary" hidden>View Jacqueline Interview Feedback</button><div id="feedbackActions" hidden><button id="saveRosiePdf" type="button" class="secondary" disabled>Save Report as PDF</button><div id="feedbackReport" class="notice" hidden></div></div>
@@ -96,6 +96,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       const direct=(value)=>String(value||'').replace(/\bthe participant's\b/gi,'your').replace(/\bthe participant\b/gi,'you').replace(/\btheir\b/gi,'your').replace(/\bthey\b/gi,'you');
       const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',direct(item),list));}else el('p',direct(items));};
       el('h2','Jacqueline | Interview Readiness Report');
+      el('p','Interview focus: '+(evaluation.occupation_label||result.latest?.occupation_label||'General Employment'),'report-meta');
       el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
       el('p','Evaluation date: '+new Date(evaluation.evaluated_at||Date.now()).toLocaleDateString()+' • Status: '+(result.latest.status==='completed'?'Completed':'Coaching review'),'report-meta');
       section('Your interview summary',evaluation.summary);
@@ -146,6 +147,11 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
   if(!session)throw Error('BOOST authentication session is unavailable.');
   const check=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{'authorization':'Bearer '+session.access_token,'apikey':cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'readiness'})});
   const readiness=await check.json();
+  const options=document.getElementById('occupation').options;
+  const allowed=new Set(readiness.available_profiles||['general']);
+  for(const option of options){option.disabled=!allowed.has(option.value);if(option.disabled&&option.selected)document.getElementById('occupation').value='general';}
+  const hint=document.getElementById('occupationHint');
+  if(hint)hint.textContent=readiness.occupation_pilots_enabled?'Choose General Employment, Customer Service or Nursing Assistant for a role-specific interview.':'Occupation pilots are prepared but awaiting the updated LiveKit worker. General Employment is available.';
   if(!check.ok)throw Error(readiness.error||'Interview readiness check failed.');
   if(!readiness.livekit_enabled)throw Error('BOOST Jacqueline gateway: '+(readiness.reason||'not ready')+'. Credentials configured: '+String(!!readiness.livekit_credentials_configured)+'. Agent ready: '+String(!!readiness.agent_reported_ready)+'.');
   // Ready 2 Work saves progress to Supabase. The interview must not depend on
@@ -177,10 +183,11 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
     startButton.onclick=async()=>{
       startButton.disabled=true;
       notice.textContent='Reserving a private BOOST interview…';
+      const chosenProfile=document.getElementById('occupation').value;
       try{
         const {data:{session:current}}=await client.auth.getSession();
         if(!current)throw Error('BOOST sign-in expired');
-        const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+current.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'start'})});
+        const response=await fetch(cfg.url+'/functions/v1/boost-live-interview-gateway',{method:'POST',headers:{authorization:'Bearer '+current.access_token,apikey:cfg.key,'content-type':'application/json'},body:JSON.stringify({mode:'start',profile_id:document.getElementById('occupation').value})});
         const result=await response.json();if(!response.ok)throw Error(result.error||'Interview reservation failed');
         activeRoomName=result.room_name;
         room=new LivekitClient.Room({adaptiveStream:true,dynacast:true});
