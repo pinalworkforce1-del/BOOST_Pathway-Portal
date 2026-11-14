@@ -86,14 +86,27 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
       el('p','Evaluation date: '+new Date(evaluation.evaluated_at||Date.now()).toLocaleDateString()+' • Status: '+(result.latest.status==='completed'?'Completed':'Coaching review'),'report-meta');
       section('Your interview summary',evaluation.summary);
-      section('80/20 coaching approach','This report emphasizes your demonstrated strengths and practical next steps. The 80/20 approach is a coaching balance, not a numerical interview grade.');
+      const speaking=evaluation.speaking_participation||result.latest?.speaking_participation;
+      if(speaking&&Number.isFinite(Number(speaking.participant_word_share_percent))){
+        el('h3','Interview participation • 80/20 speaking target');
+        const interviewee=Number(speaking.participant_word_share_percent);
+        const interviewer=Number(speaking.interviewer_word_share_percent);
+        el('p','You: '+interviewee.toFixed(1)+'% ('+Number(speaking.participant_word_count||0)+' words) • Jacqueline: '+interviewer.toFixed(1)+'% ('+Number(speaking.interviewer_word_count||0)+' words). Target: approximately 80% participant / 20% interviewer.');
+        const delta=interviewee-80;
+        el('p',Math.abs(delta)<5?'Your participation was close to the 80% target.':delta<0?'The transcript suggests Jacqueline spoke proportionally more than the 20% target; practice leading with complete examples and outcomes.':'You exceeded the participant speaking-share target; practice keeping answers focused and relevant.');
+        el('p','Based on transcript word share, not measured speaking time. This is a coaching indicator, not a grade.','report-note');
+      }else{section('Interview participation • 80/20 speaking target','The transcript speaking-share estimate is not available for this session.');}
+      if(Number.isFinite(Number(evaluation.average_question_score)))el('p','Average answer-quality indicator: '+Number(evaluation.average_question_score).toFixed(1)+' / 5 (developmental coaching, not hiring assessment).');
+      if(evaluation.source==='manual_recovery')el('p','This report was recovered from the saved transcript after the interview was interrupted. It is a brief coaching review, not the full automated Rosie evaluation.','report-note');
       section('Strengths demonstrated',evaluation.strengths||[]);
       section('Development priorities',evaluation.development_priorities||[]);
       section('Recommended next steps',evaluation.next_steps||[]);
+      if(evaluation.coach_notes)el('p','Additional coaching observations: '+evaluation.coach_notes,'report-note');
       el('h3','Question-by-question feedback');
       (evaluation.question_feedback||[]).forEach((item,index)=>{
         const article=document.createElement('article');report.appendChild(article);
         el('h3','Question '+(index+1),article);
+        if(Number.isInteger(item.score))el('p','Answer quality: '+item.score+' / 5 (developmental indicator)',article);
         const strengths=Array.isArray(item.strengths)?item.strengths.join(' '):'';
         el('p','What you demonstrated: '+(strengths||'Not enough evidence recorded.'),article);
         el('p','Development opportunity: '+(item.development||'Continue practicing with specific examples.'),article);
