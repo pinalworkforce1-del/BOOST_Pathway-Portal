@@ -93,7 +93,8 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       report.replaceChildren();
       if(!evaluation){report.textContent='No completed interview transcript is ready yet.';return;}
       const el=(tag,text,parent=report)=>{const node=document.createElement(tag);node.textContent=String(text||'');if(typeof parent==='string'){node.className=parent;report.appendChild(node);}else{parent.appendChild(node);}return node;};
-      const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',item,list));}else el('p',items);};
+      const direct=(value)=>String(value||'').replace(/\bthe participant's\b/gi,'your').replace(/\bthe participant\b/gi,'you').replace(/\btheir\b/gi,'your').replace(/\bthey\b/gi,'you');
+      const section=(title,items)=>{el('h3',title);if(Array.isArray(items)){const list=document.createElement('ul');report.appendChild(list);items.forEach(item=>el('li',direct(item),list));}else el('p',direct(items));};
       el('h2','Jacqueline | Interview Readiness Report');
       el('p','BOOST Ready 2 Work • Jacqueline practice interview','report-meta');
       el('p','Evaluation date: '+new Date(evaluation.evaluated_at||Date.now()).toLocaleDateString()+' • Status: '+(result.latest.status==='completed'?'Completed':'Coaching review'),'report-meta');
@@ -105,7 +106,7 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
         const interviewer=Number(speaking.interviewer_word_share_percent);
         el('p','You: '+interviewee.toFixed(1)+'% ('+Number(speaking.participant_word_count||0)+' words) • Jacqueline: '+interviewer.toFixed(1)+'% ('+Number(speaking.interviewer_word_count||0)+' words). Target: approximately 80% participant / 20% interviewer.');
         const delta=interviewee-80;
-        el('p',Math.abs(delta)<5?'Your participation was close to the 80% target.':delta<0?'The transcript suggests Jacqueline spoke proportionally more than the 20% target; practice leading with complete examples and outcomes.':'You exceeded the participant speaking-share target; practice keeping answers focused and relevant.');
+        el('p',Math.abs(delta)<5?'Your word share was close to the 80% target.':delta<0?'Your word share was below the 80% target. Jacqueline’s question length and follow-ups also affected the balance. The percentage is a shared conversation-design indicator, not a grade of your answers.':'Your word share exceeded the 80% target. This measure reflects both sides of the conversation; relevance and clarity are evaluated separately.');
         el('p','Based on transcript word share, not measured speaking time. This is a coaching indicator, not a grade.','report-note');
       }else{section('Interview participation • 80/20 speaking target','The transcript speaking-share estimate is not available for this session.');}
       if(Number.isFinite(Number(evaluation.average_question_score)))el('p','Average answer-quality indicator: '+Number(evaluation.average_question_score).toFixed(1)+' / 5 (developmental coaching, not hiring assessment).');
@@ -114,16 +115,16 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
       section('Strengths demonstrated',evaluation.strengths||[]);
       section('Development priorities',evaluation.development_priorities||[]);
       section('Recommended next steps',evaluation.next_steps||[]);
-      if(evaluation.coach_notes)el('p','Additional coaching observations: '+evaluation.coach_notes,'report-note');
+      // Detailed coach notes appear only in the authenticated BOOST Coach View.
       el('h3','Question-by-question feedback');
       (evaluation.question_feedback||[]).forEach((item,index)=>{
         const article=document.createElement('article');report.appendChild(article);
         el('h3','Question '+(index+1),article);
         if(Number.isInteger(item.score))el('p','Answer quality: '+item.score+' / 5 (developmental indicator)',article);
         const strengths=Array.isArray(item.strengths)?item.strengths.join(' '):'';
-        el('p','What you demonstrated: '+(strengths||'Not enough evidence recorded.'),article);
-        el('p','Development opportunity: '+(item.development||'Continue practicing with specific examples.'),article);
-        if(item.practice_prompt)el('p','Practice prompt: '+item.practice_prompt,article);
+        el('p','What you demonstrated: '+direct(strengths||'Not enough evidence recorded.'),article);
+        el('p','Development opportunity: '+direct(item.development||'Continue practicing with specific examples.'),article);
+        if(item.practice_prompt)el('p','Practice prompt: '+direct(item.practice_prompt),article);
         if(Array.isArray(item.competencies)&&item.competencies.length){
           el('p','Employability skills demonstrated:',article);
           item.competencies.forEach(c=>el('span',c,article).className='competency');
