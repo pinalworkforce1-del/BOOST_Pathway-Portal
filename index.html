@@ -588,7 +588,8 @@ function state(j,id,blocked){
    const eligible=hasEvidence(j,'module5');
    return ready?{label:'Completed — Ready for Coach Appointment',cls:'ok',block:false,canLaunch:true}:eligible?{label:'Available — Complete Appointment Prep',cls:'warn',block:false,canLaunch:true}:{label:'Available after Skill Investment',cls:'lock',block:true,canLaunch:false};
  }
- if(id==='boostcert'||id==='r2wcert')return {label:'Certificate — Eligibility Check',cls:'unknown',block:false,canLaunch:false};
+ if(id==='boostcert')return boostCareerCertificateReady(j)?{label:'Available — Generate BOOST Certificate',cls:'ok',block:false,canLaunch:true}:{label:'Certificate — Complete Required Experiences',cls:'lock',block:false,canLaunch:false};
+ if(id==='r2wcert')return {label:'Ready 2 Work Certificate — Separate Requirements',cls:'unknown',block:false,canLaunch:false};
  if(chosen==='ready'&&id==='financial')return {label:hasEvidence(j,'financial')?'Completed — Review Again':'Available Now — Start Financial Habits',cls:hasEvidence(j,'financial')?'ok':'warn',block:!hasEvidence(j,'financial'),canLaunch:true};
  if(chosen==='ready'&&id==='ai')return hasEvidence(j,'financial')?{label:hasEvidence(j,'ai')?'Completed — Review Again':'Available — Start AI & You',cls:hasEvidence(j,'ai')?'ok':'warn',block:true,canLaunch:true}:{label:'Locked — Complete Financial Habits First',cls:'lock',block:true,canLaunch:false};
  if(chosen==='ready'&&id==='r2w')return !hasEvidence(j,'financial')||!hasEvidence(j,'ai')?{label:'Locked — Complete Financial Habits and AI & You',cls:'lock',block:false,canLaunch:false}:employmentReadyEnrollmentConfirmed()?{label:'Available — Start Ready 2 Work',cls:'ok',block:false,canLaunch:true}:{label:postEnrollmentAccess.checked?'TalentSync Enrollment Confirmation Required':'Verifying TalentSync Enrollment',cls:'lock',block:false,canLaunch:false};
@@ -646,6 +647,47 @@ function updatePathwayProgress(j,path){
  el('b2progress-track').setAttribute('aria-valuenow',String(percent));
  el('b2progress-detail').textContent=current+' of '+required.length+' required experiences current'+(path==='ready'?' • Some experiences are not integrated yet':'')+'. Optional exploration is not counted.';
 }
+function boostCareerCertificateReady(j){
+ const required=['module1','module2','module3','module4','module5','financial','ai'];
+ return required.every(id=>hasEvidence(j,id)&&(!['module2','module3','module4','module5'].includes(id)||fresh(j,id)==='fresh'))&&industryComplete(j);
+}
+function certEscape(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function printBoostCareerCertificate(button){
+ const w=window.open('','_blank');
+ if(!w){alert('Allow pop-ups for BOOST to open your printable certificate.');return}
+ w.document.write('<!doctype html><title>Verifying BOOST certificate</title><p style="font:18px Arial;padding:30px">Verifying your completed BOOST journey…</p>');
+ button.disabled=true;
+ try{
+  const client=boostPathSaveClient;
+  if(!client||!authUser)throw Error('Sign in to BOOST before opening your certificate.');
+  const verified=await client.auth.getUser();
+  if(verified.error||verified.data?.user?.id!==authUser.id)throw Error('Your sign-in needs verification. Reload BOOST and try again.');
+  const result=await client.rpc('boost_pinal_load_versioned');
+  if(result.error||!result.data?.journey)throw Error('Could not verify your saved journey. Please try again.');
+  const j=result.data.journey;
+  if(!boostCareerCertificateReady(j))throw Error('One or more required experiences are not yet verified in your saved BOOST journey.');
+  const name=String(j.participant?.name||j.participant_name||verified.data.user.user_metadata?.full_name||'').trim();
+  if(!name)throw Error('A participant name is required before generating a certificate.');
+  const completion=j.modules?.ai?.completedAt||j.modules?.financial?.completedAt||j.updated_at;
+  const dt=completion?new Date(completion):new Date();
+  const date=Number.isNaN(dt.getTime())?'Date unavailable':dt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',timeZone:'America/Phoenix'});
+  const title='Certificate of Completion';
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>BOOST Certificate — ${certEscape(name)}</title><style>
+   @page{size:landscape;margin:.4in}*{box-sizing:border-box}body{margin:0;background:#e8edf1;font-family:Georgia,serif;color:#16344e}
+   .sheet{width:100%;min-height:7in;margin:auto;padding:42px 55px;background:white;border:14px double #bd922e;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+   .brand{font:900 34px Arial,sans-serif;letter-spacing:5px;color:#146b87}.subbrand{font:700 14px Arial,sans-serif;letter-spacing:2px;color:#526c7e;margin:12px}
+   h1{font-size:42px;margin:18px 0;color:#17354d}.intro{font:18px Arial,sans-serif;margin:4px}.name{font-size:38px;border-bottom:2px solid #bd922e;padding:10px 45px;margin:18px 0}
+   .path{font:bold 23px Arial,sans-serif;color:#156b85;margin:15px}.date{font:16px Arial,sans-serif;margin:20px}
+   .foot{font:12px Arial,sans-serif;color:#526575;margin-top:16px;line-height:1.6}
+   .toolbar{font:14px Arial,sans-serif;text-align:center;padding:12px;background:#edf4f8}
+   .toolbar button{padding:10px 18px;border:0;border-radius:7px;background:#145e79;color:white;font-weight:bold}
+   @media print{body{background:white}.toolbar{display:none}.sheet{min-height:7in}}
+   </style></head><body><div class="toolbar"><button onclick="window.print()">Print / Save as PDF</button></div><section class="sheet"><div class="brand">BOOST</div><div class="subbrand">PINAL COUNTY · CAREER PATHWAYS</div><h1>${title}</h1><div class="intro">This certifies that</div><div class="name">${certEscape(name)}</div><div class="intro">has successfully completed the</div><div class="path">Career Exploration & Development Pathway</div><div class="intro">including career exploration, career decision-making, financial habits, and AI literacy</div><div class="date">Completed ${certEscape(date)}</div><div class="foot">BOOST Pathways · Pinal County<br>Generated from verified participant learning records. This certificate recognizes BOOST pathway learning completion, not a professional credential or Ready 2 Work certification.</div></section></body></html>`);
+  w.document.close();
+ }catch(err){w.document.open();w.document.write('<!doctype html><title>Certificate unavailable</title><div style="font:18px Arial;padding:32px;color:#7a2830">'+certEscape(err?.message||'Certificate verification failed.')+'</div>');w.document.close();}
+ finally{button.disabled=false;}
+}
 function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,chosen);const seq=sequences[chosen],tiles=[...document.querySelectorAll('#stages .stage')];let block=false,history=0,reviews=0,next=null;tiles.forEach((tile,i)=>{const id=seq[i];if(!id)return;const status=state(snapshot,id,block);if(id==='industry'?industryComplete(snapshot)&&mapped(snapshot):hasEvidence(snapshot,id))history++;if(['Review Needed','Waiting for Earlier Review','Locked — Earlier Review Required'].includes(status.label))reviews++;if(!next&&status.block&&status.label!=='Pending Integration')next={id,tile};block ||= status.block;tile.classList.remove('boost2-review','boost2-done','boost2-locked');tile.classList.add(status.cls==='ok'?'boost2-done':status.cls==='warn'?'boost2-review':status.cls==='lock'?'boost2-locked':'boost2-review');let b=tile.querySelector('.boost2-state');if(!b){b=document.createElement('span');b.className='boost2-state';tile.querySelector('.stage-body')?.appendChild(b)}b.className='boost2-state '+status.cls;b.textContent=status.label;tile.dataset.b2status=status.label;
  if(id==='handoff'&&chosen==='explore'){
    let controls=tile.querySelector('.boost2-coach-action');
@@ -655,16 +697,15 @@ function paint(){if(!snapshot||!chosen)return;updatePathwayProgress(snapshot,cho
    btn.addEventListener('click',()=>{const url=new URL('boost-2-coach-conversation-brief.html',location.href);url.searchParams.set('next',location.href);location.assign(url.toString())});
    controls.append(btn);
  }
- if((id==='boostcert'||id==='r2wcert')&&chosen==='explore'){
-   let details=tile.querySelector('.boost2-cert-details');if(!details){details=document.createElement('div');details.className='boost2-cert-details';tile.querySelector('.stage-body')?.append(details)}
+ if(id==='boostcert'&&chosen==='explore'){
+   let details=tile.querySelector('.boost2-cert-details');
+   if(!details){details=document.createElement('div');details.className='boost2-cert-details';tile.querySelector('.stage-body')?.append(details)}
    details.replaceChildren();
-   const text=document.createElement('p');
-   const boostRequired=['module1','module2','module3','module4',...(alignedIndustry(snapshot)?['industry']:[]),'module5','financial','ai'];
-   const boostReady=boostRequired.every(k=>k==='industry'?industryComplete(snapshot):hasEvidence(snapshot,k)&&(!['module2','module3','module4'].includes(k)||fresh(snapshot,k)==='fresh'));
-   const ready2work=['softskills','resume','interview'].every(k=>hasEvidence(snapshot,k));
-   const ready=id==='boostcert'?boostReady:ready2work;
-   text.textContent=ready?'Learning evidence appears complete. Certificate validation and issuance will use the existing certified workflow.':'Certificate will become available after all required '+(id==='boostcert'?'BOOST pathway':'Ready 2 Work')+' experiences are verified.';
-   details.append(text);
+   const ready=boostCareerCertificateReady(snapshot);
+   const message=document.createElement('p');
+   message.textContent=ready?'Your required BOOST learning experiences are complete. Generate a printable certificate verified against your saved cloud journey.':'Complete all required Career Exploration & Development experiences to unlock your BOOST certificate.';
+   details.append(message);
+   if(ready){const btn=document.createElement('button');btn.type='button';btn.className='test-launch';btn.textContent='Generate My BOOST Certificate';btn.addEventListener('click',()=>printBoostCareerCertificate(btn));details.append(btn);}
  }
  const rosieBox=document.getElementById('boost2-rosie-guide');
  if(rosieBox&&chosen==='explore'&&rosiePathwayInteracted){
