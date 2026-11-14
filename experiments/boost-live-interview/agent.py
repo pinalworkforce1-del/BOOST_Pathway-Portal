@@ -30,6 +30,28 @@ PILOT_QUESTIONS = [
 ]
 
 
+# Two occupation pilots. General Employment remains the unchanged default.
+INTERVIEW_PROFILES = {
+    "general": {"label": "General Employment", "questions": PILOT_QUESTIONS},
+    "customer_service": {
+        "label": "Customer Service",
+        "questions": [
+            ("q1", "What interests you about working in customer service, and what past experiences or strengths would help you assist customers?"),
+            ("q2", "Tell me about a time you worked with others to resolve a problem or help someone. What did you contribute, and what happened?"),
+            ("q3", "Imagine a customer is upset while other customers are waiting. How would you respond, prioritize, and know when to involve a supervisor?"),
+        ],
+    },
+    "nursing_assistant": {
+        "label": "Nursing Assistant",
+        "questions": [
+            ("q1", "What interests you about becoming a nursing assistant, and what experiences or strengths would help you support patients respectfully?"),
+            ("q2", "Tell me about a time you worked with a team to support someone who needed help. What did you do, and what was the outcome?"),
+            ("q3", "Imagine you're assisting one patient when another patient asks for help and you notice a possible safety concern. How would you prioritize and when would you get the nurse involved?"),
+        ],
+    },
+}
+
+
 def build_interview_instructions(questions):
     numbered = "\n".join(f"{i}. {q['text']}" for i, q in enumerate(questions, 1))
     return f"""You are Jacqueline, a professional United States English speaking interviewer
@@ -38,7 +60,9 @@ not a real hiring decision.
 Ask the following {len(questions)} required questions in order, one at a time.
 Keep each required question recognizable; do not replace its central meaning.
 {numbered}
-Wait for the participant's response before moving on. Respond to the actual content, not with generic praise. If the answer is brief, vague, ambiguous, or missing a concrete example, ask a natural, specific follow-up and give the participant time to elaborate. Ask up to two concise follow-ups per required question when useful, but never interrogate or repeat a question mechanically. Invite a situation, the participant's actions, and the outcome where relevant. If the participant declines or cannot elaborate, acknowledge that respectfully and move forward. Do not grade or coach during the interview; Nova evaluates quality later.
+Wait for the participant's response before moving on. Respond to the actual content, not with generic praise. If the answer is brief, vague, ambiguous, or missing a concrete example, ask a natural, specific follow-up and give the participant time to elaborate. Ask up to two concise follow-ups per required question when useful, but never interrogate or repeat a question mechanically. Invite a situation, the participant's actions, and the outcome where relevant. If the participant declines or cannot elaborate, acknowledge that respectfully and move forward. Do not grade or coach during the interview; Rosie evaluates the captured transcript afterward.
+For a Nursing Assistant interview, keep scenarios within an entry-level nursing assistant's role: respect patient dignity, seek the supervising nurse for clinical decisions, follow workplace safety procedures, and do not assume the participant has clinical experience or certification.
+For a Customer Service interview, invite transferable experiences without assuming the participant has worked with customers previously. Keep follow-ups concise and make the interview a conversation rather than a lecture.
 Do not invent an answer if the participant refuses or does not respond.
 After all required questions have participant responses, call finish_interview once.
 Never say the participant has passed a real job interview or reveal grades.
@@ -167,7 +191,17 @@ async def interview(ctx: agents.JobContext):
         llm="openai/gpt-4.1-mini",
         tts=f"cartesia/sonic-3:{os.getenv('INTERVIEW_TTS_VOICE_ID', '9626c31c-bec5-4cca-baa8-f8ba9e84c8bc')}",
     )
-    questions = [{"id": qid, "text": wording} for qid, wording in PILOT_QUESTIONS]
+    try:
+        dispatch_metadata = json.loads(ctx.job.metadata or "{}")
+    except (ValueError, TypeError):
+        dispatch_metadata = {}
+    profile_id = dispatch_metadata.get("profile_id", "general") if isinstance(dispatch_metadata, dict) else "general"
+    if profile_id not in INTERVIEW_PROFILES:
+        logger.warning("INTERVIEW_PROFILE unknown profile; falling back to general")
+        profile_id = "general"
+    profile = INTERVIEW_PROFILES[profile_id]
+    logger.info("INTERVIEW_PROFILE selected=%s", profile_id)
+    questions = [{"id": qid, "text": wording} for qid, wording in profile["questions"]]
     transcript_turns = []
     transcript_flush = None
     @session.on("conversation_item_added")
