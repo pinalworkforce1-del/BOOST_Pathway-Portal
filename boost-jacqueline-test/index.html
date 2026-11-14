@@ -117,18 +117,29 @@ document.querySelector('main').appendChild(document.getElementById('feedbackActi
   const readiness=await check.json();
   if(!check.ok)throw Error(readiness.error||'Interview readiness check failed.');
   if(!readiness.livekit_enabled)throw Error('BOOST Jacqueline gateway: '+(readiness.reason||'not ready')+'. Credentials configured: '+String(!!readiness.livekit_credentials_configured)+'. Agent ready: '+String(!!readiness.agent_reported_ready)+'.');
-  const progress=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}');
-  const decisions=progress.sceneSelections||{};
-  const answers=Object.fromEntries(['31','32','33','34','35'].filter(id=>['A','B','C','D'].includes(decisions[id])).map(id=>[id,decisions[id]]));
+  // Ready 2 Work saves progress to Supabase. The interview must not depend on
+  // the browser that originally completed the five Interview Landing decisions.
+  const {data:savedJourney,error:journeyError}=await client.from('boost_ready2work_progress')
+    .select('progress_json').eq('participant_id',user.id).maybeSingle();
+  if(journeyError)throw Error('Unable to verify saved Ready 2 Work progress: '+journeyError.message);
+  const cloudDecisions=savedJourney?.progress_json?.sceneSelections||{};
+  let browserDecisions={};
+  try{browserDecisions=JSON.parse(localStorage.getItem('boost-r2w-integrated-v1')||'{}')?.sceneSelections||{}}catch(_){}
+  // Cloud decisions take precedence; local decisions can supply an unsynced answer
+  // from this browser, but never overwrite an already-saved cloud selection.
+  const decisions={...browserDecisions,...cloudDecisions};
+  const requiredIds=['31','32','33','34','35'];
+  const answers=Object.fromEntries(requiredIds.filter(id=>['A','B','C','D'].includes(decisions[id])).map(id=>[id,decisions[id]]));
   if(Object.keys(answers).length){
     const {error:syncError}=await client.rpc('boost_save_interview_scenarios',{answers});
-    if(syncError)throw Error('Interview scenario cloud save: '+syncError.message);
+    if(syncError)throw Error('Interview scenario cloud synchronization failed: '+syncError.message);
   }
-  const {data:cloud,error:cloudError}=await client.from('boost_interview_scenario_answers').select('scene_id').in('scene_id',[31,32,33,34,35]);
+  const {data:cloud,error:cloudError}=await client.from('boost_interview_scenario_answers')
+    .select('scene_id').eq('participant_id',user.id).in('scene_id',[31,32,33,34,35]);
   if(cloudError)throw Error('Cloud scenario verification: '+cloudError.message);
-  const cloudCount=new Set((cloud||[]).map(row=>row.scene_id)).size;
-  const localCount=Object.keys(answers).length;
-  notice.textContent='BOOST account verified. Interview Landing answers on this browser: '+localCount+' of 5; saved in cloud: '+cloudCount+' of 5. '+(cloudCount<5?'Complete scenarios 31–35 in Ready 2 Work, then return here to sync.':'Ready for a controlled Jacqueline interview.');
+  const cloudCount=new Set((cloud||[]).map(row=>Number(row.scene_id))).size;
+  const savedCount=requiredIds.filter(id=>['A','B','C','D'].includes(cloudDecisions[id])).length;
+  notice.textContent='BOOST account verified. Interview Landing decisions saved in your BOOST journey: '+savedCount+' of 5; verified for Jacqueline: '+cloudCount+' of 5. '+(cloudCount<5?'Finish the five Interview Landing decisions in Ready 2 Work.':'Ready to begin your Jacqueline interview.');
   if(cloudCount===5){
     startButton.disabled=false;
     startButton.onclick=async()=>{
