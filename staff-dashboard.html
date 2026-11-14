@@ -573,6 +573,49 @@ function completionSummary(rows,moduleId){
   const when=latest.completed_at||latest.updated_at;
   return '<div class="completionOk"><strong>Completion verified ✓</strong><span>'+esc(names[moduleId]||label(moduleId))+(when?' completed '+esc(fmt(when)):'')+'. Participant evidence was saved successfully.</span></div>';
 }
+
+function renderJacquelineCoachEvaluation(session){
+ if(!session?.evaluation)return '<p class="notice">No completed Rosie evaluation is available for this participant yet.</p>';
+ const e=session.evaluation,sp=e.speaking_participation||{};
+ const safe=(v)=>esc(v===null||v===undefined?'':String(v));
+ const lines=(arr)=>Array.isArray(arr)&&arr.length?'<ul>'+arr.map(v=>'<li>'+safe(v)+'</li>').join('')+'</ul>':'<p>Not recorded.</p>';
+ const ratio=Number(sp.participant_word_share_percent),jac=Number(sp.interviewer_word_share_percent);
+ const participation=Number.isFinite(ratio)&&Number.isFinite(jac)?
+  '<p><b>Participant:</b> '+ratio.toFixed(1)+'% ('+safe(sp.participant_word_count)+' words) · <b>Jacqueline:</b> '+jac.toFixed(1)+'% ('+safe(sp.interviewer_word_count)+' words) · <b>Target:</b> 80/20</p><p class="notice">This is the share of transcript words, not measured audio time. Both answer length and Jacqueline’s questions influence the result; it is not a pass/fail score.</p>':
+  '<p class="notice">Speaking-share calculation unavailable for this interview.</p>';
+ const answers=Array.isArray(e.question_feedback)?e.question_feedback:[];
+ const questions=answers.map((a,i)=>'<article class="evidenceCard" style="margin:12px 0"><h4>Question '+(i+1)+(Number.isInteger(a.score)?' · '+safe(a.score)+'/5':'')+'</h4>'+
+  '<p><b>Strengths:</b></p>'+lines(a.strengths)+
+  '<p><b>Development opportunity:</b> '+safe(a.development||'Not recorded')+'</p>'+
+  (a.practice_prompt?'<p><b>Practice prompt:</b> '+safe(a.practice_prompt)+'</p>':'')+
+  (Array.isArray(a.competencies)&&a.competencies.length?'<p><b>Demonstrated skills:</b> '+a.competencies.map(safe).join(' · ')+'</p>':'')+'</article>').join('');
+ const turns=Array.isArray(session.transcript)?session.transcript:[];
+ const transcript=turns.length?'<details><summary>Review saved interview transcript ('+turns.length+' turns)</summary><div style="max-height:380px;overflow:auto;padding:10px">'+
+  turns.map(t=>'<p><b>'+safe(t.role==='user'?'Participant':t.role==='assistant'?'Jacqueline':'Unknown')+':</b> '+safe(t.text)+'</p>').join('')+'</div></details>':'<p>Transcript not available.</p>';
+ return '<p><b>Interview status:</b> '+safe(session.status)+' · <b>Evaluated:</b> '+safe(e.evaluated_at?fmt(e.evaluated_at):'Date unavailable')+
+  (Number.isFinite(Number(e.average_question_score))?' · <b>Answer-quality indicator:</b> '+Number(e.average_question_score).toFixed(1)+'/5':'')+'</p>'+
+  '<h4>80/20 Interview Participation</h4>'+participation+
+  '<h4>Rosie’s Evidence-Based Summary</h4><p>'+safe(e.summary)+'</p>'+
+  '<h4>Demonstrated Strengths</h4>'+lines(e.strengths)+
+  '<h4>Development Priorities</h4>'+lines(e.development_priorities)+
+  '<h4>Question-Level Analysis</h4>'+(questions||'<p>Question breakdown not available.</p>')+
+  '<h4>Recommended Practice</h4>'+lines(e.next_steps)+
+  '<h4>Coach-Only Observations</h4><p>'+safe(e.coach_notes||'No additional notes recorded.')+'</p>'+
+  '<p class="notice">Developmental practice feedback only; not a hiring determination or standardized employment assessment.</p>'+transcript;
+}
+async function loadJacquelineCoachEvaluation(journeyId){
+ const target=document.getElementById('jacquelineCoachReport');
+ if(!target||target.dataset.journey!==String(journeyId))return;
+ try{
+  const d=await report(journeyId);
+  const el=document.getElementById('jacquelineCoachReport');
+  if(!el||el.dataset.journey!==String(journeyId))return;
+  el.innerHTML=renderJacquelineCoachEvaluation(d.jacqueline_interview);
+ }catch(error){
+  const el=document.getElementById('jacquelineCoachReport');
+  if(el&&el.dataset.journey===String(journeyId))el.textContent='Could not load Rosie interview evaluation: '+(error?.message||'Unknown error');
+ }
+}
 function openReady2Work(id){
  const r=records.find(x=>String(x.journey_id)===String(id));if(!r)return;
  const p=r.ready2work;if(!p)return;
@@ -592,9 +635,10 @@ function openReady2Work(id){
  html+=section('Six Employability Competencies','<p class="notice"><b>How to read these results:</b> Scores show points earned out of the maximum possible for each competency across 22 scenarios. <b>Advanced:</b> 85–100%; <b>Strong:</b> 68–84%; <b>Demonstrated:</b> 48–67%; <b>Developing:</b> below 48%. These are learning indicators, not standardized employment assessments.</p><table class="r2wTable"><thead><tr><th>Competency</th><th>Evidence score</th><th>Mastery level</th></tr></thead><tbody>'+skills+'</tbody></table>');
  html+=section('Scenario Evidence','<p>'+Object.keys(p.scenario_answers||{}).length+' saved decision selections. <span class="notice">Scenario choices are evidence, not a standalone interview score.</span></p>');
  html+=section('Résumé Studio',p.resume_complete?'<p><b>Target:</b> '+x(resume.target)+'</p><p><b>Summary:</b> '+x(resume.summary)+'</p><p><b>Skills:</b> '+x(resume.skills)+'</p><p><b>Education:</b> '+x(resume.education)+'</p>'+experiences.map(e=>'<p><b>'+x([e.role,e.employer].filter(Boolean).join(' — '))+'</b> '+x([e.startDate,e.endDate].filter(Boolean).join(' to '))+'<br>'+x((e.bullets||[]).join('; ')||e.evidence)+'</p>').join(''):'<p>Résumé not yet verified complete.</p>');
- html+=section('Jacqueline Mock Interview','<p>'+ (p.interview_complete?'Verified interview completion is recorded.':'Interview not yet verified complete.')+'</p><p class="notice">Detailed question feedback will follow in the interview report integration.</p>');
+ html+=section('Jacqueline Mock Interview','<p>'+ (p.interview_complete?'Verified interview completion is recorded.':'Interview not yet verified complete.')+'</p><div id="jacquelineCoachReport" data-journey="'+esc(id)+'" class="notice">Loading Rosie’s saved evaluation and interview evidence…</div>');
  html+=section('Certificate','<p>'+(p.certificate_earned?'BOOST Work Ready Certificate earned.':'Certificate not yet earned.')+'</p>');
  $('drawerBody').innerHTML=html;$('drawerBack').classList.add('show');
+ void loadJacquelineCoachEvaluation(id);
 }
 async function coachHandoffView(r,id){
  const d=await report(r.journey_id),j=d.journey||{},m=j.modules||{},p=m.coachAppointmentPrep;
