@@ -379,7 +379,7 @@ if(key==='explore'||key==='rapid'||item[0]==='Ready 2 Work'){
       }
     }
   } else {
-    if(!['Optional Industry Exploration','Coach Preparation'].includes(item[0])){const notice=document.createElement('div');notice.className='pending-wire';notice.textContent='Available later in your BOOST journey';body.append(notice);}
+    if(!['Optional Industry Exploration','Coach Preparation','BOOST Completion Certificate'].includes(item[0])){const notice=document.createElement('div');notice.className='pending-wire';notice.textContent='Available later in your BOOST journey';body.append(notice);}
   }
   el.append(bg,body);tiles.append(el);
  });
