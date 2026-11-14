@@ -153,6 +153,22 @@ async function acceptCompletionReceipt(client,region){
  const now=new Date().toISOString();
  // A completion receipt must persist the full module evidence, not only the progress marker.
  // Keep the receipt retryable until the guarded versioned cloud write confirms success.
+ if(id==='financial'){
+   // Financial Habits must be committed to the versioned cloud journey before
+   // the receipt is acknowledged or the local journey is replaced by cloud load.
+   let saved=false;
+   for(let attempt=0;attempt<3&&!saved;attempt++){
+     const loaded=await client.rpc('boost_pinal_load_versioned');
+     if(loaded.error||!loaded.data||loaded.data.revision===undefined)return 'Financial Habits cloud load failed. Your local snapshot is preserved; please retry the return.';
+     const remote=loaded.data.journey&&typeof loaded.data.journey==='object'?loaded.data.journey:{};
+     const merged={...remote,modules:{...(remote.modules||{}),financial:payload},progress:{...(remote.progress||{}),financial:'complete'},updated_at:now};
+     const result=await client.rpc('boost_pinal_save_if_revision',{p_journey:merged,p_revision:loaded.data.revision});
+     if(result.error)return 'Financial Habits cloud save failed: '+result.error.message;
+     if(result.data?.saved){saved=result.data.journey?.progress?.financial==='complete'&&!!result.data.journey?.modules?.financial?.completedAt;}
+     else if(result.data?.reason!=='revision_changed')return 'Financial Habits cloud save rejected: '+(result.data?.reason||'unknown reason');
+   }
+   if(!saved)return 'Financial Habits cloud confirmation pending. Your snapshot is preserved; please retry the return.';
+ }
  if(id==='skillmobility'||id==='jobsearch'){
    try{
      const saved=await window.PinalBOOSTCloud?.saveRapidEvidence?.(id,payload,client);
