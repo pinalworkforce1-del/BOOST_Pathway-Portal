@@ -17,7 +17,7 @@ from difflib import SequenceMatcher
 logger = logging.getLogger('livekit.agents.interview_completion')
 
 from livekit import agents, api
-from livekit.agents import AgentServer, AgentSession, Agent
+from livekit.agents import AgentServer, AgentSession, Agent, room_io
 from livekit.plugins import synthesia
 
 AVATAR_ID = os.getenv("SYNTHESIA_INTERACTIVE_AVATAR_ID", "fdec2525-6f4c-4544-87c6-abb3e47a12b4")
@@ -274,7 +274,8 @@ async def interview(ctx: agents.JobContext):
 
     async def close_after_goodbye():
         # The transcript listener, not the model, owns shutdown. Queue the complete
-        # closing audio before draining; do not inject any audible tool marker.
+        # closing audio before draining; room_options deletes the room after session
+        # shutdown finishes, so the participant disconnects without cutting off audio.
         await asyncio.sleep(0.5)
         if not interviewer._finished:
             interviewer._finished = True
@@ -307,7 +308,11 @@ async def interview(ctx: agents.JobContext):
         join_timeout=60.0,
     )
     await avatar.start(session, room=ctx.room)
-    await session.start(room=ctx.room, agent=interviewer)
+    await session.start(
+        room=ctx.room,
+        agent=interviewer,
+        room_options=room_io.RoomOptions(delete_room_on_close=True),
+    )
     # Give the browser a short window to enable microphone/audio before the greeting.
     await asyncio.sleep(3)
     await session.generate_reply(instructions="Introduce yourself only as Jacqueline, the AI practice interviewer. Do not pronounce or mention BOOST or Interview Landing. Welcome the participant naturally and ask the first interview question.")
