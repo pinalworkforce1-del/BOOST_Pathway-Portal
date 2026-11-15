@@ -253,19 +253,53 @@ async def interview(ctx: agents.JobContext):
     questions = [{"id": qid, "text": wording} for qid, wording in profile["questions"]]
     transcript_turns = []
     transcript_flush = None
+    closing_queued = False
+    interviewer = PracticeInterviewer(ctx.room.name, questions, transcript_turns)
+
     @session.on("conversation_item_added")
     def capture_turn(event):
+        nonlocal transcript_flush, closing_queued
         item = event.item
         if getattr(item, "role", None) not in ("user", "assistant"):
             return
         content = getattr(item, "text_content", None) or ""
-        if content.strip():
-            transcript_turns.append({"role": item.role, "text": content[:5000]})
-            logger.info("INTERVIEW_TRANSCRIPT captured role=%s total=%d", item.role, len(transcript_turns))
-            nonlocal transcript_flush
-            if transcript_flush and not transcript_flush.done():
-                transcript_flush.cancel()
-            transcript_flush = asyncio.create_task(flush_when_quiet())
+        if not content.strip():
+            return
+        transcript_turns.append({"role": item.role, "text": content[:5000]})
+        logger.info("INTERVIEW_TRANSCRIPT captured role=%s total=%d", item.role, len(transcript_turns))
+        if transcript_flush and not transcript_flush.done():
+            transcript_flush.cancel()
+        transcript_flush = asyncio.create_task(flush_when_quiet())
+
+        # An LLM may announce the interview has ended without invoking its finish tool.
+        # Close only after all three substantive answers and an explicit final goodbye.
+        # shutdown(drain=True) retains the entire final utterance in the audio queue.
+        if item.role == "assistant" and not closing_queued and not interviewer._finished:
+            normalized = content.lower().replace("’", "'")
+            farewell_phrases = (
+                "that completes the set of questions",
+                "that concludes the interview",
+                "this concludes the interview",
+                "i'm going to end the interview",
+                "i'll end the interview",
+                "we've reached the end of the interview",
+            )
+            if any(phrase in normalized for phrase in farewell_phrases):
+                answered = extract_question_answers(transcript_turns, questions)
+                if len(answered) == len(questions):
+                    closing_queued = True
+                    logger.info("INTERVIEW_COMPLETION graceful closure after spoken goodbye")
+                    asyncio.create_task(close_after_goodbye())
+                else:
+                    logger.warning("INTERVIEW_COMPLETION goodbye deferred: %d/%d answers", len(answered), len(questions))
+
+    async def close_after_goodbye():
+        # Give the current turn a moment to queue its speech, then drain that
+        # speech rather than forcing room deletion on a fixed short timer.
+        await asyncio.sleep(0.5)
+        if not interviewer._finished:
+            interviewer._finished = True
+            session.shutdown(drain=True)
 
     async def upload_transcript():
         if not transcript_turns:
@@ -294,7 +328,7 @@ async def interview(ctx: agents.JobContext):
         join_timeout=60.0,
     )
     await avatar.start(session, room=ctx.room)
-    await session.start(room=ctx.room, agent=PracticeInterviewer(ctx.room.name, questions, transcript_turns))
+    await session.start(room=ctx.room, agent=interviewer)
     # Give the browser a short window to enable microphone/audio before the greeting.
     await asyncio.sleep(3)
     await session.generate_reply(instructions="Introduce yourself only as Jacqueline, the AI practice interviewer. Do not pronounce or mention BOOST or Interview Landing. Welcome the participant naturally and ask the first interview question.")
