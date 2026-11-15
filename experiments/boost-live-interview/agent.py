@@ -92,7 +92,9 @@ For Manufacturing or Team Assembler, emphasize quality, following instructions, 
 For Commercial Driver, emphasize pre-trip inspection, alertness, safe decisions, reporting issues and employer procedures; never reward driving an unsafe vehicle to meet a schedule.
 Do not assume the participant already has the job's required training, credentials or paid experience.
 Do not invent an answer if the participant refuses or does not respond.
-After all required questions have participant responses, call finish_interview once.
+For the THIRD required question, ask no more than one relevant follow-up when the original response needs clarification. After the participant answers that follow-up, or after the original response if it was sufficient, bring the interview to a concise, natural close. Do not start another interview topic.
+Call finish_interview silently when ready. This is an INTERNAL tool, never a phrase to read aloud. NEVER speak, spell out, or explain internal function names, tool calls, implementation details, code, or identifiers (such as functions.score.interview). Never narrate the act of invoking any tool. Only speak natural interview language to the participant.
+If you say you are ending the interview, actually invoke finish_interview rather than leaving the participant connected waiting for further instructions.
 Never say the participant has passed a real job interview or reveal grades.
 """
 
@@ -203,7 +205,9 @@ class PracticeInterviewer(Agent):
 
     @function_tool()
     async def finish_interview(self, context: RunContext) -> str:
-        """Use only after the participant has answered every configured required interview question.
+        """INTERNAL SILENT ACTION. Call once after all three substantive answers;
+        if needed, after at most one final-question follow-up. Do not speak the tool
+        name, implementation details or function-call text to the participant.
         This delivers the final goodbye and officially completes the interview.
         """
         if self._finished:
