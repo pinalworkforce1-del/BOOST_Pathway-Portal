@@ -17,7 +17,7 @@ from difflib import SequenceMatcher
 logger = logging.getLogger('livekit.agents.interview_completion')
 
 from livekit import agents, api
-from livekit.agents import AgentServer, AgentSession, Agent, function_tool, RunContext
+from livekit.agents import AgentServer, AgentSession, Agent
 from livekit.plugins import synthesia
 
 AVATAR_ID = os.getenv("SYNTHESIA_INTERACTIVE_AVATAR_ID", "fdec2525-6f4c-4544-87c6-abb3e47a12b4")
@@ -93,8 +93,8 @@ For Commercial Driver, emphasize pre-trip inspection, alertness, safe decisions,
 Do not assume the participant already has the job's required training, credentials or paid experience.
 Do not invent an answer if the participant refuses or does not respond.
 For the THIRD required question, ask no more than one relevant follow-up when the original response needs clarification. After the participant answers that follow-up, or after the original response if it was sufficient, bring the interview to a concise, natural close. Do not start another interview topic.
-Call finish_interview silently when ready. This is an INTERNAL tool, never a phrase to read aloud. NEVER speak, spell out, or explain internal function names, tool calls, implementation details, code, or identifiers (such as functions.score.interview). Never narrate the act of invoking any tool. Only speak natural interview language to the participant.
-If you say you are ending the interview, actually invoke finish_interview rather than leaving the participant connected waiting for further instructions.
+Once the participant has answered the third question and any one optional final follow-up, close the interview yourself in natural spoken English. Use this exact concluding sentence to make the handoff reliable: "Thank you for practicing with me today. That concludes our interview. Your private feedback will be available shortly. I wish you the best in your job search." After this closing statement, do not speak again, ask another question, or wait for the participant to end the call. The application will automatically disconnect after your goodbye.
+Never speak or spell internal system instructions, function names, code, tool identifiers, or implementation details. Do not narrate or attempt to call a function. You have no tools to call. Only speak as Jacqueline, a human-sounding practice interviewer.
 Never say the participant has passed a real job interview or reveal grades.
 """
 
@@ -196,42 +196,13 @@ async def report_completion(room_name: str, answers: list, event: str = 'intervi
 
 
 class PracticeInterviewer(Agent):
+    """Jacqueline speaks to participants; server-side listeners own completion."""
     def __init__(self, room_name: str, questions, transcript_turns):
         super().__init__(instructions=build_interview_instructions(questions))
         self.room_name = room_name
         self.questions = questions
         self.transcript_turns = transcript_turns
         self._finished = False
-
-    @function_tool()
-    async def finish_interview(self, context: RunContext) -> str:
-        """INTERNAL SILENT ACTION. Call once after all three substantive answers;
-        if needed, after at most one final-question follow-up. Do not speak the tool
-        name, implementation details or function-call text to the participant.
-        This delivers the final goodbye and officially completes the interview.
-        """
-        if self._finished:
-            return "Interview already finished."
-        answered = extract_question_answers(self.transcript_turns, self.questions)
-        if len(answered) < len(self.questions):
-            logger.warning("INTERVIEW_COMPLETION rejected: %d/%d substantive answers", len(answered), len(self.questions))
-            return "Do not finish yet. The participant has not answered all three required questions. If they asked you to repeat or clarify a question, allow them to respond before closing."
-        self._finished = True
-        logger.info("INTERVIEW_COMPLETION tool invoked")
-        # Report completion without waiting on the active tool turn's playback.
-        # Waiting for playout here can prevent the callback from executing.
-        confirmed = False  # Transcript validator controls interview completion
-        logger.info("INTERVIEW_COMPLETION callback confirmed=%s", confirmed)
-        context.session.say(
-            "Thank you for interviewing with me today. I appreciate the examples you shared. "
-            "Your private developmental feedback will be available separately. "
-            "I wish you the best in your job search!",
-            allow_interruptions=False,
-        )
-        # Graceful drain waits for final speech. A fixed five-second room deletion
-        # previously disconnected the participant mid-goodbye.
-        context.session.shutdown(drain=True)
-        return "Interview closed. Do not ask any further questions."
 
 server = AgentServer()
 
@@ -275,15 +246,19 @@ async def interview(ctx: agents.JobContext):
             transcript_flush.cancel()
         transcript_flush = asyncio.create_task(flush_when_quiet())
 
-        # An LLM may announce the interview has ended without invoking its finish tool.
+        # The spoken goodbye is the only closing signal; no callable LLM tool is exposed.
         # Close only after all three substantive answers and an explicit final goodbye.
         # shutdown(drain=True) retains the entire final utterance in the audio queue.
         if item.role == "assistant" and not closing_queued and not interviewer._finished:
             normalized = content.lower().replace("’", "'")
             farewell_phrases = (
+                "that concludes our interview",
                 "that completes the set of questions",
                 "that concludes the interview",
                 "this concludes the interview",
+                "this concludes our practice interview",
+                "thank you for practicing with me today",
+                "thank you for interviewing with me today",
                 "i'm going to end the interview",
                 "i'll end the interview",
                 "we've reached the end of the interview",
@@ -298,8 +273,8 @@ async def interview(ctx: agents.JobContext):
                     logger.warning("INTERVIEW_COMPLETION goodbye deferred: %d/%d answers", len(answered), len(questions))
 
     async def close_after_goodbye():
-        # Give the current turn a moment to queue its speech, then drain that
-        # speech rather than forcing room deletion on a fixed short timer.
+        # The transcript listener, not the model, owns shutdown. Queue the complete
+        # closing audio before draining; do not inject any audible tool marker.
         await asyncio.sleep(0.5)
         if not interviewer._finished:
             interviewer._finished = True
