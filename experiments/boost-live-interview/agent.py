@@ -114,20 +114,25 @@ def question_match(spoken, expected):
 
 
 def is_clarification_only(response: str) -> bool:
-    """A request to repeat/clarify a question must not count as an interview answer."""
+    """A request for repetition alone must not satisfy a required interview answer."""
     spoken = " ".join(response.lower().split())
     if len(spoken) > 250:
         return False
     repeats = (
-        r"\\b(?:can|could|would)\\s+(?:can\\s+)?you\\s+(?:please\\s+)?(?:repeat|rephrase|clarify|say)\\b",
-        r"\\b(?:repeat|rephrase|say)\\s+(?:that|it|the question)\\s+(?:again|please)\\b",
-        r"\\bwhat\\s+(?:was|is)\\s+the\\s+question\\b",
-        r"\\b(?:i\\s+)?(?:didn't|did not|couldn't|could not)\\s+(?:hear|catch|understand)\\b",
+        "can you repeat", "could you repeat", "would you repeat",
+        "can you say that again", "could you say that again",
+        "please repeat", "repeat that", "repeat the question",
+        "can you rephrase", "could you rephrase", "can you clarify",
+        "what was the question", "what is the question",
+        "didn't hear", "did not hear", "couldn't hear", "didn't catch",
     )
-    if not any(re.search(p.replace(r"\\", r"\"), spoken) for p in repeats):
+    if not any(phrase in spoken for phrase in repeats):
         return False
-    # Do not reject someone who asks for clarification but also offers a real response.
-    return not re.search(r"\\b(?:i\\s+would|i'd|my\\s+first\\s+step|first\\s+i|i\\s+will|i\\s+would\\s+ask|i\\s+would\\s+call)\\b".replace(r"\\", r"\"), spoken)
+    # Asking for clarification plus a substantive response is still an answer.
+    substantive_starts = ("i would ", "i'd ", "i will ", "my first step ",
+                          "first i ", "i would ask ", "i would call ")
+    return not any(phrase in spoken for phrase in substantive_starts)
+
 
 def extract_question_answers(turns, questions):
     """Only attribute verbatim participant turns to questions; never manufacture evidence."""
