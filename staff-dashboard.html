@@ -625,6 +625,12 @@ function renderJacquelineCoachEvaluation(session){
   '<p><b>Development opportunity:</b> '+safe(a.development||'Not recorded')+'</p>'+
   (a.practice_prompt?'<p><b>Practice prompt:</b> '+safe(a.practice_prompt)+'</p>':'')+
   (Array.isArray(a.competencies)&&a.competencies.length?'<p><b>Demonstrated skills:</b> '+a.competencies.map(safe).join(' · ')+'</p>':'')+'</article>').join('');
+ const followups=Array.isArray(e.followup_feedback)?e.followup_feedback:[];
+ const followupCards=followups.map((a,i)=>'<article class="evidenceCard" style="margin:12px 0"><h4>Follow-up '+(i+1)+' · '+safe(String(a.parent_question_id||'').toUpperCase())+(Number.isInteger(a.score)?' · '+safe(a.score)+'/5':'')+'</h4>'+
+  '<p><b>Jacqueline asked:</b> '+safe(a.question_text||'')+'</p>'+
+  '<p><b>Strengths:</b></p>'+lines(a.strengths)+
+  '<p><b>Development opportunity:</b> '+safe(a.development||'Not recorded')+'</p>'+
+  (a.practice_prompt?'<p><b>Practice prompt:</b> '+safe(a.practice_prompt)+'</p>':'')+'</article>').join('');
  const turns=Array.isArray(session.transcript)?session.transcript:[];
  const transcript=turns.length?'<details><summary>Review saved interview transcript ('+turns.length+' turns)</summary><div style="max-height:380px;overflow:auto;padding:10px">'+
   turns.map(t=>'<p><b>'+safe(t.role==='user'?'Participant':t.role==='assistant'?'Jacqueline':'Unknown')+':</b> '+safe(t.text)+'</p>').join('')+'</div></details>':'<p>Transcript not available.</p>';
@@ -635,6 +641,7 @@ function renderJacquelineCoachEvaluation(session){
   '<h4>Demonstrated Strengths</h4>'+lines(e.strengths)+
   '<h4>Development Priorities</h4>'+lines(e.development_priorities)+
   '<h4>Question-Level Analysis</h4>'+(questions||'<p>Question breakdown not available.</p>')+
+  (followups.length?'<h4>Follow-up Question Analysis ('+followups.length+')</h4><p class="notice">Additional coaching recovered from the saved transcript; original three topic scores preserved.</p>'+followupCards:'')+
   '<h4>Recommended Practice</h4>'+lines(e.next_steps)+
   '<h4>Coach-Only Observations</h4><p>'+safe(e.coach_notes||'No additional notes recorded.')+'</p>'+
   '<p class="notice">Developmental practice feedback only; not a hiring determination or standardized employment assessment.</p>'+transcript;
