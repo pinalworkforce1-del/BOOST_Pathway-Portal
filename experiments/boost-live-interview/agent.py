@@ -112,6 +112,23 @@ def question_match(spoken, expected):
     return overlap >= 0.72 and (SequenceMatcher(None, sa, sb).ratio() >= 0.32 or len(a) >= len(b))
 
 
+
+def is_clarification_only(response: str) -> bool:
+    """A request to repeat/clarify a question must not count as an interview answer."""
+    spoken = " ".join(response.lower().split())
+    if len(spoken) > 250:
+        return False
+    repeats = (
+        r"\\b(?:can|could|would)\\s+(?:can\\s+)?you\\s+(?:please\\s+)?(?:repeat|rephrase|clarify|say)\\b",
+        r"\\b(?:repeat|rephrase|say)\\s+(?:that|it|the question)\\s+(?:again|please)\\b",
+        r"\\bwhat\\s+(?:was|is)\\s+the\\s+question\\b",
+        r"\\b(?:i\\s+)?(?:didn't|did not|couldn't|could not)\\s+(?:hear|catch|understand)\\b",
+    )
+    if not any(re.search(p.replace(r"\\", r"\"), spoken) for p in repeats):
+        return False
+    # Do not reject someone who asks for clarification but also offers a real response.
+    return not re.search(r"\\b(?:i\\s+would|i'd|my\\s+first\\s+step|first\\s+i|i\\s+will|i\\s+would\\s+ask|i\\s+would\\s+call)\\b".replace(r"\\", r"\"), spoken)
+
 def extract_question_answers(turns, questions):
     """Only attribute verbatim participant turns to questions; never manufacture evidence."""
     answers = []
@@ -126,7 +143,8 @@ def extract_question_answers(turns, questions):
                            if next_question_text and turns[i]["role"] == "assistant"
                            and question_match(turns[i]["text"], next_question_text)), len(turns))
         replies = [x["text"].strip() for x in turns[first+1:next_index]
-                   if x["role"] == "user" and len(x["text"].strip()) >= 3]
+                   if x["role"] == "user" and len(x["text"].strip()) >= 12
+                   and not is_clarification_only(x["text"])]
         if not replies:
             break
         # Supabase validates each extracted answer against a captured participant turn.
@@ -171,11 +189,12 @@ async def report_completion(room_name: str, answers: list, event: str = 'intervi
 
 
 class PracticeInterviewer(Agent):
-    def __init__(self, room_name: str, questions):
+    def __init__(self, room_name: str, questions, transcript_turns):
         super().__init__(instructions=build_interview_instructions(questions))
         self.room_name = room_name
+        self.questions = questions
+        self.transcript_turns = transcript_turns
         self._finished = False
-        self._answers = {}
 
     @function_tool()
     async def finish_interview(self, context: RunContext) -> str:
@@ -184,6 +203,10 @@ class PracticeInterviewer(Agent):
         """
         if self._finished:
             return "Interview already finished."
+        answered = extract_question_answers(self.transcript_turns, self.questions)
+        if len(answered) < len(self.questions):
+            logger.warning("INTERVIEW_COMPLETION rejected: %d/%d substantive answers", len(answered), len(self.questions))
+            return "Do not finish yet. The participant has not answered all three required questions. If they asked you to repeat or clarify a question, allow them to respond before closing."
         self._finished = True
         logger.info("INTERVIEW_COMPLETION tool invoked")
         # Report completion without waiting on the active tool turn's playback.
@@ -196,16 +219,9 @@ class PracticeInterviewer(Agent):
             "I wish you the best in your job search!",
             allow_interruptions=False,
         )
-        # Drain queued goodbye speech and prevent a second model response.
+        # Graceful drain waits for final speech. A fixed five-second room deletion
+        # previously disconnected the participant mid-goodbye.
         context.session.shutdown(drain=True)
-        async def close_room():
-            await asyncio.sleep(5)
-            try:
-                async with api.LiveKitAPI() as lk:
-                    await lk.room.delete_room(api.DeleteRoomRequest(room=self.room_name))
-            except Exception as exc:
-                print("Interview room close failed:", type(exc).__name__)
-        asyncio.create_task(close_room())
         return "Interview closed. Do not ask any further questions."
 
 server = AgentServer()
@@ -273,7 +289,7 @@ async def interview(ctx: agents.JobContext):
         join_timeout=60.0,
     )
     await avatar.start(session, room=ctx.room)
-    await session.start(room=ctx.room, agent=PracticeInterviewer(ctx.room.name, questions))
+    await session.start(room=ctx.room, agent=PracticeInterviewer(ctx.room.name, questions, transcript_turns))
     # Give the browser a short window to enable microphone/audio before the greeting.
     await asyncio.sleep(3)
     await session.generate_reply(instructions="Introduce yourself only as Jacqueline, the AI practice interviewer. Do not pronounce or mention BOOST or Interview Landing. Welcome the participant naturally and ask the first interview question.")
