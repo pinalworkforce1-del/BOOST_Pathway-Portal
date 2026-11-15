@@ -22,7 +22,7 @@ from livekit.plugins import synthesia
 
 AVATAR_ID = os.getenv("SYNTHESIA_INTERACTIVE_AVATAR_ID", "fdec2525-6f4c-4544-87c6-abb3e47a12b4")
 AGENT_NAME = "boost-jacqueline-interview"
-MAX_INTERVIEW_SECONDS = 480
+MAX_INTERVIEW_SECONDS = 720
 PILOT_QUESTIONS = [
     ("q1", "What interests you about this position and what experience would help you succeed?"),
     ("q2", "What workplace responsibilities have best prepared you to work with a team?"),
