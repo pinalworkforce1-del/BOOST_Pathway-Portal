@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BOOST 2.0 | Shared Tools Readiness</title>
+<style>body{margin:0;background:#071c2b;color:#e6f3fb;font:16px/1.5 system-ui,sans-serif}main{max-width:850px;margin:auto;padding:34px 18px}.panel{background:#14354a;border:1px solid #3d7794;padding:20px;border-radius:16px;margin:16px 0}h1{margin:0}.muted{color:#bdd1dd}.state{margin-top:12px;white-space:pre-line}button,a.link{background:#f0c36e;color:#152e42;border:0;border-radius:9px;padding:10px 15px;font:inherit;font-weight:750;cursor:pointer}a{color:#7bdaff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.disabled{opacity:.65}@media(max-width:650px){.grid{grid-template-columns:1fr}}</style></head><body><main>
+<p class="muted">BOOST 2.0 · Development-branch diagnostic · READ ONLY</p><h1>Ready 2 Work shared tools</h1>
+<p>This page checks your existing BOOST sign-in and module evidence. It does not launch Level Up, issue interview tokens, write results, or award completion.</p>
+<div class="panel"><button id="check" type="button">Check My BOOST Readiness</button><div id="status" class="state" role="status">Not checked.</div></div>
+<div class="grid"><section class="panel disabled"><h2>Résumé Builder</h2><p>Shared Level Up interface identified. BOOST cloud save adapter pending.</p><button disabled>Launch disabled until verified</button></section><section class="panel disabled"><h2>Jacqueline Interview</h2><p>LiveKit service identified. BOOST-authorized token, transcript and evaluation path pending.</p><button disabled>Launch disabled until verified</button></section></div>
+<p><a href="boost-2-certificates-rosie-staging.html">← Return to BOOST 2.0 staging</a></p>
+</main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.115.0"></script><script src="assets/js/boost-config.js?v=20260908f"></script><script>
+const out=document.getElementById('status'),btn=document.getElementById('check');
+btn.addEventListener('click',async()=>{btn.disabled=true;out.textContent='Checking authenticated BOOST evidence…';
+try{const config=window.BOOST_CONFIG;if(!config?.supabaseUrl||!window.supabase?.createClient)throw Error('BOOST client configuration unavailable.');
+const client=window.supabase.createClient(config.supabaseUrl,config.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const {data:{user},error:authError}=await client.auth.getUser();if(authError||!user)throw Error('BOOST sign-in required. Open the authenticated BOOST portal first.');
+const {data,error}=await client.from('boost_module_progress').select('module_id,status,completed_at').eq('region',config.region).in('module_id',['module5','financial','ai','ready2work-soft-skills','ready2work-resume-builder','ready2work-live-interview']);
+if(error)throw Error('BOOST progress could not be read: '+error.message);
+const byId=Object.fromEntries((data||[]).map(x=>[x.module_id,x]));
+const status=id=>byId[id]?.status==='completed'?'Completed':byId[id]?.status||'No cloud completion recorded';
+const prerequisites=['module5','financial','ai'];const eligible=prerequisites.every(id=>status(id)==='Completed');
+out.textContent='Authenticated BOOST account confirmed.\nModule 5: '+status('module5')+'\nFinancial Habits: '+status('financial')+'\nAI & You: '+status('ai')+'\nPrerequisite evidence: '+(eligible?'All three module records present':'Not all three completed in BOOST progress')+'\n\nNote: Coach appointment, enrollment and scenario-specific completion require separate verified checks. This page never unlocks or writes results.';
+}catch(e){out.textContent='Read-only check unavailable: '+e.message}finally{btn.disabled=false}});
+</script></body></html>
