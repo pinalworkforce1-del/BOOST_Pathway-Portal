@@ -6,12 +6,6 @@ window.PINAL_BOOST_CONFIG = Object.freeze({
 });
 
 (()=>{
-  if(/staff-dashboard\.html$/i.test(location.pathname)){
-    const s=document.createElement('script');
-    s.src='assets/js/talentsync-coach.js?v=2';
-    s.defer=true;
-    document.head.appendChild(s);
-  }
   if(/talentsync\.html$/i.test(location.pathname)){
     window.addEventListener('DOMContentLoaded',()=>{
       const tabs=document.querySelector('.view-tabs');
