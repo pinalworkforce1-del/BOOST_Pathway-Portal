@@ -914,11 +914,17 @@ async function downloadSummary(id){
 function boostCredNormalize(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
 function boostCredMessage(s,bad=false){const x=$('boostCredMessage');x.textContent=s;x.className='credMsg '+(bad?'error':'success')}
 function boostCredClear(){for(const id of ['boostCredCode','boostCredConfirm']){$(id).value='';$(id).type='password'}$('boostCredShow').checked=false}
-function boostCredPopulate(){
+async function boostCredPopulate(){
  const panel=$('boostCredentialAdmin');if(me!=='aamoon@eckerd.org'){panel.classList.add('hidden');return}
- panel.classList.remove('hidden');const select=$('boostCredStaff'),prev=select.value;select.replaceChildren(new Option('Choose staff member',''));
- const seen=new Set();for(const a of staffList){const email=String(a.email||'').toLowerCase();if(!email||seen.has(email))continue;seen.add(email);select.add(new Option((a.display_name||email)+' — '+email,email))}
- select.value=prev;
+ panel.classList.remove('hidden');const select=$('boostCredStaff'),prev=select.value;select.replaceChildren(new Option('Loading BOOST staff…',''));
+ try{
+  const result=await api('admin_list_staff_for_credentials'),seen=new Set();
+  select.replaceChildren(new Option('Choose staff member',''));
+  for(const a of result.staff||[]){const email=String(a.email||'').toLowerCase();if(!email||seen.has(email))continue;seen.add(email);
+   const access=[a.can_pinal?'Pinal':null,a.can_northern?'Northern':null].filter(Boolean).join(' + ')||'No area';
+   select.add(new Option((a.display_name||email)+' — '+email+' ('+access+')',email))}
+  select.value=prev;
+ }catch(e){select.replaceChildren(new Option('Staff list unavailable',''));boostCredMessage('Could not load staff list: '+e.message,true)}
 }
 async function boostCredSubmit(){
  const email=$('boostCredStaff').value,raw=$('boostCredCode').value,confirmation=$('boostCredConfirm').value,code=boostCredNormalize(raw);
