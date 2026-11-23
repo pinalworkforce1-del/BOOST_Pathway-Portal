@@ -62,6 +62,7 @@
 <select id="daysFilter"><option value="">All durations</option><option value="15">15+ days</option><option value="30">30+ days</option><option value="45">45+ days</option></select>
 <select id="h3Filter"><option value="">All careers</option><option value="h3">H3 pathway</option><option value="other">Other regional career</option></select>
 <select id="assignmentFilter"><option value="">All assignments</option><option value="mine">Assigned to me</option><option value="unassigned">Unassigned</option></select>
+<button class="btn alt" id="talentSyncToggle" type="button" onclick="location.href='talentsync.html'">Open TalentSync</button>
 <button class="btn alt" id="refresh">Refresh</button>
 </div>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:-2px 0 12px"><label class="toggle"><input type="checkbox" id="emailAlertToggle"> Email my assigned participant alerts</label></div>
@@ -133,7 +134,7 @@
 </aside>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
-<script src="assets/js/pinal-cloud-config.js"></script>
+<script src="assets/js/pinal-cloud-config.js?v=20261123-pipeline-v3"></script>
 <script src="assets/js/pinal-coach-mobility-report-v1.js?v=20261031-coach1"></script>
 <script>
 (()=>{'use strict';
