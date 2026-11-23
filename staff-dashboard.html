@@ -24,6 +24,16 @@
 #jacquelineCoachReport details p{font-size:15px;line-height:1.6}
 @media(max-width:620px){#jacquelineCoachReport{font-size:15px}#jacquelineCoachReport p,#jacquelineCoachReport li{font-size:15px}#jacquelineCoachReport h4{font-size:17px}#jacquelineCoachReport .evidenceCard{padding:13px}}
 .moduleEvidence{display:block;margin-top:5px;color:#426879;font-size:10px;font-weight:750}.r2wCoachBar{margin-top:14px}</style>
+<style>
+#boostCredentialAdmin{margin:14px 0 20px;background:#fff;border:1px solid #b8d5dc;border-radius:16px;padding:18px}
+#boostCredentialAdmin h2{margin:0 0 5px;color:#102d49;font-size:18px}
+#boostCredentialAdmin .credGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+#boostCredentialAdmin label{font-size:12px;font-weight:800;display:block;margin-bottom:5px}
+#boostCredentialAdmin input:not([type=checkbox]),#boostCredentialAdmin select{width:100%;padding:11px;border:1px solid #b7cbd4;border-radius:9px;font:inherit}
+#boostCredentialAdmin .credMsg{padding:10px;margin-top:10px;border-radius:8px;font-size:12px;overflow-wrap:anywhere}
+#boostCredentialAdmin .credMsg.success{background:#eaf8ef;color:#1e673e}#boostCredentialAdmin .credMsg.error{background:#ffedf0;color:#962d42}
+@media(max-width:650px){#boostCredentialAdmin .credGrid{grid-template-columns:1fr}}
+</style>
 <link rel="stylesheet" href="assets/css/talentsync-rosie.css?v=20261002-rosie-standard4">\n</head>
 <body>
 <header class="top"><div class="brand"><b>PINAL BOOST • COACH VIEW</b><span>PATHWAY PROGRESS • COACH-READY DETAIL • 90-DAY ACCESS CODES</span></div><span class="pill" id="coachBadge">Staff access</span><button class="btn alt hidden" id="signOut">Sign out</button></header>
@@ -40,6 +50,18 @@
 <button class="btn alt" id="refresh">Refresh</button>
 </div>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:-2px 0 12px"><label class="toggle"><input type="checkbox" id="emailAlertToggle"> Email my assigned participant alerts</label></div>
+<section class="hidden" id="boostCredentialAdmin" aria-labelledby="boostCredHeading">
+<h2 id="boostCredHeading">Staff Credential Management <small style="color:#607583;font-size:11px">Admin only</small></h2>
+<p class="notice">Assign a custom access code to an existing BOOST staff member without changing area permissions. Resets expire in 90 days and revoke previous BOOST staff sessions; Level Up is not affected.</p>
+<div class="credGrid">
+<div><label for="boostCredStaff">Staff member</label><select id="boostCredStaff"><option value="">Choose staff member</option></select></div>
+<div><label for="boostCredCode">New access code</label><input id="boostCredCode" type="password" autocomplete="new-password" placeholder="Enter or paste access code"></div>
+<div><label for="boostCredConfirm">Confirm access code</label><input id="boostCredConfirm" type="password" autocomplete="new-password" placeholder="Repeat access code"></div>
+<div><label><input type="checkbox" id="boostCredShow"> Show access code</label><p class="notice">12–128 letters A–Z or digits 2–9; spaces/dashes are ignored.</p></div>
+</div>
+<button class="btn" type="button" id="boostCredSubmit">Set Custom Credential</button> <button class="btn alt" type="button" id="boostCredClear">Clear</button>
+<div id="boostCredMessage" class="credMsg hidden" role="status"></div>
+</section>
 <div class="stats"><div class="stat"><small>Participants</small><strong id="sPeople">0</strong></div><div class="stat"><small>Active</small><strong id="sActive">0</strong></div><div class="stat"><small>Needs follow-up</small><strong id="sFollow">0</strong></div><div class="stat"><small>Completed</small><strong id="sDone">0</strong></div></div>
 <div class="grid" id="grid"></div>
 <section class="panel notifications"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2>Staff Notifications</h2><div class="notice">Milestones and follow-up alerts generated from BOOST.</div></div><button class="btn alt" id="refreshNotices">Refresh</button></div><div id="noticeList" class="notifList"></div></section>
@@ -210,7 +232,7 @@ function hideError(){$('authError').classList.add('hidden')}
 async function signIn(){hideError();const email=$('email').value.trim(),access_code=$('staffCode').value.trim();if(!email||!access_code){showError('Enter your staff email and access code.');return}try{const data=await api('staff_login',{email,access_code},'');localStorage.setItem(TOKEN_KEY,data.staff_token);me=String(data.staff?.email||email).toLowerCase();openApp(data.staff);await load()}catch(e){showError(e.message)}}
 function openApp(staff){$('signin').classList.add('hidden');$('app').classList.remove('hidden');$('signOut').classList.remove('hidden');$('coachBadge').textContent=(staff?.display_name||staff?.email||'Staff')+' • Pinal BOOST'}
 async function resume(){const token=localStorage.getItem(TOKEN_KEY)||'';if(!token)return;try{const data=await api('staff_resume',{},token);me=String(data.staff?.email||'').toLowerCase();openApp(data.staff);await load()}catch(_){localStorage.removeItem(TOKEN_KEY)}}
-async function load(){const data=await api('coach_board');records=(data.records||[]).map(r=>currentComplete(r)?{...r,participant_status:'completed'}:r);notices=data.notifications||[];staffList=data.assignable_staff||[];assignments=new Map((data.assignments||[]).map(x=>[String(x.journey_id),x]));handoffs=new Map((data.talentsync_handoffs||[]).map(x=>[String(x.source_journey_id),x]));me=String(data.staff?.email||me).toLowerCase();$('emailAlertToggle').checked=!!data.staff?.email_notifications;populateAssignments();render();renderNotices()}
+async function load(){const data=await api('coach_board');records=(data.records||[]).map(r=>currentComplete(r)?{...r,participant_status:'completed'}:r);notices=data.notifications||[];staffList=data.assignable_staff||[];assignments=new Map((data.assignments||[]).map(x=>[String(x.journey_id),x]));handoffs=new Map((data.talentsync_handoffs||[]).map(x=>[String(x.source_journey_id),x]));me=String(data.staff?.email||me).toLowerCase();$('emailAlertToggle').checked=!!data.staff?.email_notifications;populateAssignments();boostCredPopulate();render();renderNotices()}
 function populateAssignments(){const f=$('assignmentFilter'),keep=f.value;f.querySelectorAll('option[data-staff]').forEach(x=>x.remove());for(const s of staffList){const o=document.createElement('option');o.dataset.staff='1';o.value=s.email;o.textContent=s.display_name||s.email;f.appendChild(o)}f.value=keep}
 function assignmentOptions(current){return '<option value="">Unassigned</option>'+staffList.map(s=>'<option value="'+esc(s.email)+'" '+(String(current||'').toLowerCase()===String(s.email).toLowerCase()?'selected':'')+'>'+esc(s.display_name||s.email)+'</option>').join('')}
 function passesAssignment(r){const v=$('assignmentFilter').value;if(!v)return true;const a=assignments.get(String(r.journey_id)),assigned=String(a?.primary_staff_email||'').toLowerCase();if(v==='mine')return assigned===me;if(v==='unassigned')return !assigned;return assigned===String(v).toLowerCase()}
@@ -888,6 +910,31 @@ async function downloadSummary(id){
   }catch(err){alert('Could not build participant PDF: '+err.message)}
   finally{if(btn){btn.disabled=false;btn.textContent='Download PDF'}}
 }
+
+function boostCredNormalize(s){return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'')}
+function boostCredMessage(s,bad=false){const x=$('boostCredMessage');x.textContent=s;x.className='credMsg '+(bad?'error':'success')}
+function boostCredClear(){for(const id of ['boostCredCode','boostCredConfirm']){$(id).value='';$(id).type='password'}$('boostCredShow').checked=false}
+function boostCredPopulate(){
+ const panel=$('boostCredentialAdmin');if(me!=='aamoon@eckerd.org'){panel.classList.add('hidden');return}
+ panel.classList.remove('hidden');const select=$('boostCredStaff'),prev=select.value;select.replaceChildren(new Option('Choose staff member',''));
+ const seen=new Set();for(const a of staffList){const email=String(a.email||'').toLowerCase();if(!email||seen.has(email))continue;seen.add(email);select.add(new Option((a.display_name||email)+' — '+email,email))}
+ select.value=prev;
+}
+async function boostCredSubmit(){
+ const email=$('boostCredStaff').value,raw=$('boostCredCode').value,confirmation=$('boostCredConfirm').value,code=boostCredNormalize(raw);
+ if(!email)return boostCredMessage('Choose a staff member.',true);
+ if(!/^[A-Za-z2-9\s-]+$/.test(raw)||code.length<12||code.length>128)return boostCredMessage('Use 12–128 letters A–Z and digits 2–9 (spaces/dashes allowed).',true);
+ if(code!==boostCredNormalize(confirmation))return boostCredMessage('Access codes do not match.',true);
+ if(!confirm('Reset BOOST access for '+email+' and sign out existing BOOST sessions?'))return;
+ const btn=$('boostCredSubmit');btn.disabled=true;btn.textContent='Saving…';
+ try{const response=await api('admin_set_custom_credential',{email,access_code:raw});boostCredClear();boostCredMessage('Credential updated for '+response.email+'; expires '+fmt(response.expires_at)+'. Existing BOOST sessions signed out. Level Up unchanged.')}
+ catch(err){boostCredMessage(err.message||'Credential reset failed.',true)}
+ finally{btn.disabled=false;btn.textContent='Set Custom Credential'}
+}
+$('boostCredSubmit').onclick=boostCredSubmit;
+$('boostCredClear').onclick=()=>{boostCredClear();$('boostCredMessage').classList.add('hidden')};
+$('boostCredShow').onchange=e=>{for(const id of ['boostCredCode','boostCredConfirm'])$(id).type=e.target.checked?'text':'password'};
+
 $('intakeRosieClose').onclick=()=>$('intakeRosiePanel').classList.remove('open');$('intakeRosieSend').onclick=()=>{const i=$('intakeRosieInput'),q=i.value;i.value='';intakeRosieAsk(q)};$('intakeRosieInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('intakeRosieSend').click()}});intakeRosieQuick();$('codeLogin').onclick=signIn;$('staffCode').addEventListener('keydown',e=>{if(e.key==='Enter')signIn()});$('signOut').onclick=async()=>{try{await api('staff_logout')}catch(_){}localStorage.removeItem(TOKEN_KEY);location.reload()};$('refresh').onclick=load;$('refreshNotices').onclick=load;$('closeDrawer').onclick=()=>$('drawerBack').classList.remove('show');$('drawerBack').addEventListener('click',e=>{if(e.target===$('drawerBack'))$('drawerBack').classList.remove('show')});$('noticeList').addEventListener('click',async e=>{const n=e.target.closest('[data-notice]');if(!n)return;try{await api('mark_notification_read',{notification_id:n.dataset.notice});await load()}catch(err){alert(err.message)}});['search','pathFilter','statusFilter','daysFilter','h3Filter','assignmentFilter'].forEach(id=>{const el=$(id);if(el)el.addEventListener(id==='search'?'input':'change',render)});$('emailAlertToggle').onchange=async e=>{try{await api('update_email_notifications',{enabled:e.target.checked})}catch(err){alert(err.message)}};resume().then(()=>{const target=new URLSearchParams(location.search).get('ready2work');if(target){const found=records.find(r=>String(r.journey_id)===target);if(found?.ready2work)openReady2Work(target);else if(found){$('drawerTitle').textContent='Ready 2 Work';$('drawerMeta').textContent=found.participant_name||'';$('drawerBody').textContent='No Ready 2 Work evidence is recorded for this participant.';$('drawerBack').classList.add('show');}}});
 })();
 </script>
