@@ -34,6 +34,21 @@
 #boostCredentialAdmin .credMsg.success{background:#eaf8ef;color:#1e673e}#boostCredentialAdmin .credMsg.error{background:#ffedf0;color:#962d42}
 @media(max-width:650px){#boostCredentialAdmin .credGrid{grid-template-columns:1fr}}
 </style>
+<style>
+.boostFunnel{margin:14px 0 18px}.boostFunnelHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 11px;flex-wrap:wrap}
+.boostFunnelHead h2{margin:0;color:var(--navy);font-size:18px}.boostFunnelHead p{font-size:11px;margin:4px 0;color:var(--muted)}
+.boostFunnelUpdated{font-size:10px;color:var(--muted)}
+.boostFunnelGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.boostFunnelCard{border:1px solid var(--line);border-radius:14px;padding:13px;background:#fff;min-width:0}
+.boostFunnelCard small{display:block;text-transform:uppercase;font-size:10px;color:#4f6f83;letter-spacing:.045em;font-weight:900}
+.boostFunnelCard strong{display:block;color:var(--navy);font-size:26px;margin:5px 0 7px}
+.boostFunnelCard span,.boostStatHelp{display:block;color:var(--muted);font-size:10px;line-height:1.45}
+.boostFunnelCard.verified{background:#f3faf6;border-color:#a9d5bd}
+.boostFunnelReconcile{font-size:11px;color:#516d7f;margin-top:9px}
+.boostFunnelReconcile.warn{color:#885e15;background:#fff7e3;border:1px solid #edd8a2;border-radius:9px;padding:9px 11px}
+@media(max-width:980px){.boostFunnelGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.boostFunnelGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
 <link rel="stylesheet" href="assets/css/talentsync-rosie.css?v=20261002-rosie-standard4">\n</head>
 <body>
 <header class="top"><div class="brand"><b>PINAL BOOST • COACH VIEW</b><span>PATHWAY PROGRESS • COACH-READY DETAIL • 90-DAY ACCESS CODES</span></div><span class="pill" id="coachBadge">Staff access</span><button class="btn alt hidden" id="signOut">Sign out</button></header>
@@ -62,7 +77,23 @@
 <button class="btn" type="button" id="boostCredSubmit">Set Custom Credential</button> <button class="btn alt" type="button" id="boostCredClear">Clear</button>
 <div id="boostCredMessage" class="credMsg hidden" role="status"></div>
 </section>
-<div class="stats"><div class="stat"><small>Participants</small><strong id="sPeople">0</strong></div><div class="stat"><small>Active</small><strong id="sActive">0</strong></div><div class="stat"><small>Needs follow-up</small><strong id="sFollow">0</strong></div><div class="stat"><small>Completed</small><strong id="sDone">0</strong></div></div>
+<section class="boostFunnel" id="boostFunnel" aria-label="BOOST pathway and enrollment milestones">
+  <div class="boostFunnelHead"><div><h2>BOOST → Enrollment Pipeline</h2><p>Verified Pinal journey and TalentSync milestones. Counts overlap by design; this is not a subtraction funnel.</p></div><span id="boostFunnelUpdated" class="boostFunnelUpdated"></span></div>
+  <div class="boostFunnelGrid">
+    <article class="boostFunnelCard"><small>BOOST Records</small><strong id="fRecords">—</strong><span>Distinct participant journeys in Pinal BOOST</span></article>
+    <article class="boostFunnelCard"><small>BOOST Started</small><strong id="fStarted">—</strong><span>Journey has a recorded BOOST start date</span></article>
+    <article class="boostFunnelCard"><small>Pre-Enrollment Pathway Complete</small><strong id="fCore">—</strong><span>Career Modules 1–4 or rapid pathway activities complete</span></article>
+    <article class="boostFunnelCard"><small>Sent to TalentSync</small><strong id="fMoved">—</strong><span>TalentSync intake record created from BOOST</span></article>
+    <article class="boostFunnelCard verified"><small>Enrollment Approved</small><strong id="fApproved">—</strong><span>Confirmed enrollment approval timestamp in TalentSync</span></article>
+  </div>
+  <div id="boostFunnelReconcile" class="boostFunnelReconcile" role="status"></div>
+</section>
+<div class="stats">
+ <div class="stat"><small>Learning Complete</small><strong id="sDone">0</strong><span class="boostStatHelp">All required learning modules for the selected pathway, including foundation modules</span></div>
+ <div class="stat"><small>No Recorded Start</small><strong id="sPeople">0</strong><span class="boostStatHelp">BOOST journey exists without a start date</span></div>
+ <div class="stat"><small>Needs Follow-up · 7+ Days</small><strong id="sFollow">0</strong><span class="boostStatHelp">Started, unfinished, not handed off, no saved activity for 7+ days</span></div>
+ <div class="stat"><small>Inactive · 30+ Days</small><strong id="sActive">0</strong><span class="boostStatHelp">Subset of follow-up participants with 30+ days inactivity</span></div>
+</div>
 <div class="grid" id="grid"></div>
 <section class="panel notifications"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><h2>Staff Notifications</h2><div class="notice">Milestones and follow-up alerts generated from BOOST.</div></div><button class="btn alt" id="refreshNotices">Refresh</button></div><div id="noticeList" class="notifList"></div></section>
 </section>
@@ -233,11 +264,57 @@ async function signIn(){hideError();const email=$('email').value.trim(),access_c
 function openApp(staff){$('signin').classList.add('hidden');$('app').classList.remove('hidden');$('signOut').classList.remove('hidden');$('coachBadge').textContent=(staff?.display_name||staff?.email||'Staff')+' • Pinal BOOST'}
 async function resume(){const token=localStorage.getItem(TOKEN_KEY)||'';if(!token)return;try{const data=await api('staff_resume',{},token);me=String(data.staff?.email||'').toLowerCase();openApp(data.staff);await load()}catch(_){localStorage.removeItem(TOKEN_KEY)}}
 async function load(){const data=await api('coach_board');records=(data.records||[]).map(r=>currentComplete(r)?{...r,participant_status:'completed'}:r);notices=data.notifications||[];staffList=data.assignable_staff||[];assignments=new Map((data.assignments||[]).map(x=>[String(x.journey_id),x]));handoffs=new Map((data.talentsync_handoffs||[]).map(x=>[String(x.source_journey_id),x]));me=String(data.staff?.email||me).toLowerCase();$('emailAlertToggle').checked=!!data.staff?.email_notifications;populateAssignments();boostCredPopulate();render();renderNotices()}
+
+function boostLastSavedActivity(r){
+ let stamp=new Date(r.updated_at||0).getTime();
+ for(const p of (r.validated_progress||[])){const n=new Date(p.updated_at||p.completed_at||0).getTime();if(Number.isFinite(n))stamp=Math.max(stamp,n)}
+ return stamp||0;
+}
+function boostCoreComplete(r){
+ const pathway=pathKind(r);
+ if(pathway==='career')return ['module1','module2','module3','module4'].every(id=>validated(r,id));
+ if(pathway==='rapid')return ['module1','skillmobility','jobsearch'].every(id=>validated(r,id));
+ return false;
+}
+function boostPipelineStats(){
+ const ids=new Set(records.map(r=>String(r.journey_id)));
+ const transfers=[...handoffs.values()];
+ const now=Date.now();
+ const follow=records.filter(r=>r.boost_started_at&&!currentComplete(r)&&!handoffs.has(String(r.journey_id))&&(now-boostLastSavedActivity(r))>=7*86400000);
+ return {
+  records:ids.size,
+  started:records.filter(r=>!!r.boost_started_at).length,
+  core:records.filter(boostCoreComplete).length,
+  learning:records.filter(currentComplete).length,
+  noStart:records.filter(r=>!r.boost_started_at).length,
+  follow:follow.length,
+  inactive30:follow.filter(r=>now-boostLastSavedActivity(r)>=30*86400000).length,
+  moved:transfers.length,
+  approved:transfers.filter(t=>!!t.enrollment_approved_at).length,
+  unmatched:transfers.filter(t=>!ids.has(String(t.source_journey_id))).length,
+  completeWithoutStart:records.filter(r=>currentComplete(r)&&!r.boost_started_at).length,
+  completeMissingStamp:records.filter(r=>currentComplete(r)&&!r.boost_completed_at).length
+ };
+}
+function boostRenderPipeline(){
+ const counts=boostPipelineStats();
+ const set=(id,value)=>{const e=$(id);if(e)e.textContent=String(value)};
+ set('fRecords',counts.records);set('fStarted',counts.started);set('fCore',counts.core);set('fMoved',counts.moved);set('fApproved',counts.approved);
+ set('sDone',counts.learning);set('sPeople',counts.noStart);set('sFollow',counts.follow);set('sActive',counts.inactive30);
+ $('boostFunnelUpdated').textContent='Refreshed '+new Date().toLocaleString();
+ const notes=[];
+ if(counts.unmatched)notes.push(counts.unmatched+' TalentSync record'+(counts.unmatched===1?' does':'s do')+' not match a current Pinal BOOST journey');
+ if(counts.completeMissingStamp)notes.push(counts.completeMissingStamp+' learning-complete record'+(counts.completeMissingStamp===1?' lacks':'s lack')+' the historical BOOST completion timestamp');
+ if(counts.completeWithoutStart)notes.push(counts.completeWithoutStart+' learning-complete record'+(counts.completeWithoutStart===1?' lacks':'s lack')+' a recorded start date');
+ const status=$('boostFunnelReconcile');status.textContent=notes.length?'Data-quality review: '+notes.join(' · '):'All displayed milestones were calculated from saved records.';
+ status.classList.toggle('warn',notes.length>0);
+}
+
 function populateAssignments(){const f=$('assignmentFilter'),keep=f.value;f.querySelectorAll('option[data-staff]').forEach(x=>x.remove());for(const s of staffList){const o=document.createElement('option');o.dataset.staff='1';o.value=s.email;o.textContent=s.display_name||s.email;f.appendChild(o)}f.value=keep}
 function assignmentOptions(current){return '<option value="">Unassigned</option>'+staffList.map(s=>'<option value="'+esc(s.email)+'" '+(String(current||'').toLowerCase()===String(s.email).toLowerCase()?'selected':'')+'>'+esc(s.display_name||s.email)+'</option>').join('')}
 function passesAssignment(r){const v=$('assignmentFilter').value;if(!v)return true;const a=assignments.get(String(r.journey_id)),assigned=String(a?.primary_staff_email||'').toLowerCase();if(v==='mine')return assigned===me;if(v==='unassigned')return !assigned;return assigned===String(v).toLowerCase()}
 function enrollmentControl(r,a){const h=handoffs.get(String(r.journey_id));if(h)return '<div class="enrollAction"><button class="btn enroll" type="button" disabled>Sent to TalentSync ✓</button><small>TalentSync status: '+esc(label(h.operational_status||'record exists'))+' • '+esc(h.assigned_coach_email||a?.primary_staff_email||'Coach assigned')+'</small></div>';const ready=(pathKind(r)==='career'&&validated(r,'module4'))||(pathKind(r)==='ready'&&validated(r,'financial')&&validated(r,'ai'));if(!ready)return '<div class="enrollAction"><button class="btn enroll" type="button" disabled>Intake handoff locked</button><small>'+(pathKind(r)==='ready'?'Complete and save Financial Habits and AI & You before starting the TalentSync intake handoff.':'Complete and save Module 4 before starting the TalentSync intake handoff.')+'</small></div>';if(!a?.primary_staff_email)return '<div class="enrollAction"><button class="btn enroll" type="button" disabled>Assign coach to start intake</button><small>Select a primary Career Coach first.</small></div>';return '<div class="enrollAction"><button class="btn enroll" type="button" data-enroll="'+esc(r.journey_id)+'">Send to TalentSync for Intake</button><small>Creates or connects the participant\'s TalentSync intake record.</small></div>'}
-function render(){const q=$('search').value.trim().toLowerCase(),pf=$('pathFilter').value,sf=$('statusFilter').value,df=$('daysFilter').value,hf=$('h3Filter')?.value||'';const list=records.filter(r=>{const hay=[r.participant_name,r.participant_email,r.primary_career_title,r.selected_industry,r.current_step,r.h3_status].join(' ').toLowerCase(),h=String(r.h3_status||'').toLowerCase();return(!q||hay.includes(q))&&(!pf||r.selected_pathway===pf)&&(!sf||r.participant_status===sf)&&(!df||Number(r.days_active)>=Number(df))&&(!hf||(hf==='h3'?h.includes('h3'):!h.includes('h3')))&&passesAssignment(r)});$('sPeople').textContent=records.length;$('sActive').textContent=records.filter(r=>r.boost_started_at&&r.participant_status!=='completed').length;$('sFollow').textContent=records.filter(r=>r.participant_status==='needs_follow_up').length;$('sDone').textContent=records.filter(r=>r.participant_status==='completed').length;$('grid').innerHTML=list.length?list.map(r=>{const s=seq(r),done=s.filter(id=>validated(r,id)).length,a=assignments.get(String(r.journey_id));return '<article class="person"><div class="personTop"><div><h3>'+esc(r.participant_name||'Participant')+'</h3><div class="meta">'+esc(r.participant_email||'No email')+' • Last activity '+fmt(r.updated_at)+'</div><div class="tags"><span class="tag '+esc(r.selected_pathway||'')+'">'+esc(pathLabel(r.selected_pathway))+'</span><span class="tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.h3_status?'<span class="tag">'+esc(r.h3_status)+'</span>':'')+'</div></div><div class="right"><div class="series">'+done+' / '+s.length+' pathway steps complete</div><button class="btn alt" type="button" data-download="'+esc(r.journey_id)+'" style="margin-top:8px">Download PDF</button><button class="btn alt" type="button" data-intake-rosie="'+esc(r.journey_id)+'" data-intake-name="'+esc(r.participant_name||'Participant')+'" style="margin-top:8px;margin-left:6px">Ask Rosie · Intake</button>'+(r.participant_status==='completed'?'<button class="btn alt" type="button" data-path-cert="'+esc(r.journey_id)+'" style="margin-top:8px;margin-left:6px">BOOST Certificate</button>':'')+'<div class="assign"><select data-assign="'+esc(r.journey_id)+'">'+assignmentOptions(a?.primary_staff_email||'')+'</select></div>'+enrollmentControl(r,a)+'</div></div>'+'<div class="boostCoachPhases">'+phaseGroups(r).map(g=>'<section class="boostCoachPhase"><h4>'+esc(g.title)+'</h4><div class="progress">'+g.items.map(id=>{const status=stageStatus(r,id),cls=(status==='Completed'||status==='Ready for coach appointment'||status==='Completed — Legacy Module 1')?'done':status==='Needs review'?'review':'';return '<button type="button" class="module '+cls+'" data-person="'+esc(r.journey_id)+'" data-module="'+esc(id)+'"><b>'+esc(names[id]||label(id))+'</b><span>'+esc(status)+'</span><em>'+esc(stageCompletionLabel(r,id,status))+'</em><small class="moduleEvidence">View participant evidence</small></button>'}).join('')+'</div>'+(g.kind==='ready2work'&&r.ready2work?'<div class="r2wCoachBar"><strong>Ready 2 Work Summary</strong><span>'+esc(r.ready2work.scenario_count)+' / 22 scenarios · Résumé '+(r.ready2work.resume_complete?'✓':'Pending')+' · Jacqueline '+(r.ready2work.interview_complete?'✓':'Pending')+' · Certificate '+(r.ready2work.certificate_earned?'Earned':'Pending')+(r.ready2work.certificate_earned?(r.ready2work.certificate_earned_at?' · Awarded '+esc(fmt(r.ready2work.certificate_earned_at)):' · Award date not recorded'):'')+'</span><button class="btn alt" type="button" data-r2w="'+esc(r.journey_id)+'">View Ready 2 Work Results</button></div>':'')+'</section>').join('')+'</div></article>'}).join(''):'<section class="empty"><h2>No participants match this search.</h2></section>';document.querySelectorAll('[data-r2w]').forEach(b=>b.onclick=()=>openReady2Work(b.dataset.r2w));document.querySelectorAll('[data-person][data-module]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person,b.dataset.module));document.querySelectorAll('[data-download]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadSummary(b.dataset.download)});document.querySelectorAll('[data-intake-rosie]').forEach(b=>b.onclick=e=>{e.stopPropagation();intakeRosieOpen(b.dataset.intakeRosie,b.dataset.intakeName)});document.querySelectorAll('[data-path-cert]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadPathwayCertificate(b.dataset.pathCert)});document.querySelectorAll('[data-assign]').forEach(sel=>sel.onchange=async()=>{sel.disabled=true;try{await api('assign_participant',{journey_id:sel.dataset.assign,staff_email:sel.value||null});await load()}catch(e){alert(e.message)}finally{sel.disabled=false}});document.querySelectorAll('[data-enroll]').forEach(btn=>btn.onclick=async()=>{
+function render(){const q=$('search').value.trim().toLowerCase(),pf=$('pathFilter').value,sf=$('statusFilter').value,df=$('daysFilter').value,hf=$('h3Filter')?.value||'';const list=records.filter(r=>{const hay=[r.participant_name,r.participant_email,r.primary_career_title,r.selected_industry,r.current_step,r.h3_status].join(' ').toLowerCase(),h=String(r.h3_status||'').toLowerCase();return(!q||hay.includes(q))&&(!pf||r.selected_pathway===pf)&&(!sf||r.participant_status===sf)&&(!df||Number(r.days_active)>=Number(df))&&(!hf||(hf==='h3'?h.includes('h3'):!h.includes('h3')))&&passesAssignment(r)});boostRenderPipeline();$('grid').innerHTML=list.length?list.map(r=>{const s=seq(r),done=s.filter(id=>validated(r,id)).length,a=assignments.get(String(r.journey_id));return '<article class="person"><div class="personTop"><div><h3>'+esc(r.participant_name||'Participant')+'</h3><div class="meta">'+esc(r.participant_email||'No email')+' • Last activity '+fmt(r.updated_at)+'</div><div class="tags"><span class="tag '+esc(r.selected_pathway||'')+'">'+esc(pathLabel(r.selected_pathway))+'</span><span class="tag '+(r.participant_status==='needs_follow_up'?'warn':'good')+'">'+esc(label(r.participant_status||'not started'))+'</span>'+(r.h3_status?'<span class="tag">'+esc(r.h3_status)+'</span>':'')+'</div></div><div class="right"><div class="series">'+done+' / '+s.length+' pathway steps complete</div><button class="btn alt" type="button" data-download="'+esc(r.journey_id)+'" style="margin-top:8px">Download PDF</button><button class="btn alt" type="button" data-intake-rosie="'+esc(r.journey_id)+'" data-intake-name="'+esc(r.participant_name||'Participant')+'" style="margin-top:8px;margin-left:6px">Ask Rosie · Intake</button>'+(r.participant_status==='completed'?'<button class="btn alt" type="button" data-path-cert="'+esc(r.journey_id)+'" style="margin-top:8px;margin-left:6px">BOOST Certificate</button>':'')+'<div class="assign"><select data-assign="'+esc(r.journey_id)+'">'+assignmentOptions(a?.primary_staff_email||'')+'</select></div>'+enrollmentControl(r,a)+'</div></div>'+'<div class="boostCoachPhases">'+phaseGroups(r).map(g=>'<section class="boostCoachPhase"><h4>'+esc(g.title)+'</h4><div class="progress">'+g.items.map(id=>{const status=stageStatus(r,id),cls=(status==='Completed'||status==='Ready for coach appointment'||status==='Completed — Legacy Module 1')?'done':status==='Needs review'?'review':'';return '<button type="button" class="module '+cls+'" data-person="'+esc(r.journey_id)+'" data-module="'+esc(id)+'"><b>'+esc(names[id]||label(id))+'</b><span>'+esc(status)+'</span><em>'+esc(stageCompletionLabel(r,id,status))+'</em><small class="moduleEvidence">View participant evidence</small></button>'}).join('')+'</div>'+(g.kind==='ready2work'&&r.ready2work?'<div class="r2wCoachBar"><strong>Ready 2 Work Summary</strong><span>'+esc(r.ready2work.scenario_count)+' / 22 scenarios · Résumé '+(r.ready2work.resume_complete?'✓':'Pending')+' · Jacqueline '+(r.ready2work.interview_complete?'✓':'Pending')+' · Certificate '+(r.ready2work.certificate_earned?'Earned':'Pending')+(r.ready2work.certificate_earned?(r.ready2work.certificate_earned_at?' · Awarded '+esc(fmt(r.ready2work.certificate_earned_at)):' · Award date not recorded'):'')+'</span><button class="btn alt" type="button" data-r2w="'+esc(r.journey_id)+'">View Ready 2 Work Results</button></div>':'')+'</section>').join('')+'</div></article>'}).join(''):'<section class="empty"><h2>No participants match this search.</h2></section>';document.querySelectorAll('[data-r2w]').forEach(b=>b.onclick=()=>openReady2Work(b.dataset.r2w));document.querySelectorAll('[data-person][data-module]').forEach(b=>b.onclick=()=>openDetail(b.dataset.person,b.dataset.module));document.querySelectorAll('[data-download]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadSummary(b.dataset.download)});document.querySelectorAll('[data-intake-rosie]').forEach(b=>b.onclick=e=>{e.stopPropagation();intakeRosieOpen(b.dataset.intakeRosie,b.dataset.intakeName)});document.querySelectorAll('[data-path-cert]').forEach(b=>b.onclick=e=>{e.stopPropagation();downloadPathwayCertificate(b.dataset.pathCert)});document.querySelectorAll('[data-assign]').forEach(sel=>sel.onchange=async()=>{sel.disabled=true;try{await api('assign_participant',{journey_id:sel.dataset.assign,staff_email:sel.value||null});await load()}catch(e){alert(e.message)}finally{sel.disabled=false}});document.querySelectorAll('[data-enroll]').forEach(btn=>btn.onclick=async()=>{
   const r=records.find(x=>String(x.journey_id)===String(btn.dataset.enroll)),a=assignments.get(String(btn.dataset.enroll));
   if(!r||!a?.primary_staff_email)return;
   const participant=r.participant_name||'Participant';
